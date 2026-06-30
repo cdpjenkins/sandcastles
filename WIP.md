@@ -2,17 +2,17 @@
 
 ## Current Step
 
-Step 2 of 5: Erosion.ts
+Step 4 of 5: Slope.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval
+⏸️ WAITING — awaiting commit approval for Step 3
 
 ## Completed
 
-- [ ] Step 1: Grid.sediment + WaterSim.velocity
-- [ ] Step 2: Erosion.ts
-- [ ] Step 3: Moisture.ts
+- [x] Step 1: Grid.sediment + WaterSim.velocity
+- [x] Step 2: Erosion.ts
+- [x] Step 3: Moisture.ts
 - [ ] Step 4: Slope.ts
 - [ ] Step 5: Game wiring + moisture colouring
 
@@ -22,4 +22,4 @@ None
 
 ## Next Action
 
-Add sediment tests to grid.test.ts and velocity tests to waterSim.test.ts.
+After commit approval: write Slope.ts (talus/angle-of-repose simulation) and lower sand angleOfRepose from 34° to 20° in materials.ts.
