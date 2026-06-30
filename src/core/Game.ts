@@ -123,7 +123,7 @@ export class Game {
   }
 
   private simStep(dt: number): void {
-    this.waterSim.step(this.grid, dt)
-    this.terrain.rebuildAll()
+    const dirty = this.waterSim.step(this.grid, dt)
+    this.terrain.updateDirtyCells(dirty)
   }
 }

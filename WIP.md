@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 1 of 3: WaterSim dirty-cell mask
+Step 2 of 3: TerrainMesh partial update + Game wiring
 
 ## Status
 

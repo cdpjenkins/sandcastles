@@ -87,6 +87,22 @@ export class TerrainMesh {
     this.geometry.computeVertexNormals()
   }
 
+  updateDirtyCells(dirty: Uint8Array): void {
+    const W = this.grid.width
+    let any = false
+    for (let i = 0; i < dirty.length; i++) {
+      if (dirty[i]) {
+        this.setVertex(i % W, Math.floor(i / W))
+        any = true
+      }
+    }
+    if (any) {
+      this.geometry.attributes['position'].needsUpdate = true
+      this.geometry.attributes['color'].needsUpdate = true
+      this.geometry.computeVertexNormals()
+    }
+  }
+
   updateDirtyRegion(x0: number, z0: number, x1: number, z1: number): void {
     for (let z = z0; z <= z1; z++) {
       for (let x = x0; x <= x1; x++) {
