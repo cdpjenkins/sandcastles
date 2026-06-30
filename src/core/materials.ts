@@ -25,7 +25,7 @@ export const MATERIAL_PROPS: Readonly<Record<Material, MaterialProps>> = {
   [Material.Sand]: {
     diggable: true,
     erodibility: 0.6,
-    angleOfRepose: 34,
+    angleOfRepose: 20,
     colour: '#c2a06e',
   },
   [Material.Gravel]: {

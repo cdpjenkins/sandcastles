@@ -14,8 +14,8 @@ describe('Material properties', () => {
     expect(MATERIAL_PROPS[Material.Sand].diggable).toBe(true)
   })
 
-  it('sand angle of repose is 34 degrees', () => {
-    expect(MATERIAL_PROPS[Material.Sand].angleOfRepose).toBe(34)
+  it('sand angle of repose is 20 degrees', () => {
+    expect(MATERIAL_PROPS[Material.Sand].angleOfRepose).toBe(20)
   })
 
   it('gravel has a steeper angle of repose than sand', () => {

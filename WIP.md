@@ -6,14 +6,14 @@ Step 4 of 5: Slope.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 3
+⏸️ WAITING — awaiting commit approval for Step 4
 
 ## Completed
 
 - [x] Step 1: Grid.sediment + WaterSim.velocity
 - [x] Step 2: Erosion.ts
 - [x] Step 3: Moisture.ts
-- [ ] Step 4: Slope.ts
+- [x] Step 4: Slope.ts
 - [ ] Step 5: Game wiring + moisture colouring
 
 ## Blockers
