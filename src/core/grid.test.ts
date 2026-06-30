@@ -28,6 +28,26 @@ describe('Grid', () => {
     expect(highGround).toBeGreaterThan(lowGround)
   })
 
+  it('slope is gentler near the sea than inland', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const avgDrop = (z: number) => {
+      let sum = 0
+      for (let x = 0; x < 256; x += 16)
+        sum += Math.abs((grid.getSandHeight(x, z)! - grid.getSandHeight(x, z + 1)!))
+      return sum / 16
+    }
+    expect(avgDrop(20)).toBeGreaterThan(avgDrop(170))
+  })
+
+  it('beach has fractal height variation across cells at the same depth', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const heights = new Set<number>()
+    for (let x = 0; x < 64; x++) heights.add(grid.getSandHeight(x, 50)!)
+    expect(heights.size).toBeGreaterThan(32)
+  })
+
   it('setHeight and getSandHeight round-trip', () => {
     const grid = new Grid(256, 256)
     grid.setSandHeight(10, 20, 4.5)

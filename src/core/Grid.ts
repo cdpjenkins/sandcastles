@@ -107,10 +107,47 @@ export class Grid {
           this.sand[i] = 0
           this.water[i] = 1.0
         } else {
-          const t = 1 - z / seaStart
-          this.sand[i] = t * 30.0
+          const t = z / seaStart
+          const base = 30 * Math.pow(1 - t, 2)
+          const noise = Grid.fractalNoise(x, z) * 7
+          this.sand[i] = Math.max(0, base + noise)
         }
       }
     }
+  }
+
+  private static hashNoise(xi: number, zi: number): number {
+    let h = (Math.imul(xi, 374761393) + Math.imul(zi, 668265263)) | 0
+    h = Math.imul(h ^ (h >>> 13), 1274126177)
+    h = h ^ (h >>> 16)
+    return (h & 0xffff) / 32767.5 - 1
+  }
+
+  private static smoothNoise(x: number, z: number): number {
+    const xi = Math.floor(x)
+    const zi = Math.floor(z)
+    const fx = x - xi
+    const fz = z - zi
+    const ux = fx * fx * (3 - 2 * fx)
+    const uz = fz * fz * (3 - 2 * fz)
+    const a = Grid.hashNoise(xi, zi)
+    const b = Grid.hashNoise(xi + 1, zi)
+    const c = Grid.hashNoise(xi, zi + 1)
+    const d = Grid.hashNoise(xi + 1, zi + 1)
+    const ab = a + (b - a) * ux
+    const cd = c + (d - c) * ux
+    return ab + (cd - ab) * uz
+  }
+
+  private static fractalNoise(x: number, z: number): number {
+    const freqs = [1 / 64, 1 / 32, 1 / 16, 1 / 8]
+    const amps  = [1,      0.5,    0.25,   0.125]
+    let value = 0
+    let total = 0
+    for (let o = 0; o < freqs.length; o++) {
+      value += Grid.smoothNoise(x * freqs[o], z * freqs[o]) * amps[o]
+      total += amps[o]
+    }
+    return value / total
   }
 }
