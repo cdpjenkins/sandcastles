@@ -9,11 +9,14 @@ export class Waves {
   readonly period = PERIOD
   readonly seaLevel = SEA_LEVEL
   timeUntilWave = PERIOD
+  fired = false
 
   step(grid: Grid, dt: number, seaZ: number): void {
+    this.fired = false
     this.timeUntilWave -= dt
 
     if (this.timeUntilWave <= 0) {
+      this.fired = true
       this.timeUntilWave = PERIOD
       const W = grid.width
       for (let row = 0; row < SURGE_ROWS; row++) {

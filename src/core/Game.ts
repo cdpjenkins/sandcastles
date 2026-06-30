@@ -10,6 +10,7 @@ import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
 import { Slope } from '../sim/Slope.ts'
 import { Waves } from '../sim/Waves.ts'
+import { WaveAudio } from '../audio/WaveAudio.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
@@ -24,6 +25,7 @@ export class Game {
   private readonly moisture: Moisture
   private readonly slope: Slope
   private readonly waves: Waves
+  private readonly waveAudio: WaveAudio
   private readonly seaStart: number
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
@@ -55,6 +57,7 @@ export class Game {
     this.moisture = new Moisture()
     this.slope = new Slope()
     this.waves = new Waves()
+    this.waveAudio = new WaveAudio()
     this.seaStart = Math.floor(this.grid.depth * 0.75)
 
     this.renderer = new Renderer(canvas)
@@ -154,6 +157,7 @@ export class Game {
 
   private simStep(dt: number): void {
     this.waves.step(this.grid, dt, this.seaStart)
+    if (this.waves.fired) this.waveAudio.play()
     this.waterSim.step(this.grid, dt)
     this.erosion.step(this.grid, this.waterSim, dt)
     this.moisture.step(this.grid, dt)
