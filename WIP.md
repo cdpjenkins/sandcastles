@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 3 of 4: `TerrainMesh.ts` — render water surface elevation
+Step 4 of 4: Game wiring + stream tool
 
 ## Status
 
@@ -10,10 +10,10 @@ Step 3 of 4: `TerrainMesh.ts` — render water surface elevation
 
 ## Completed
 
-- [ ] Step 1: Grid sourceRate
-- [ ] Step 2: WaterSim.ts pipe model
-- [ ] Step 3: TerrainMesh water surface rendering
-- [ ] Step 4: Game wiring + stream tool
+- [x] Step 1: Grid sourceRate
+- [x] Step 2: WaterSim.ts pipe model
+- [x] Step 3: TerrainMesh water surface rendering
+- [x] Step 4: Game wiring + stream tool
 
 ## Blockers
 
@@ -21,4 +21,4 @@ None
 
 ## Next Action
 
-Add sourceRate tests to `grid.test.ts`, then implement.
+After commit: M3 complete. Start M4 (dam & lake).

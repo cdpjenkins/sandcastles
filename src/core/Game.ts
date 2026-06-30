@@ -5,14 +5,17 @@ import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump } from '../input/Tools.ts'
+import { WaterSim } from '../sim/WaterSim.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
 const BUCKET_CAPACITY = 10
+const STREAM_RATE = 3.0
 
 export class Game {
   private readonly grid: Grid
   private readonly bucket: Bucket
+  private readonly waterSim: WaterSim
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
@@ -38,6 +41,7 @@ export class Game {
     this.grid = new Grid(256, 256)
     this.grid.initBeach()
     this.bucket = new Bucket(BUCKET_CAPACITY)
+    this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
 
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
@@ -60,6 +64,12 @@ export class Game {
   }
 
   private onCellPick(x: number, z: number): void {
+    if (this.toolMode === ToolMode.Stream) {
+      this.grid.setSourceRate(x, z, STREAM_RATE)
+      this.updateHud()
+      return
+    }
+
     let changed = false
     if (this.toolMode === ToolMode.Spade) {
       changed = dig(this.grid, x, z, this.bucket)
@@ -78,12 +88,24 @@ export class Game {
         this.toolMode === ToolMode.Spade ? ToolMode.Dump : ToolMode.Spade
       this.updateHud()
     }
+    if (e.key === 'w' || e.key === 'W') {
+      this.toolMode = ToolMode.Stream
+      this.updateHud()
+    }
+    if (e.key === 's' || e.key === 'S') {
+      this.toolMode = ToolMode.Spade
+      this.updateHud()
+    }
   }
 
   private updateHud(): void {
-    const icon = this.toolMode === ToolMode.Spade ? '⛏ Spade' : '🪣 Dump'
+    const icons: Record<ToolMode, string> = {
+      [ToolMode.Spade]: '⛏ Spade',
+      [ToolMode.Dump]: '🪣 Dump',
+      [ToolMode.Stream]: '💧 Stream',
+    }
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
-    this.hud.textContent = `${icon}   bucket: ${fill}`
+    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}`
   }
 
   private loop = (timestamp: number): void => {
@@ -100,7 +122,8 @@ export class Game {
     requestAnimationFrame(this.loop)
   }
 
-  private simStep(_dt: number): void {
-    // placeholder — simulation systems added in M3+
+  private simStep(dt: number): void {
+    this.waterSim.step(this.grid, dt)
+    this.terrain.rebuildAll()
   }
 }

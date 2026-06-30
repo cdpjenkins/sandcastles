@@ -4,6 +4,7 @@ import type { Bucket } from '../core/Bucket.ts'
 export const ToolMode = {
   Spade: 'spade',
   Dump: 'dump',
+  Stream: 'stream',
 } as const
 
 export type ToolMode = (typeof ToolMode)[keyof typeof ToolMode]
