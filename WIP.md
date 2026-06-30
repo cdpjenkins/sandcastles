@@ -1,8 +1,8 @@
-# WIP: M3 — Water Flow & Pooling
+# WIP: M4 — Dam & Lake
 
 ## Current Step
 
-Step 4 of 4: Game wiring + stream tool
+Step 1 of 3: WaterSim dirty-cell mask
 
 ## Status
 
@@ -10,10 +10,9 @@ Step 4 of 4: Game wiring + stream tool
 
 ## Completed
 
-- [x] Step 1: Grid sourceRate
-- [x] Step 2: WaterSim.ts pipe model
-- [x] Step 3: TerrainMesh water surface rendering
-- [x] Step 4: Game wiring + stream tool
+- [ ] Step 1: WaterSim dirty-cell mask
+- [ ] Step 2: TerrainMesh partial update + Game wiring
+- [ ] Step 3: R key reset + manual dam demo
 
 ## Blockers
 
@@ -21,4 +20,4 @@ None
 
 ## Next Action
 
-After commit: M3 complete. Start M4 (dam & lake).
+Add dirty-mask tests to `waterSim.test.ts`, then update `WaterSim.step()`.

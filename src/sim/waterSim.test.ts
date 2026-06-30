@@ -81,6 +81,47 @@ describe('WaterSim', () => {
   })
 })
 
+describe('WaterSim dirty mask', () => {
+  it('step returns a Uint8Array with length width*depth', () => {
+    const grid = flatGrid(4, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    const dirty = sim.step(grid, DT)
+    expect(dirty).toBeInstanceOf(Uint8Array)
+    expect(dirty.length).toBe(16)
+  })
+
+  it('dirty mask is set for a cell that gained water', () => {
+    const grid = flatGrid(2, 1)
+    grid.setWaterHeight(0, 0, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    const dirty = sim.step(grid, DT)
+    expect(dirty[1]).toBe(1)
+  })
+
+  it('dirty mask is set for a cell that lost water', () => {
+    const grid = flatGrid(2, 1)
+    grid.setWaterHeight(0, 0, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    const dirty = sim.step(grid, DT)
+    expect(dirty[0]).toBe(1)
+  })
+
+  it('dirty mask is zero for a cell with no water change', () => {
+    const grid = flatGrid(3, 1)
+    grid.setWaterHeight(0, 0, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    const dirty = sim.step(grid, DT)
+    expect(dirty[2]).toBe(0)
+  })
+
+  it('stable grid with no water returns all-zero mask', () => {
+    const grid = flatGrid(4, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    const dirty = sim.step(grid, DT)
+    expect(Array.from(dirty).every(v => v === 0)).toBe(true)
+  })
+})
+
 function totalWater(grid: Grid): number {
   let sum = 0
   for (let z = 0; z < grid.depth; z++)
