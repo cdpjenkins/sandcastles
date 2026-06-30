@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 1 of 5: Grid.sediment + WaterSim.velocity
+Step 2 of 5: Erosion.ts
 
 ## Status
 
