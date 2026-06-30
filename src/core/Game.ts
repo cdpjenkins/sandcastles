@@ -6,6 +6,9 @@ import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump } from '../input/Tools.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
+import { Erosion } from '../sim/Erosion.ts'
+import { Moisture } from '../sim/Moisture.ts'
+import { Slope } from '../sim/Slope.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
@@ -16,6 +19,9 @@ export class Game {
   private readonly grid: Grid
   private readonly bucket: Bucket
   private readonly waterSim: WaterSim
+  private readonly erosion: Erosion
+  private readonly moisture: Moisture
+  private readonly slope: Slope
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
@@ -42,6 +48,9 @@ export class Game {
     this.grid.initBeach()
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
+    this.erosion = new Erosion()
+    this.moisture = new Moisture()
+    this.slope = new Slope()
 
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
@@ -137,7 +146,10 @@ export class Game {
   }
 
   private simStep(dt: number): void {
-    const dirty = this.waterSim.step(this.grid, dt)
-    this.terrain.updateDirtyCells(dirty)
+    this.waterSim.step(this.grid, dt)
+    this.erosion.step(this.grid, this.waterSim, dt)
+    this.moisture.step(this.grid, dt)
+    this.slope.step(this.grid)
+    this.terrain.rebuildAll()
   }
 }

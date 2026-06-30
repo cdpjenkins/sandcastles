@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { Grid } from '../core/Grid.ts'
 import { MATERIAL_PROPS, Material } from '../core/materials.ts'
+import { sandColour } from './sandColour.ts'
 
 export class TerrainMesh {
   readonly mesh: THREE.Mesh
@@ -69,8 +70,11 @@ export class TerrainMesh {
     this.positions[vi + 1] = surface + water
     this.positions[vi + 2] = z
 
-    const mat = water > 0 ? Material.Water : Material.Sand
-    const col = new THREE.Color(MATERIAL_PROPS[mat].colour)
+    const moisture = this.grid.getMoisture(x, z) ?? 0
+    const col =
+      water > 0
+        ? new THREE.Color(MATERIAL_PROPS[Material.Water].colour)
+        : sandColour(moisture)
     this.colors[vi] = col.r
     this.colors[vi + 1] = col.g
     this.colors[vi + 2] = col.b
