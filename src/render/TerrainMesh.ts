@@ -64,11 +64,11 @@ export class TerrainMesh {
     const vi = (z * W + x) * 3
 
     const surface = this.grid.getSurfaceHeight(x, z) ?? 0
+    const water = this.grid.getWaterHeight(x, z) ?? 0
     this.positions[vi] = x
-    this.positions[vi + 1] = surface
+    this.positions[vi + 1] = surface + water
     this.positions[vi + 2] = z
 
-    const water = this.grid.getWaterHeight(x, z) ?? 0
     const mat = water > 0 ? Material.Water : Material.Sand
     const col = new THREE.Color(MATERIAL_PROPS[mat].colour)
     this.colors[vi] = col.r

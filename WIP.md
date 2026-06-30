@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 2 of 4: `src/sim/WaterSim.ts` — pipe model step
+Step 3 of 4: `TerrainMesh.ts` — render water surface elevation
 
 ## Status
 
