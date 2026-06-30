@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import type { Grid } from '../core/Grid.ts'
 import { MATERIAL_PROPS, Material } from '../core/materials.ts'
 import { sandColour } from './sandColour.ts'
+import { cellNoise } from './cellNoise.ts'
+
+const JITTER = 0.06
 
 export class TerrainMesh {
   readonly mesh: THREE.Mesh
@@ -75,9 +78,10 @@ export class TerrainMesh {
       water > 0
         ? new THREE.Color(MATERIAL_PROPS[Material.Water].colour)
         : sandColour(moisture)
-    this.colors[vi] = col.r
-    this.colors[vi + 1] = col.g
-    this.colors[vi + 2] = col.b
+    const jitter = water > 0 ? 0 : cellNoise(x, z) * JITTER
+    this.colors[vi] = Math.max(0, Math.min(1, col.r + jitter))
+    this.colors[vi + 1] = Math.max(0, Math.min(1, col.g + jitter))
+    this.colors[vi + 2] = Math.max(0, Math.min(1, col.b + jitter))
   }
 
   rebuildAll(): void {
