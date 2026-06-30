@@ -6,15 +6,13 @@ const ISO_ANGLE_X = Math.atan(1 / Math.sqrt(2))
 const MIN_ZOOM = 20
 const MAX_ZOOM = 300
 const PAN_SPEED = 0.5
-const ZOOM_SPEED = 1.1
+const ZOOM_SPEED = 1.08
 
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera
 
   private zoom = 80
   private panTarget = new THREE.Vector3(128, 0, 128)
-  private isDragging = false
-  private lastPointer = { x: 0, y: 0 }
 
   constructor(canvas: HTMLCanvasElement) {
     const aspect = canvas.clientWidth / canvas.clientHeight
@@ -30,11 +28,6 @@ export class IsoCamera {
     this.updateCameraPosition()
 
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
-    canvas.addEventListener('pointerdown', this.onPointerDown)
-    canvas.addEventListener('pointermove', this.onPointerMove)
-    canvas.addEventListener('pointerup', this.onPointerUp)
-    canvas.addEventListener('pointercancel', this.onPointerUp)
-
     window.addEventListener('resize', () => this.onResize(canvas))
   }
 
@@ -60,36 +53,21 @@ export class IsoCamera {
 
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault()
-    this.zoom *= e.deltaY > 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED
-    this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.zoom))
-    this.updateFrustum(e.target as HTMLCanvasElement)
-  }
 
-  private onPointerDown = (e: PointerEvent): void => {
-    if (e.button === 1 || e.button === 2) {
-      this.isDragging = true
-      this.lastPointer = { x: e.clientX, y: e.clientY }
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    if (e.ctrlKey) {
+      // Pinch gesture on trackpad (or Ctrl+scroll)
+      const factor = e.deltaY > 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED
+      this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.zoom * factor))
+      this.updateFrustum(e.target as HTMLCanvasElement)
+    } else {
+      // Two-finger drag on trackpad
+      const scale = (this.zoom / 100) * PAN_SPEED
+      const dx = e.deltaX
+      const dy = e.deltaY
+      this.panTarget.x -= (dx * Math.cos(ISO_ANGLE_Y) + dy * Math.sin(ISO_ANGLE_Y)) * scale
+      this.panTarget.z -= (-dx * Math.sin(ISO_ANGLE_Y) + dy * Math.cos(ISO_ANGLE_Y)) * scale
+      this.updateCameraPosition()
     }
-  }
-
-  private onPointerMove = (e: PointerEvent): void => {
-    if (!this.isDragging) return
-
-    const dx = e.clientX - this.lastPointer.x
-    const dy = e.clientY - this.lastPointer.y
-    this.lastPointer = { x: e.clientX, y: e.clientY }
-
-    const scale = (this.zoom / 100) * PAN_SPEED
-    this.panTarget.x -= (dx * Math.cos(ISO_ANGLE_Y) + dy * Math.sin(ISO_ANGLE_Y)) * scale
-    this.panTarget.z -= (-dx * Math.sin(ISO_ANGLE_Y) + dy * Math.cos(ISO_ANGLE_Y)) * scale
-
-    this.updateCameraPosition()
-  }
-
-  private onPointerUp = (e: PointerEvent): void => {
-    this.isDragging = false
-    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
   }
 
   private onResize = (canvas: HTMLCanvasElement): void => {
