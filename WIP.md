@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 1 of 3: `src/core/Bucket.ts` — bucket data model
+Step 2 of 3: `src/input/Tools.ts` — dig/dump pure functions
 
 ## Status
 
