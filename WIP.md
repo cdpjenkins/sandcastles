@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 1 of 4: `Grid.ts` — add `sourceRate` array
+Step 2 of 4: `src/sim/WaterSim.ts` — pipe model step
 
 ## Status
 
