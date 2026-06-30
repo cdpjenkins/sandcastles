@@ -6,12 +6,12 @@ Step 1 of 2: Waves.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 1
+⏸️ WAITING — awaiting commit approval for Step 2
 
 ## Completed
 
 - [x] Step 1: Waves.ts
-- [ ] Step 2: Game wiring + HUD countdown
+- [x] Step 2: Game wiring + HUD countdown
 
 ## Blockers
 

@@ -9,6 +9,7 @@ import { WaterSim } from '../sim/WaterSim.ts'
 import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
 import { Slope } from '../sim/Slope.ts'
+import { Waves } from '../sim/Waves.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
@@ -22,6 +23,8 @@ export class Game {
   private readonly erosion: Erosion
   private readonly moisture: Moisture
   private readonly slope: Slope
+  private readonly waves: Waves
+  private readonly seaStart: number
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
@@ -51,6 +54,8 @@ export class Game {
     this.erosion = new Erosion()
     this.moisture = new Moisture()
     this.slope = new Slope()
+    this.waves = new Waves()
+    this.seaStart = Math.floor(this.grid.depth * 0.75)
 
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
@@ -128,7 +133,8 @@ export class Game {
       [ToolMode.Stream]: '💧 Stream',
     }
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
-    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}`
+    const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
+    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}`
   }
 
   private loop = (timestamp: number): void => {
@@ -141,11 +147,13 @@ export class Game {
       this.simAccumulator -= SIM_STEP
     }
 
+    this.updateHud()
     this.renderer.render(this.isoCamera.camera)
     requestAnimationFrame(this.loop)
   }
 
   private simStep(dt: number): void {
+    this.waves.step(this.grid, dt, this.seaStart)
     this.waterSim.step(this.grid, dt)
     this.erosion.step(this.grid, this.waterSim, dt)
     this.moisture.step(this.grid, dt)
