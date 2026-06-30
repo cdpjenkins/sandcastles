@@ -63,4 +63,28 @@ describe('Grid', () => {
     grid.setRockHeight(5, 5, 1.0)
     expect(grid.getSurfaceHeight(5, 5)).toBeCloseTo(4.0)
   })
+
+  it('sourceRate defaults to zero', () => {
+    const grid = new Grid(16, 16)
+    expect(grid.getSourceRate(4, 4)).toBe(0)
+  })
+
+  it('setSourceRate and getSourceRate round-trip', () => {
+    const grid = new Grid(16, 16)
+    grid.setSourceRate(4, 4, 2.5)
+    expect(grid.getSourceRate(4, 4)).toBeCloseTo(2.5)
+  })
+
+  it('setSourceRate does not affect adjacent cells', () => {
+    const grid = new Grid(16, 16)
+    grid.setSourceRate(4, 4, 2.5)
+    expect(grid.getSourceRate(5, 4)).toBe(0)
+    expect(grid.getSourceRate(4, 5)).toBe(0)
+  })
+
+  it('getSourceRate returns undefined out of bounds', () => {
+    const grid = new Grid(16, 16)
+    expect(grid.getSourceRate(-1, 0)).toBeUndefined()
+    expect(grid.getSourceRate(0, 16)).toBeUndefined()
+  })
 })

@@ -1,8 +1,8 @@
-# WIP: M2 — Bucket & Spade
+# WIP: M3 — Water Flow & Pooling
 
 ## Current Step
 
-Step 3 of 3: Game wiring + DOM overlay
+Step 1 of 4: `Grid.ts` — add `sourceRate` array
 
 ## Status
 
@@ -10,9 +10,10 @@ Step 3 of 3: Game wiring + DOM overlay
 
 ## Completed
 
-- [x] Step 1: Bucket.ts
-- [x] Step 2: Tools.ts dig/dump
-- [x] Step 3: Game wiring + DOM overlay
+- [ ] Step 1: Grid sourceRate
+- [ ] Step 2: WaterSim.ts pipe model
+- [ ] Step 3: TerrainMesh water surface rendering
+- [ ] Step 4: Game wiring + stream tool
 
 ## Blockers
 
@@ -20,4 +21,4 @@ None
 
 ## Next Action
 
-After commit: write failing test for Tools.ts dig/dump.
+Add sourceRate tests to `grid.test.ts`, then implement.

@@ -6,6 +6,7 @@ export class Grid {
   private readonly sand: Float32Array
   private readonly water: Float32Array
   private readonly moisture: Float32Array
+  private readonly source: Float32Array
 
   constructor(width: number, depth: number) {
     this.width = width
@@ -15,6 +16,7 @@ export class Grid {
     this.sand = new Float32Array(size)
     this.water = new Float32Array(size)
     this.moisture = new Float32Array(size)
+    this.source = new Float32Array(size)
   }
 
   private inBounds(x: number, z: number): boolean {
@@ -63,6 +65,16 @@ export class Grid {
   setMoisture(x: number, z: number, v: number): void {
     if (!this.inBounds(x, z)) return
     this.moisture[this.idx(x, z)] = v
+  }
+
+  getSourceRate(x: number, z: number): number | undefined {
+    if (!this.inBounds(x, z)) return undefined
+    return this.source[this.idx(x, z)]
+  }
+
+  setSourceRate(x: number, z: number, rate: number): void {
+    if (!this.inBounds(x, z)) return
+    this.source[this.idx(x, z)] = rate
   }
 
   getSurfaceHeight(x: number, z: number): number | undefined {
