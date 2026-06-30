@@ -6,13 +6,13 @@ Step 1 of 3: cellNoise.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 2
+⏸️ WAITING — awaiting commit approval for Step 3
 
 ## Completed
 
 - [x] Step 1: cellNoise.ts — sand colour variation
 - [x] Step 2: Waves.fired flag + WaveAudio.ts
-- [ ] Step 3: ? help overlay
+- [x] Step 3: ? help overlay
 
 ## Blockers
 

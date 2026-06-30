@@ -32,6 +32,7 @@ export class Game {
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
   private readonly hud: HTMLDivElement
+  private readonly helpOverlay: HTMLDivElement
 
   private toolMode: ToolMode = ToolMode.Spade
   private simAccumulator = 0
@@ -48,6 +49,24 @@ export class Game {
       'position:fixed;top:12px;left:12px;color:#fff;font:14px/1.4 monospace;' +
       'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;pointer-events:none'
     document.body.appendChild(this.hud)
+
+    this.helpOverlay = document.createElement('div')
+    this.helpOverlay.style.cssText =
+      'display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+      'color:#fff;font:15px/1.8 monospace;background:rgba(0,0,0,0.75);' +
+      'padding:20px 28px;border-radius:10px;pointer-events:none;white-space:pre'
+    this.helpOverlay.textContent = [
+      'Controls',
+      '────────',
+      'S        Spade (dig)',
+      'D        Toggle Spade / Dump',
+      'W        Water stream',
+      'R        Reset water',
+      'Pinch    Zoom',
+      '2-finger Pan',
+      '?        Toggle this help',
+    ].join('\n')
+    document.body.appendChild(this.helpOverlay)
 
     this.grid = new Grid(256, 256)
     this.grid.initBeach()
@@ -115,6 +134,10 @@ export class Game {
     }
     if (e.key === 'r' || e.key === 'R') {
       this.resetWater()
+    }
+    if (e.key === '?') {
+      const visible = this.helpOverlay.style.display === 'block'
+      this.helpOverlay.style.display = visible ? 'none' : 'block'
     }
   }
 
