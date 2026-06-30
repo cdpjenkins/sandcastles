@@ -96,6 +96,20 @@ export class Game {
       this.toolMode = ToolMode.Spade
       this.updateHud()
     }
+    if (e.key === 'r' || e.key === 'R') {
+      this.resetWater()
+    }
+  }
+
+  private resetWater(): void {
+    for (let z = 0; z < this.grid.depth; z++) {
+      for (let x = 0; x < this.grid.width; x++) {
+        this.grid.setWaterHeight(x, z, 0)
+        this.grid.setSourceRate(x, z, 0)
+      }
+    }
+    this.waterSim.reset()
+    this.terrain.rebuildAll()
   }
 
   private updateHud(): void {

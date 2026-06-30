@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 2 of 3: TerrainMesh partial update + Game wiring
+Step 3 of 3: R key reset + manual dam demo
 
 ## Status
 
@@ -10,9 +10,9 @@ Step 2 of 3: TerrainMesh partial update + Game wiring
 
 ## Completed
 
-- [ ] Step 1: WaterSim dirty-cell mask
-- [ ] Step 2: TerrainMesh partial update + Game wiring
-- [ ] Step 3: R key reset + manual dam demo
+- [x] Step 1: WaterSim dirty-cell mask
+- [x] Step 2: TerrainMesh partial update + Game wiring
+- [x] Step 3: R key reset + manual dam demo
 
 ## Blockers
 
@@ -20,4 +20,4 @@ None
 
 ## Next Action
 
-Add dirty-mask tests to `waterSim.test.ts`, then update `WaterSim.step()`.
+After commit: M4 complete. Start M5 (erosion + wet/dry sand).
