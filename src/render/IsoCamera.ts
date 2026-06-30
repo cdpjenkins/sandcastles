@@ -64,8 +64,8 @@ export class IsoCamera {
       const scale = (this.zoom / 100) * PAN_SPEED
       const dx = e.deltaX
       const dy = e.deltaY
-      this.panTarget.x -= (dx * Math.cos(ISO_ANGLE_Y) + dy * Math.sin(ISO_ANGLE_Y)) * scale
-      this.panTarget.z -= (-dx * Math.sin(ISO_ANGLE_Y) + dy * Math.cos(ISO_ANGLE_Y)) * scale
+      this.panTarget.x += (dx * Math.cos(ISO_ANGLE_Y) + dy * Math.sin(ISO_ANGLE_Y)) * scale
+      this.panTarget.z += (-dx * Math.sin(ISO_ANGLE_Y) + dy * Math.cos(ISO_ANGLE_Y)) * scale
       this.updateCameraPosition()
     }
   }
