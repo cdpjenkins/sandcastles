@@ -1,20 +1,17 @@
-# WIP: M5 — Erosion + Wet/Dry Sand
+# WIP: M6 — Waves
 
 ## Current Step
 
-Step 4 of 5: Slope.ts
+Step 1 of 2: Waves.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 5
+⏸️ WAITING — awaiting commit approval for Step 1
 
 ## Completed
 
-- [x] Step 1: Grid.sediment + WaterSim.velocity
-- [x] Step 2: Erosion.ts
-- [x] Step 3: Moisture.ts
-- [x] Step 4: Slope.ts
-- [x] Step 5: Game wiring + moisture colouring
+- [x] Step 1: Waves.ts
+- [ ] Step 2: Game wiring + HUD countdown
 
 ## Blockers
 
@@ -22,4 +19,4 @@ None
 
 ## Next Action
 
-After commit approval: write Slope.ts (talus/angle-of-repose simulation) and lower sand angleOfRepose from 34° to 20° in materials.ts.
+Write failing test for Waves.ts (surge + sea drain).
