@@ -1,19 +1,25 @@
 import { Grid } from './Grid.ts'
+import { Bucket } from './Bucket.ts'
 import { Renderer } from '../render/Renderer.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
+import { ToolMode, dig, dump } from '../input/Tools.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
+const BUCKET_CAPACITY = 10
 
 export class Game {
   private readonly grid: Grid
+  private readonly bucket: Bucket
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
+  private readonly hud: HTMLDivElement
 
+  private toolMode: ToolMode = ToolMode.Spade
   private simAccumulator = 0
   private lastTime = 0
 
@@ -23,8 +29,15 @@ export class Game {
     document.body.style.cssText = 'margin:0;overflow:hidden;background:#000'
     document.body.appendChild(canvas)
 
+    this.hud = document.createElement('div')
+    this.hud.style.cssText =
+      'position:fixed;top:12px;left:12px;color:#fff;font:14px/1.4 monospace;' +
+      'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;pointer-events:none'
+    document.body.appendChild(this.hud)
+
     this.grid = new Grid(256, 256)
     this.grid.initBeach()
+    this.bucket = new Bucket(BUCKET_CAPACITY)
 
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
@@ -38,11 +51,39 @@ export class Game {
       this.grid.width,
       this.grid.depth,
     )
-    this.picker.onCellPick(({ x, z }) => {
-      console.log(`cell picked: { x: ${x}, z: ${z} }`)
-    })
+    this.picker.onCellPick(({ x, z }) => this.onCellPick(x, z))
 
+    window.addEventListener('keydown', this.onKeyDown)
+
+    this.updateHud()
     requestAnimationFrame(this.loop)
+  }
+
+  private onCellPick(x: number, z: number): void {
+    let changed = false
+    if (this.toolMode === ToolMode.Spade) {
+      changed = dig(this.grid, x, z, this.bucket)
+    } else {
+      changed = dump(this.grid, x, z, this.bucket)
+    }
+    if (changed) {
+      this.terrain.updateDirtyRegion(x, z, x, z)
+      this.updateHud()
+    }
+  }
+
+  private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === 'd' || e.key === 'D') {
+      this.toolMode =
+        this.toolMode === ToolMode.Spade ? ToolMode.Dump : ToolMode.Spade
+      this.updateHud()
+    }
+  }
+
+  private updateHud(): void {
+    const icon = this.toolMode === ToolMode.Spade ? '⛏ Spade' : '🪣 Dump'
+    const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
+    this.hud.textContent = `${icon}   bucket: ${fill}`
   }
 
   private loop = (timestamp: number): void => {

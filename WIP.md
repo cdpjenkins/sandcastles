@@ -2,7 +2,7 @@
 
 ## Current Step
 
-Step 2 of 3: `src/input/Tools.ts` — dig/dump pure functions
+Step 3 of 3: Game wiring + DOM overlay
 
 ## Status
 
@@ -11,8 +11,8 @@ Step 2 of 3: `src/input/Tools.ts` — dig/dump pure functions
 ## Completed
 
 - [x] Step 1: Bucket.ts
-- [ ] Step 2: Tools.ts dig/dump
-- [ ] Step 3: Game wiring + DOM overlay
+- [x] Step 2: Tools.ts dig/dump
+- [x] Step 3: Game wiring + DOM overlay
 
 ## Blockers
 
