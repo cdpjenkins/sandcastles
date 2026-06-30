@@ -122,6 +122,31 @@ describe('WaterSim dirty mask', () => {
   })
 })
 
+describe('WaterSim velocity', () => {
+  it('getVelocity returns positive value where water is flowing', () => {
+    const grid = flatGrid(2, 1)
+    grid.setWaterHeight(0, 0, 4)
+    grid.setWaterHeight(1, 0, 0)
+    const sim = new WaterSim(grid.width, grid.depth)
+    sim.step(grid, DT)
+    expect(sim.getVelocity(0, 0)).toBeGreaterThan(0)
+  })
+
+  it('getVelocity returns zero for a still cell', () => {
+    const grid = flatGrid(4, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    sim.step(grid, DT)
+    expect(sim.getVelocity(2, 2)).toBe(0)
+  })
+
+  it('getVelocity returns zero before first step', () => {
+    const grid = flatGrid(2, 1)
+    grid.setWaterHeight(0, 0, 4)
+    const sim = new WaterSim(grid.width, grid.depth)
+    expect(sim.getVelocity(0, 0)).toBe(0)
+  })
+})
+
 function totalWater(grid: Grid): number {
   let sum = 0
   for (let z = 0; z < grid.depth; z++)

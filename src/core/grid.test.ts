@@ -87,4 +87,28 @@ describe('Grid', () => {
     expect(grid.getSourceRate(-1, 0)).toBeUndefined()
     expect(grid.getSourceRate(0, 16)).toBeUndefined()
   })
+
+  it('getSediment defaults to zero', () => {
+    const grid = new Grid(16, 16)
+    expect(grid.getSediment(5, 5)).toBe(0)
+  })
+
+  it('setSediment and getSediment round-trip', () => {
+    const grid = new Grid(16, 16)
+    grid.setSediment(5, 5, 1.5)
+    expect(grid.getSediment(5, 5)).toBeCloseTo(1.5)
+  })
+
+  it('setSediment does not affect adjacent cells', () => {
+    const grid = new Grid(16, 16)
+    grid.setSediment(5, 5, 1.5)
+    expect(grid.getSediment(6, 5)).toBe(0)
+    expect(grid.getSediment(5, 6)).toBe(0)
+  })
+
+  it('getSediment returns undefined out of bounds', () => {
+    const grid = new Grid(16, 16)
+    expect(grid.getSediment(-1, 0)).toBeUndefined()
+    expect(grid.getSediment(0, 16)).toBeUndefined()
+  })
 })

@@ -1,8 +1,8 @@
-# WIP: M4 — Dam & Lake
+# WIP: M5 — Erosion + Wet/Dry Sand
 
 ## Current Step
 
-Step 3 of 3: R key reset + manual dam demo
+Step 1 of 5: Grid.sediment + WaterSim.velocity
 
 ## Status
 
@@ -10,9 +10,11 @@ Step 3 of 3: R key reset + manual dam demo
 
 ## Completed
 
-- [x] Step 1: WaterSim dirty-cell mask
-- [x] Step 2: TerrainMesh partial update + Game wiring
-- [x] Step 3: R key reset + manual dam demo
+- [ ] Step 1: Grid.sediment + WaterSim.velocity
+- [ ] Step 2: Erosion.ts
+- [ ] Step 3: Moisture.ts
+- [ ] Step 4: Slope.ts
+- [ ] Step 5: Game wiring + moisture colouring
 
 ## Blockers
 
@@ -20,4 +22,4 @@ None
 
 ## Next Action
 
-After commit: M4 complete. Start M5 (erosion + wet/dry sand).
+Add sediment tests to grid.test.ts and velocity tests to waterSim.test.ts.

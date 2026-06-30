@@ -9,6 +9,7 @@ export class WaterSim {
   private readonly flowX: Float32Array
   private readonly flowZ: Float32Array
   private readonly dirty: Uint8Array
+  private readonly velocityArr: Float32Array
   private readonly width: number
   private readonly depth: number
 
@@ -18,6 +19,11 @@ export class WaterSim {
     this.flowX = new Float32Array(width * depth)
     this.flowZ = new Float32Array(width * depth)
     this.dirty = new Uint8Array(width * depth)
+    this.velocityArr = new Float32Array(width * depth)
+  }
+
+  getVelocity(x: number, z: number): number {
+    return this.velocityArr[z * this.width + x] ?? 0
   }
 
   reset(): void {
@@ -74,17 +80,21 @@ export class WaterSim {
       }
     }
 
-    // Apply flows, inject sources, record dirty cells
+    // Apply flows, inject sources, record dirty cells, compute velocity
     this.dirty.fill(0)
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const i = z * W + x
         let delta = 0
 
-        if (x + 1 < W) delta -= this.flowX[i]
-        if (x > 0) delta += this.flowX[z * W + x - 1]
-        if (z + 1 < D) delta -= this.flowZ[i]
-        if (z > 0) delta += this.flowZ[(z - 1) * W + x]
+        const fxRight = x + 1 < W ? this.flowX[i] : 0
+        const fxLeft  = x > 0     ? this.flowX[z * W + x - 1] : 0
+        const fzDown  = z + 1 < D ? this.flowZ[i] : 0
+        const fzUp    = z > 0     ? this.flowZ[(z - 1) * W + x] : 0
+
+        delta = -fxRight + fxLeft - fzDown + fzUp
+
+        this.velocityArr[i] = (Math.abs(fxRight) + Math.abs(fxLeft) + Math.abs(fzDown) + Math.abs(fzUp)) / 4
 
         const source = grid.getSourceRate(x, z) ?? 0
         const wBefore = grid.getWaterHeight(x, z) ?? 0
