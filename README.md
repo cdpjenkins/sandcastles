@@ -2,6 +2,8 @@
 
 A 2.5D isometric beach sandbox. Dig sand, build dams, divert streams, and watch waves reshape the shore.
 
+![Sandcastles screenshot](docs/screenshot.webp)
+
 ## Running
 
 ```bash
