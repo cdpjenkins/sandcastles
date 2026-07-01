@@ -73,7 +73,7 @@ export class Game {
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
     this.erosion = new Erosion(this.grid.width, this.grid.depth)
-    this.moisture = new Moisture()
+    this.moisture = new Moisture(this.grid.width, this.grid.depth)
     this.slope = new Slope()
     this.waves = new Waves()
     this.waveAudio = new WaveAudio()
