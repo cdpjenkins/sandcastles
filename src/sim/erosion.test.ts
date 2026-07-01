@@ -9,7 +9,7 @@ const makeScene = (w = 4, d = 1) => {
   const grid = new Grid(w, d)
   for (let x = 0; x < w; x++) grid.setRockHeight(x, 0, 1)
   const waterSim = new WaterSim(w, d)
-  const erosion = new Erosion()
+  const erosion = new Erosion(w, d)
   return { grid, waterSim, erosion }
 }
 
@@ -65,6 +65,57 @@ describe('Erosion', () => {
     }
 
     expect(totalSandAndSediment(grid, 4, 1)).toBeCloseTo(before, 1)
+  })
+})
+
+describe('Erosion dirty mask', () => {
+  it('step returns a Uint8Array with length width*depth', () => {
+    const { grid, waterSim, erosion } = makeScene(4, 1)
+    const dirty = erosion.step(grid, waterSim, DT)
+    expect(dirty).toBeInstanceOf(Uint8Array)
+    expect(dirty.length).toBe(4)
+  })
+
+  it('a cell that erodes is flagged dirty', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 5)
+    grid.setWaterHeight(0, 0, 3)
+    waterSim.step(grid, DT)
+
+    const dirty = erosion.step(grid, waterSim, DT)
+
+    expect(dirty[0]).toBe(1)
+  })
+
+  it('a cell that deposits sand is flagged dirty', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 2)
+    grid.setWaterHeight(0, 0, 0.01)
+    grid.setSediment(0, 0, 10)
+
+    const dirty = erosion.step(grid, waterSim, DT)
+
+    expect(dirty[0]).toBe(1)
+  })
+
+  it('a cell skipped because water is below the erosion threshold is not dirty', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 5)
+    grid.setWaterHeight(0, 0, 0)
+
+    const dirty = erosion.step(grid, waterSim, DT)
+
+    expect(dirty[0]).toBe(0)
+  })
+
+  it('a rock cell with no sand and no water stays clean', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 0)
+    grid.setWaterHeight(0, 0, 0)
+
+    const dirty = erosion.step(grid, waterSim, DT)
+
+    expect(dirty[0]).toBe(0)
   })
 })
 

@@ -1,18 +1,22 @@
-# WIP: M7 — Polish
+# WIP: Perf fix — combined dirty-cell mask (Erosion/Moisture/Slope/Waves)
 
 ## Current Step
 
-Step 1 of 3: cellNoise.ts
+Step 1 of 7: Erosion dirty mask
 
 ## Status
 
-✅ COMPLETE — all steps done, all milestones M1–M7 complete
+🔴 RED — writing failing test for Erosion.step() dirty mask
 
 ## Completed
 
-- [x] Step 1: cellNoise.ts — sand colour variation
-- [x] Step 2: Waves.fired flag + WaveAudio.ts
-- [x] Step 3: ? help overlay
+- [ ] Step 1: Erosion dirty mask
+- [ ] Step 2: Moisture dirty mask
+- [ ] Step 3: Slope dirty mask
+- [ ] Step 4: Waves dirty mask
+- [ ] Step 5: combineDirty helper + wire Game.simStep
+- [ ] Step 6: TerrainMesh confirm (comment only)
+- [ ] Step 7: README + WIP docs fix
 
 ## Blockers
 
@@ -20,4 +24,4 @@ None
 
 ## Next Action
 
-Write failing test for cellNoise(x, z).
+Write failing test for Erosion.step() returning a per-cell dirty Uint8Array.
