@@ -14,7 +14,7 @@ describe('Slope', () => {
     const grid = makeGrid()
     grid.setSandHeight(0, 0, 20)
     grid.setSandHeight(1, 0, 0)
-    const slope = new Slope()
+    const slope = new Slope(4, 1)
 
     for (let i = 0; i < 50; i++) slope.step(grid)
 
@@ -28,7 +28,7 @@ describe('Slope', () => {
     grid.setSandHeight(1, 0, 0)
     const totalBefore =
       (grid.getSandHeight(0, 0) ?? 0) + (grid.getSandHeight(1, 0) ?? 0)
-    const slope = new Slope()
+    const slope = new Slope(4, 1)
 
     for (let i = 0; i < 50; i++) slope.step(grid)
 
@@ -48,7 +48,7 @@ describe('Slope', () => {
     grid.setSandHeight(2, 0, 4.4)
     grid.setSandHeight(3, 0, 4.1)
     const before = [0, 1, 2, 3].map(x => grid.getSandHeight(x, 0)!)
-    const slope = new Slope()
+    const slope = new Slope(4, 1)
 
     for (let i = 0; i < 10; i++) slope.step(grid)
 
@@ -61,12 +61,58 @@ describe('Slope', () => {
     const grid = makeGrid(4, 4)
     for (let z = 0; z < 4; z++)
       for (let x = 0; x < 4; x++) grid.setSandHeight(x, z, 5)
-    const slope = new Slope()
+    const slope = new Slope(4, 4)
 
     for (let i = 0; i < 20; i++) slope.step(grid)
 
     for (let z = 0; z < 4; z++)
       for (let x = 0; x < 4; x++)
         expect(grid.getSandHeight(x, z)!).toBeCloseTo(5, 3)
+  })
+})
+
+describe('Slope dirty mask', () => {
+  it('step returns a Uint8Array with length width*depth', () => {
+    const grid = makeGrid(4, 1)
+    const slope = new Slope(4, 1)
+    const dirty = slope.step(grid)
+    expect(dirty).toBeInstanceOf(Uint8Array)
+    expect(dirty.length).toBe(4)
+  })
+
+  it('a real transfer flags both the source and destination cell', () => {
+    const grid = makeGrid()
+    grid.setSandHeight(0, 0, 20)
+    grid.setSandHeight(1, 0, 0)
+    const slope = new Slope(4, 1)
+
+    const dirty = slope.step(grid)
+
+    expect(dirty[0]).toBe(1)
+    expect(dirty[1]).toBe(1)
+  })
+
+  it('a gentle in-repose slope with no transfer stays all-zero', () => {
+    const grid = makeGrid(4, 1)
+    grid.setSandHeight(0, 0, 5)
+    grid.setSandHeight(1, 0, 4.7)
+    grid.setSandHeight(2, 0, 4.4)
+    grid.setSandHeight(3, 0, 4.1)
+    const slope = new Slope(4, 1)
+
+    const dirty = slope.step(grid)
+
+    expect(Array.from(dirty).every(v => v === 0)).toBe(true)
+  })
+
+  it('flat terrain produces an all-zero mask', () => {
+    const grid = makeGrid(4, 4)
+    for (let z = 0; z < 4; z++)
+      for (let x = 0; x < 4; x++) grid.setSandHeight(x, z, 5)
+    const slope = new Slope(4, 4)
+
+    const dirty = slope.step(grid)
+
+    expect(Array.from(dirty).every(v => v === 0)).toBe(true)
   })
 })

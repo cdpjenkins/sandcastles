@@ -3,11 +3,22 @@ import type { Grid } from '../core/Grid.ts'
 const ANGLE_OF_REPOSE_DEGREES = 20
 const TAN_AOR = Math.tan((ANGLE_OF_REPOSE_DEGREES * Math.PI) / 180)
 const TRANSFER_FRACTION = 0.5
+const DIRTY_EPSILON = 1e-4
 
 export class Slope {
-  step(grid: Grid): void {
+  private readonly dirty: Uint8Array
+  private readonly width: number
+
+  constructor(width: number, depth: number) {
+    this.width = width
+    this.dirty = new Uint8Array(width * depth)
+  }
+
+  step(grid: Grid): Uint8Array {
     const W = grid.width
     const D = grid.depth
+
+    this.dirty.fill(0)
 
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
@@ -30,12 +41,16 @@ export class Slope {
 
           const sand = grid.getSandHeight(x, z) ?? 0
           const transfer = Math.min(excess * TRANSFER_FRACTION, sand)
-          if (transfer <= 0) continue
+          if (transfer <= DIRTY_EPSILON) continue
 
           grid.setSandHeight(x, z, sand - transfer)
           grid.setSandHeight(nx, nz, nSand + transfer)
+          this.dirty[z * this.width + x] = 1
+          this.dirty[nz * this.width + nx] = 1
         }
       }
     }
+
+    return this.dirty
   }
 }
