@@ -1,18 +1,22 @@
-# WIP: M7 — Polish
+# WIP: Perf fix — combined dirty-cell mask (Erosion/Moisture/Slope/Waves)
 
 ## Current Step
 
-Step 1 of 3: cellNoise.ts
+All steps complete.
 
 ## Status
 
-✅ COMPLETE — all steps done, all milestones M1–M7 complete
+🟢 GREEN — all steps committed, PR open for review
 
 ## Completed
 
-- [x] Step 1: cellNoise.ts — sand colour variation
-- [x] Step 2: Waves.fired flag + WaveAudio.ts
-- [x] Step 3: ? help overlay
+- [x] Step 1: Erosion dirty mask
+- [x] Step 2: Moisture dirty mask
+- [x] Step 3: Slope dirty mask
+- [x] Step 4: Waves dirty mask
+- [x] Step 5: combineDirty helper + wire Game.simStep
+- [x] Step 6: TerrainMesh confirm (comment only, folded into Step 5 commit)
+- [x] Step 7: README + WIP docs fix
 
 ## Blockers
 
@@ -20,4 +24,4 @@ None
 
 ## Next Action
 
-Write failing test for cellNoise(x, z).
+None — awaiting next task.

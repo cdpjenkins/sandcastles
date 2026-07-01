@@ -41,7 +41,7 @@ A pipe-model shallow-water simulation runs at 30 Hz. Each cell exchanges water w
 
 ### Dams and lakes (M4)
 
-Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. A dirty-cell mask limits mesh updates to only the cells the simulation touched that tick. The `R` key drains all water.
+Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. Each sim (water, erosion, moisture, slope, waves) returns a per-cell dirty mask; these are combined and used to limit mesh updates to only the cells that actually changed that tick, instead of rebuilding all 65,536 vertices every tick. The `R` key resets all water and stream sources.
 
 ### Erosion and wet/dry sand (M5)
 
@@ -81,6 +81,7 @@ src/
 │   ├── cellNoise.ts        Position-hash colour jitter
 │   └── sandColour.ts       Moisture-blended sand colour
 └── sim/
+    ├── combineDirty.ts     OR-combines per-sim dirty masks
     ├── Erosion.ts          Sediment capacity erosion model
     ├── Moisture.ts         Wet/dry diffusion and evaporation
     ├── Slope.ts            Talus / angle-of-repose slumping
@@ -92,7 +93,7 @@ All simulation state lives in typed `Float32Array` buffers. The sim runs on the 
 
 ## Tests
 
-85 tests across 13 files, all passing:
+110 tests across 14 files, all passing:
 
 ```bash
 npm test

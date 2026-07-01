@@ -107,6 +107,9 @@ export class TerrainMesh {
     if (any) {
       this.geometry.attributes['position'].needsUpdate = true
       this.geometry.attributes['color'].needsUpdate = true
+      // Three.js has no partial/region normals API, so this still walks
+      // every face even when only a few cells are dirty — still far
+      // cheaper than rebuildAll()'s full setVertex pass over all cells.
       this.geometry.computeVertexNormals()
     }
   }
