@@ -6,7 +6,7 @@ Step 1 of 3: cellNoise.ts
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 3
+✅ COMPLETE — all steps done, all milestones M1–M7 complete
 
 ## Completed
 

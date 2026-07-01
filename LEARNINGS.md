@@ -23,4 +23,12 @@
 
 ## Edge Cases
 
-(none yet)
+### THREE.js Color stores in linear space, not sRGB
+- **Context**: Testing `sandColour()` by comparing `.r` against `0xc2/255`.
+- **Issue**: `new THREE.Color('#c2a06e').r` returns the sRGB-decoded linear value (~0.54), not 0xc2/255 (0.76).
+- **Solution**: Compare with `.getHexString()` instead of raw channel values.
+
+### makeGrid helper must set rock for all z rows
+- **Context**: Slope test used `makeGrid(4, 4)` which only initialised rock for z=0.
+- **Issue**: Other rows had rock=0, creating uneven base heights that triggered spurious slope movement.
+- **Solution**: Loop over all `z` in `d` when setting initial rock height.
