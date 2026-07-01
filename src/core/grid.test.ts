@@ -28,6 +28,35 @@ describe('Grid', () => {
     expect(highGround).toBeGreaterThan(lowGround)
   })
 
+  it('inland row has high height variance (bumpy terrain)', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let sum = 0
+    let sumSq = 0
+    const N = 256
+    for (let x = 0; x < N; x++) {
+      const h = grid.getSandHeight(x, 10)!
+      sum += h
+      sumSq += h * h
+    }
+    const variance = sumSq / N - (sum / N) ** 2
+    expect(variance).toBeGreaterThan(25)
+  })
+
+  it('inland terrain is bumpier than near-shore terrain', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const variance = (z: number) => {
+      let sum = 0, sumSq = 0
+      for (let x = 0; x < 256; x++) {
+        const h = grid.getSandHeight(x, z)!
+        sum += h; sumSq += h * h
+      }
+      return sumSq / 256 - (sum / 256) ** 2
+    }
+    expect(variance(10)).toBeGreaterThan(variance(170) * 2)
+  })
+
   it('slope is gentler near the sea than inland', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()

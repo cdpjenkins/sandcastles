@@ -109,7 +109,7 @@ export class Grid {
         } else {
           const t = z / seaStart
           const base = 30 * Math.pow(1 - t, 2)
-          const noise = Grid.fractalNoise(x, z) * 7
+          const noise = Grid.fractalNoise(x, z) * 20
           this.sand[i] = Math.max(0, base + noise)
         }
       }
@@ -141,7 +141,7 @@ export class Grid {
 
   private static fractalNoise(x: number, z: number): number {
     const freqs = [1 / 64, 1 / 32, 1 / 16, 1 / 8]
-    const amps  = [1,      0.5,    0.25,   0.125]
+    const amps  = [1,      0.65,   0.422,  0.274]
     let value = 0
     let total = 0
     for (let o = 0; o < freqs.length; o++) {
