@@ -20,6 +20,23 @@ describe('Grid', () => {
     expect(grid.getSandHeight(128, 255)).toBe(0)
   })
 
+  it('exposes seaStart as the single source of truth for the sea boundary', () => {
+    const grid = new Grid(128, 256)
+    expect(grid.seaStart).toBe(Math.floor(256 * 0.75))
+  })
+
+  it('initBeach places the sand/sea boundary exactly at seaStart', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+
+    let maxJustBeforeSea = 0
+    for (let x = 0; x < 256; x++) {
+      maxJustBeforeSea = Math.max(maxJustBeforeSea, grid.getSandHeight(x, grid.seaStart - 1)!)
+      expect(grid.getSandHeight(x, grid.seaStart)).toBe(0)
+    }
+    expect(maxJustBeforeSea).toBeGreaterThan(0)
+  })
+
   it('sand height decreases toward sea edge', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
