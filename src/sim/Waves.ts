@@ -45,9 +45,11 @@ export class Waves {
     for (let z = seaZ; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const w = grid.getWaterHeight(x, z) ?? 0
-        if (w > SEA_LEVEL + DIRTY_EPSILON) {
+        if (w > SEA_LEVEL) {
           grid.setWaterHeight(x, z, SEA_LEVEL)
-          this.dirty[z * this.width + x] = 1
+          if (w - SEA_LEVEL > DIRTY_EPSILON) {
+            this.dirty[z * this.width + x] = 1
+          }
         }
       }
     }

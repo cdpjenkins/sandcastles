@@ -41,12 +41,14 @@ export class Slope {
 
           const sand = grid.getSandHeight(x, z) ?? 0
           const transfer = Math.min(excess * TRANSFER_FRACTION, sand)
-          if (transfer <= DIRTY_EPSILON) continue
+          if (transfer <= 0) continue
 
           grid.setSandHeight(x, z, sand - transfer)
           grid.setSandHeight(nx, nz, nSand + transfer)
-          this.dirty[z * this.width + x] = 1
-          this.dirty[nz * this.width + nx] = 1
+          if (transfer > DIRTY_EPSILON) {
+            this.dirty[z * this.width + x] = 1
+            this.dirty[nz * this.width + nx] = 1
+          }
         }
       }
     }

@@ -6,7 +6,7 @@ All steps complete.
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval for Step 7 (docs)
+🟢 GREEN — all steps committed, PR open for review
 
 ## Completed
 

@@ -41,7 +41,7 @@ A pipe-model shallow-water simulation runs at 30 Hz. Each cell exchanges water w
 
 ### Dams and lakes (M4)
 
-Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. Each sim (water, erosion, moisture, slope, waves) returns a per-cell dirty mask; these are combined and used to limit mesh updates to only the cells that actually changed that tick, instead of rebuilding all 65,536 vertices every tick. The `R` key drains all water.
+Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. Each sim (water, erosion, moisture, slope, waves) returns a per-cell dirty mask; these are combined and used to limit mesh updates to only the cells that actually changed that tick, instead of rebuilding all 65,536 vertices every tick. The `R` key resets all water and stream sources.
 
 ### Erosion and wet/dry sand (M5)
 
