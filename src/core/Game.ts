@@ -75,7 +75,7 @@ export class Game {
     this.erosion = new Erosion(this.grid.width, this.grid.depth)
     this.moisture = new Moisture(this.grid.width, this.grid.depth)
     this.slope = new Slope(this.grid.width, this.grid.depth)
-    this.waves = new Waves()
+    this.waves = new Waves(this.grid.width, this.grid.depth)
     this.waveAudio = new WaveAudio()
     this.seaStart = Math.floor(this.grid.depth * 0.75)
 
