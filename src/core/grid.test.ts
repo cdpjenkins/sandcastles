@@ -21,7 +21,7 @@ describe('Grid', () => {
   })
 
   it('exposes seaStart as the single source of truth for the sea boundary', () => {
-    const grid = new Grid(256, 256)
+    const grid = new Grid(128, 256)
     expect(grid.seaStart).toBe(Math.floor(256 * 0.75))
   })
 
