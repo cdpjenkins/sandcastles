@@ -1,6 +1,9 @@
+const SEA_FRACTION = 0.75
+
 export class Grid {
   readonly width: number
   readonly depth: number
+  readonly seaStart: number
 
   private readonly rock: Float32Array
   private readonly sand: Float32Array
@@ -12,6 +15,7 @@ export class Grid {
   constructor(width: number, depth: number) {
     this.width = width
     this.depth = depth
+    this.seaStart = Math.floor(depth * SEA_FRACTION)
     const size = width * depth
     this.rock = new Float32Array(size)
     this.sand = new Float32Array(size)
@@ -96,18 +100,16 @@ export class Grid {
   }
 
   initBeach(): void {
-    const seaStart = Math.floor(this.depth * 0.75)
-
     for (let z = 0; z < this.depth; z++) {
       for (let x = 0; x < this.width; x++) {
         const i = this.idx(x, z)
         this.rock[i] = 1.0
 
-        if (z >= seaStart) {
+        if (z >= this.seaStart) {
           this.sand[i] = 0
           this.water[i] = 1.0
         } else {
-          const t = z / seaStart
+          const t = z / this.seaStart
           const base = 30 * Math.pow(1 - t, 2)
           const noise = Grid.fractalNoise(x, z) * 20
           this.sand[i] = Math.max(0, base + noise)

@@ -28,7 +28,6 @@ export class Game {
   private readonly waves: Waves
   private readonly waveAudio: WaveAudio
   private readonly combinedDirty: Uint8Array
-  private readonly seaStart: number
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
@@ -80,7 +79,6 @@ export class Game {
     this.waves = new Waves(this.grid.width, this.grid.depth)
     this.waveAudio = new WaveAudio()
     this.combinedDirty = new Uint8Array(this.grid.width * this.grid.depth)
-    this.seaStart = Math.floor(this.grid.depth * 0.75)
 
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
@@ -182,7 +180,7 @@ export class Game {
   }
 
   private simStep(dt: number): void {
-    const wavesDirty = this.waves.step(this.grid, dt, this.seaStart)
+    const wavesDirty = this.waves.step(this.grid, dt, this.grid.seaStart)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
