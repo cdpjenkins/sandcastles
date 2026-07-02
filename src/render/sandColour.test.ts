@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { sandColour } from './sandColour.ts'
+import { MATERIAL_PROPS, Material } from '../core/materials.ts'
 
 describe('sandColour', () => {
   it('dry sand matches base sand hex #c2a06e', () => {
     expect(sandColour(0).getHexString()).toBe('c2a06e')
+  })
+
+  it('dry sand tracks MATERIAL_PROPS[Sand].colour rather than its own copy', () => {
+    const expectedHex = MATERIAL_PROPS[Material.Sand].colour.replace('#', '')
+    expect(sandColour(0).getHexString()).toBe(expectedHex)
   })
 
   it('wet sand is darker than dry sand', () => {
