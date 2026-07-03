@@ -1,22 +1,16 @@
-# WIP: Perf fix — combined dirty-cell mask (Erosion/Moisture/Slope/Waves)
+# WIP: Flatten terrain base
 
 ## Current Step
 
-All steps complete.
+Step 1 of 1: Reduce base amplitude from 30 to 8 in initBeach()
 
 ## Status
 
-🟢 GREEN — all steps committed, PR open for review
+⏸️ WAITING — awaiting commit approval
 
 ## Completed
 
-- [x] Step 1: Erosion dirty mask
-- [x] Step 2: Moisture dirty mask
-- [x] Step 3: Slope dirty mask
-- [x] Step 4: Waves dirty mask
-- [x] Step 5: combineDirty helper + wire Game.simStep
-- [x] Step 6: TerrainMesh confirm (comment only, folded into Step 5 commit)
-- [x] Step 7: README + WIP docs fix
+- [x] Step 1: Reduce base from 30 to 8; update fragile tests; all 116 tests green
 
 ## Blockers
 
@@ -24,4 +18,4 @@ None
 
 ## Next Action
 
-None — awaiting next task.
+Await commit approval.

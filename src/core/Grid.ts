@@ -110,7 +110,7 @@ export class Grid {
           this.water[i] = 1.0
         } else {
           const t = z / this.seaStart
-          const base = 30 * Math.pow(1 - t, 2)
+          const base = 8 * Math.pow(1 - t, 2)
           const noise = Grid.fractalNoise(x, z) * 20
           this.sand[i] = Math.max(0, base + noise)
         }

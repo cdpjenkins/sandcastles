@@ -8,10 +8,12 @@ describe('Grid', () => {
     expect(grid.depth).toBe(256)
   })
 
-  it('initialises beach with positive sand height', () => {
+  it('initialises beach with positive average sand height inland', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
-    expect(grid.getSandHeight(0, 0)).toBeGreaterThan(0)
+    let sum = 0
+    for (let x = 0; x < 256; x++) sum += grid.getSandHeight(x, 0)!
+    expect(sum / 256).toBeGreaterThan(0)
   })
 
   it('sea strip at far edge has zero sand height', () => {
@@ -37,6 +39,14 @@ describe('Grid', () => {
     expect(maxJustBeforeSea).toBeGreaterThan(0)
   })
 
+  it('back row average sand height is modest (much less than 15)', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let sum = 0
+    for (let x = 0; x < 256; x++) sum += grid.getSandHeight(x, 0)!
+    expect(sum / 256).toBeLessThan(15)
+  })
+
   it('sand height decreases toward sea edge', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
@@ -57,7 +67,7 @@ describe('Grid', () => {
       sumSq += h * h
     }
     const variance = sumSq / N - (sum / N) ** 2
-    expect(variance).toBeGreaterThan(25)
+    expect(variance).toBeGreaterThan(10)
   })
 
   it('inland terrain is bumpier than near-shore terrain', () => {

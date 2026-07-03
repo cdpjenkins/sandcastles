@@ -5,7 +5,8 @@ import { Bucket } from '../core/Bucket.ts'
 
 const makeGrid = () => {
   const g = new Grid(16, 16)
-  g.initBeach()
+  g.setRockHeight(8, 0, 1)
+  g.setSandHeight(8, 0, 5)
   return g
 }
 
