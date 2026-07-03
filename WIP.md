@@ -2,15 +2,16 @@
 
 ## Current Step
 
-Step 2 of 2: Add cross-advection terms to WaterSim
+All steps complete.
 
 ## Status
 
-🔴 RED — writing failing test
+⏸️ WAITING — awaiting commit approval
 
 ## Completed
 
 - [x] Step 1: Add getFlowX/Z, setFlowX/Z accessors; all 123 tests green
+- [x] Step 2: Add cross-advection terms; all 124 tests green
 
 ## Blockers
 
@@ -18,7 +19,7 @@ None
 
 ## Next Action
 
-Write failing advection test, implement, commit.
+Await commit approval.
 
 ## Blockers
 

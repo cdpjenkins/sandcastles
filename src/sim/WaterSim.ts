@@ -59,15 +59,37 @@ export class WaterSim {
 
         if (x + 1 < W) {
           const hj = (grid.getSurfaceHeight(x + 1, z) ?? 0) + (grid.getWaterHeight(x + 1, z) ?? 0)
+          // Average z-velocity at the four corners surrounding this x-edge
+          const vNW = z > 0     ? this.flowZ[(z - 1) * W + x]     : 0
+          const vNE = z > 0     ? this.flowZ[(z - 1) * W + x + 1] : 0
+          const vSW = z + 1 < D ? this.flowZ[i]                   : 0
+          const vSE = z + 1 < D ? this.flowZ[z * W + x + 1]       : 0
+          const vAvg = (vNW + vNE + vSW + vSE) / 4
+          // Upwind z-gradient of x-flow
+          const uHere = this.flowX[i]
+          const uUp   = z > 0     ? this.flowX[(z - 1) * W + x] : uHere
+          const uDown = z + 1 < D ? this.flowX[(z + 1) * W + x] : uHere
+          const duDz  = vAvg >= 0 ? uHere - uUp : uDown - uHere
           this.flowX[i] = Math.max(-MAX_FLOW, Math.min(MAX_FLOW,
-            (this.flowX[i] + GRAVITY * (hi - hj) * dt) * DAMPING
+            (this.flowX[i] + GRAVITY * (hi - hj) * dt - vAvg * duDz * dt) * DAMPING
           ))
         }
 
         if (z + 1 < D) {
           const hj = (grid.getSurfaceHeight(x, z + 1) ?? 0) + (grid.getWaterHeight(x, z + 1) ?? 0)
+          // Average x-velocity at the four corners surrounding this z-edge
+          const uNW = x > 0     ? this.flowX[z * W + x - 1]       : 0
+          const uNE = x + 1 < W ? this.flowX[i]                   : 0
+          const uSW = x > 0     ? this.flowX[(z + 1) * W + x - 1] : 0
+          const uSE = x + 1 < W ? this.flowX[(z + 1) * W + x]     : 0
+          const uAvg = (uNW + uNE + uSW + uSE) / 4
+          // Upwind x-gradient of z-flow
+          const vHere  = this.flowZ[i]
+          const vLeft  = x > 0     ? this.flowZ[z * W + x - 1] : vHere
+          const vRight = x + 1 < W ? this.flowZ[z * W + x + 1] : vHere
+          const dvDx   = uAvg >= 0 ? vHere - vLeft : vRight - vHere
           this.flowZ[i] = Math.max(-MAX_FLOW, Math.min(MAX_FLOW,
-            (this.flowZ[i] + GRAVITY * (hi - hj) * dt) * DAMPING
+            (this.flowZ[i] + GRAVITY * (hi - hj) * dt - uAvg * dvDx * dt) * DAMPING
           ))
         }
       }

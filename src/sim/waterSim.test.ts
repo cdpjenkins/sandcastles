@@ -147,6 +147,36 @@ describe('WaterSim velocity', () => {
   })
 })
 
+describe('WaterSim cross-advection', () => {
+  it('z-flow advects x-momentum to the downstream row', () => {
+    // Flat terrain, water at rest everywhere — no pressure gradient, so pressure
+    // term alone produces zero change in flowX.  We inject:
+    //   flowZ = V  at rows z=1 and z=2 (z-flow flowing downward)
+    //   flowX = F  at row z=1          (x-flow only at the upstream row)
+    //
+    // Cross-advection −v·(du/dz)·dt should carry the x-momentum from z=1
+    // into z=2.  Without the term, flowX at z=2 stays zero.
+    const W = 5, D = 5
+    const grid = flatGrid(W, D)
+    for (let z = 0; z < D; z++)
+      for (let x = 0; x < W; x++)
+        grid.setWaterHeight(x, z, 1.0)
+
+    const sim = new WaterSim(W, D)
+    const V = 1.0, F = 1.0
+    for (let x = 0; x < W - 1; x++) {
+      sim.setFlowZ(x, 1, V)
+      sim.setFlowZ(x, 2, V)
+      sim.setFlowX(x, 1, F)   // x-flow present at z=1
+    }
+
+    sim.step(grid, DT)
+
+    // x-flow at z=2 should have grown (advection carried it downstream)
+    expect(sim.getFlowX(2, 2)).toBeGreaterThan(0)
+  })
+})
+
 describe('WaterSim flow accessors', () => {
   it('getFlowX returns 0 before any step', () => {
     const sim = new WaterSim(4, 4)
