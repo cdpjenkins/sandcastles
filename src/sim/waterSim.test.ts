@@ -147,6 +147,37 @@ describe('WaterSim velocity', () => {
   })
 })
 
+describe('WaterSim flow accessors', () => {
+  it('getFlowX returns 0 before any step', () => {
+    const sim = new WaterSim(4, 4)
+    expect(sim.getFlowX(1, 1)).toBe(0)
+  })
+
+  it('getFlowZ returns 0 before any step', () => {
+    const sim = new WaterSim(4, 4)
+    expect(sim.getFlowZ(1, 1)).toBe(0)
+  })
+
+  it('setFlowX and getFlowX round-trip', () => {
+    const sim = new WaterSim(4, 4)
+    sim.setFlowX(2, 1, 1.5)
+    expect(sim.getFlowX(2, 1)).toBeCloseTo(1.5)
+  })
+
+  it('setFlowZ and getFlowZ round-trip', () => {
+    const sim = new WaterSim(4, 4)
+    sim.setFlowZ(2, 1, 2.5)
+    expect(sim.getFlowZ(2, 1)).toBeCloseTo(2.5)
+  })
+
+  it('setFlowX does not affect adjacent cells', () => {
+    const sim = new WaterSim(4, 4)
+    sim.setFlowX(2, 1, 1.5)
+    expect(sim.getFlowX(3, 1)).toBe(0)
+    expect(sim.getFlowX(2, 2)).toBe(0)
+  })
+})
+
 function totalWater(grid: Grid): number {
   let sum = 0
   for (let z = 0; z < grid.depth; z++)

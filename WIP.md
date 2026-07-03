@@ -1,16 +1,24 @@
-# WIP: Reduce noise amplitude
+# WIP: Cross-advection for river meandering
 
 ## Current Step
 
-Step 1 of 1: Reduce fractal noise amplitude from ×20 to ×6
+Step 2 of 2: Add cross-advection terms to WaterSim
 
 ## Status
 
-⏸️ WAITING — awaiting commit approval
+🔴 RED — writing failing test
 
 ## Completed
 
-- [x] Step 1: Change noise * 20 to * 6; update variance threshold 10→2; all 118 tests green
+- [x] Step 1: Add getFlowX/Z, setFlowX/Z accessors; all 123 tests green
+
+## Blockers
+
+None
+
+## Next Action
+
+Write failing advection test, implement, commit.
 
 ## Blockers
 

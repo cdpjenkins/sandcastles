@@ -26,6 +26,22 @@ export class WaterSim {
     return this.velocityArr[z * this.width + x] ?? 0
   }
 
+  getFlowX(x: number, z: number): number {
+    return this.flowX[z * this.width + x] ?? 0
+  }
+
+  getFlowZ(x: number, z: number): number {
+    return this.flowZ[z * this.width + x] ?? 0
+  }
+
+  setFlowX(x: number, z: number, v: number): void {
+    this.flowX[z * this.width + x] = v
+  }
+
+  setFlowZ(x: number, z: number, v: number): void {
+    this.flowZ[z * this.width + x] = v
+  }
+
   reset(): void {
     this.flowX.fill(0)
     this.flowZ.fill(0)
