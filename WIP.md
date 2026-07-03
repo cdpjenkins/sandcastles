@@ -1,8 +1,8 @@
-# WIP: Flatten terrain base
+# WIP: Reduce noise amplitude
 
 ## Current Step
 
-Step 1 of 1: Reduce base amplitude from 30 to 8 in initBeach()
+Step 1 of 1: Reduce fractal noise amplitude from ×20 to ×6
 
 ## Status
 
@@ -10,7 +10,7 @@ Step 1 of 1: Reduce base amplitude from 30 to 8 in initBeach()
 
 ## Completed
 
-- [x] Step 1: Reduce base from 30 to 8; update fragile tests; all 116 tests green
+- [x] Step 1: Change noise * 20 to * 6; update variance threshold 10→2; all 118 tests green
 
 ## Blockers
 

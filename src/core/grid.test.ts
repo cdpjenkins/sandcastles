@@ -55,6 +55,14 @@ describe('Grid', () => {
     expect(highGround).toBeGreaterThan(lowGround)
   })
 
+  it('back row minimum sand height is above sea level', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let min = Infinity
+    for (let x = 0; x < 256; x++) min = Math.min(min, grid.getSandHeight(x, 0)!)
+    expect(min).toBeGreaterThan(1)
+  })
+
   it('inland row has high height variance (bumpy terrain)', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
@@ -67,7 +75,7 @@ describe('Grid', () => {
       sumSq += h * h
     }
     const variance = sumSq / N - (sum / N) ** 2
-    expect(variance).toBeGreaterThan(10)
+    expect(variance).toBeGreaterThan(2)
   })
 
   it('inland terrain is bumpier than near-shore terrain', () => {
@@ -94,6 +102,15 @@ describe('Grid', () => {
       return sum / 16
     }
     expect(avgDrop(20)).toBeGreaterThan(avgDrop(170))
+  })
+
+  it('terrain noise is smooth (low average cell-to-cell step inland)', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let sum = 0
+    for (let x = 0; x < 255; x++)
+      sum += Math.abs(grid.getSandHeight(x + 1, 10)! - grid.getSandHeight(x, 10)!)
+    expect(sum / 255).toBeLessThan(0.23)
   })
 
   it('beach has fractal height variation across cells at the same depth', () => {
