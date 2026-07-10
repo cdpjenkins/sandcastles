@@ -1,8 +1,8 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from './WaterSim.ts'
 
-const EROSION_K = 0.5
-const DEPOSITION_K = 0.3
+const EROSION_K = 2.0
+const DEPOSITION_K = 1.2
 const MIN_WATER_TO_ERODE = 1e-5
 const DIRTY_EPSILON = 1e-4
 

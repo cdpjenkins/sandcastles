@@ -52,6 +52,30 @@ describe('Erosion', () => {
     expect(grid.getRockHeight(0, 0)!).toBeCloseTo(1)
   })
 
+  it('fast-flowing cell loses at least a fifth of its sand within a second', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 5)
+    grid.setWaterHeight(0, 0, 3)
+
+    for (let i = 0; i < 30; i++) {
+      waterSim.step(grid, DT)
+      erosion.step(grid, waterSim, DT)
+    }
+
+    expect(grid.getSandHeight(0, 0)!).toBeLessThan(4)
+  })
+
+  it('cell with large sediment surplus deposits a substantial amount in one step', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 2)
+    grid.setWaterHeight(0, 0, 0.01)
+    grid.setSediment(0, 0, 10)
+
+    erosion.step(grid, waterSim, DT)
+
+    expect(grid.getSandHeight(0, 0)!).toBeGreaterThan(2.3)
+  })
+
   it('total sand + sediment is conserved', () => {
     const { grid, waterSim, erosion } = makeScene(4, 1)
     for (let x = 0; x < 4; x++) grid.setSandHeight(x, 0, 3)
