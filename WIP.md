@@ -1,8 +1,8 @@
-# WIP: Cross-advection for river meandering
+# WIP: Look tool
 
 ## Current Step
 
-All steps complete.
+Step 1 of 4: `src/input/LookInfo.ts` — `getLookInfo`
 
 ## Status
 
@@ -10,8 +10,10 @@ All steps complete.
 
 ## Completed
 
-- [x] Step 1: Add getFlowX/Z, setFlowX/Z accessors; all 123 tests green
-- [x] Step 2: Add cross-advection terms; all 124 tests green
+- [x] Step 1: `getLookInfo` — 126 tests green
+- [ ] Step 2: `formatLookInfo` ← current
+- [ ] Step 3: `Picker` hover support
+- [ ] Step 4: `Game` wiring
 
 ## Blockers
 
@@ -19,12 +21,4 @@ None
 
 ## Next Action
 
-Await commit approval.
-
-## Blockers
-
-None
-
-## Next Action
-
-Await commit approval.
+Await commit approval, then write failing test for `formatLookInfo`.

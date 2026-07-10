@@ -1,11 +1,8 @@
-# Learnings: M5 — Erosion + Wet/Dry Sand
+# Learnings: Look tool
 
 ## Gotchas
 
-### Float32Array precision vs decimal thresholds
-- **Context**: Comparing a Float32Array-stored value against a decimal constant like `0.01`.
-- **Issue**: `0.01` stored as Float32 is `≈ 0.009999999776`, which is less than the JS number `0.01`, causing `< 0.01` guards to fire unexpectedly.
-- **Solution**: Use small powers of 10 that round-trip cleanly in Float32 (e.g. `1e-5`), or compare with `> 0`.
+(none yet)
 
 ## Patterns That Worked
 
@@ -13,22 +10,15 @@
 
 ## Decisions Made
 
-### Erosion uses WaterSim velocity, not raw flow pipes
-- **Decision**: WaterSim exposes a computed velocity magnitude per cell; Erosion reads it.
-- **Rationale**: Decouples erosion logic from pipe internals; velocity is the physically meaningful quantity.
-
-### Sand angleOfRepose lowered from 34° to 20°
-- **Decision**: Change in materials.ts as part of Step 4.
-- **Rationale**: User observed towers were too steep; 20° gives more natural spreading.
+(none yet)
 
 ## Edge Cases
 
-### THREE.js Color stores in linear space, not sRGB
-- **Context**: Testing `sandColour()` by comparing `.r` against `0xc2/255`.
-- **Issue**: `new THREE.Color('#c2a06e').r` returns the sRGB-decoded linear value (~0.54), not 0xc2/255 (0.76).
-- **Solution**: Compare with `.getHexString()` instead of raw channel values.
-
-### makeGrid helper must set rock for all z rows
-- **Context**: Slope test used `makeGrid(4, 4)` which only initialised rock for z=0.
-- **Issue**: Other rows had rock=0, creating uneven base heights that triggered spurious slope movement.
-- **Solution**: Loop over all `z` in `d` when setting initial rock height.
+### Float32Array round-trip breaks `toEqual` on struct-returning functions
+- **Context**: `getLookInfo` reads values back out of `Grid`/`WaterSim`, which store
+  state in `Float32Array`s.
+- **Issue**: `toEqual({ flowX: 1.2, ... })` fails — `1.2` stored as Float32 comes back
+  as `1.2000000476837158`, etc. Same class of issue as the earlier Float32 vs decimal
+  gotcha, but here it's a whole-object equality check, not a threshold comparison.
+- **Solution**: assert each numeric field individually with `toBeCloseTo` instead of
+  `toEqual` on the whole object.
