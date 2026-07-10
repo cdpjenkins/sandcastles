@@ -1,4 +1,4 @@
-const SEA_FRACTION = 0.75
+const SEA_FRACTION = 0.78
 const ROCK_BASE_HEIGHT = 1.0
 const SEA_WATER_HEIGHT = 1.0
 
