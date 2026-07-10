@@ -83,6 +83,7 @@ export class Game {
 
     this.grid = new Grid(256, 256)
     this.grid.initBeach()
+    this.grid.initSpring(STREAM_RATE)
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
     this.erosion = new Erosion(this.grid.width, this.grid.depth)

@@ -118,6 +118,12 @@ export class Grid {
     }
   }
 
+  initSpring(rate: number): void {
+    const x = Math.floor(this.width / 2)
+    const z = Math.floor(this.seaStart * 0.1)
+    this.setSourceRate(x, z, rate)
+  }
+
   private static hashNoise(xi: number, zi: number): number {
     let h = (Math.imul(xi, 374761393) + Math.imul(zi, 668265263)) | 0
     h = Math.imul(h ^ (h >>> 13), 1274126177)

@@ -204,4 +204,27 @@ describe('Grid', () => {
     expect(grid.getSediment(-1, 0)).toBeUndefined()
     expect(grid.getSediment(0, 16)).toBeUndefined()
   })
+
+  it('initSpring places a single water source, centred in x and well inland', () => {
+    const grid = new Grid(256, 256)
+    grid.initSpring(3.0)
+
+    let sourceCount = 0
+    let sourceX = -1
+    let sourceZ = -1
+    for (let z = 0; z < grid.depth; z++) {
+      for (let x = 0; x < grid.width; x++) {
+        if ((grid.getSourceRate(x, z) ?? 0) > 0) {
+          sourceCount++
+          sourceX = x
+          sourceZ = z
+        }
+      }
+    }
+
+    expect(sourceCount).toBe(1)
+    expect(sourceX).toBe(Math.floor(grid.width / 2))
+    expect(grid.getSourceRate(sourceX, sourceZ)).toBeCloseTo(3.0)
+    expect(sourceZ).toBeLessThan(grid.seaStart * 0.25)
+  })
 })
