@@ -205,6 +205,32 @@ describe('Grid', () => {
     expect(grid.getSediment(0, 16)).toBeUndefined()
   })
 
+  it('exposes seaLevel as the sea surface height', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const seaSurface = grid.getSurfaceHeight(128, grid.seaStart)! + grid.getWaterHeight(128, grid.seaStart)!
+    expect(grid.seaLevel).toBeCloseTo(seaSurface)
+  })
+
+  it('land below sea level starts inundated with water up to sea level', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let foundSubmerged = false
+    for (let z = 0; z < grid.seaStart; z++) {
+      for (let x = 0; x < grid.width; x++) {
+        const surface = grid.getSurfaceHeight(x, z)!
+        const water = grid.getWaterHeight(x, z)!
+        if (surface < grid.seaLevel - 1e-6) {
+          foundSubmerged = true
+          expect(surface + water).toBeCloseTo(grid.seaLevel, 5)
+        } else {
+          expect(water).toBe(0)
+        }
+      }
+    }
+    expect(foundSubmerged).toBe(true)
+  })
+
   it('initSpring places a single water source, centred in x and well inland', () => {
     const grid = new Grid(256, 256)
     grid.initSpring(3.0)

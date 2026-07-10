@@ -1,9 +1,12 @@
 const SEA_FRACTION = 0.75
+const ROCK_BASE_HEIGHT = 1.0
+const SEA_WATER_HEIGHT = 1.0
 
 export class Grid {
   readonly width: number
   readonly depth: number
   readonly seaStart: number
+  readonly seaLevel: number
 
   private readonly rock: Float32Array
   private readonly sand: Float32Array
@@ -16,6 +19,7 @@ export class Grid {
     this.width = width
     this.depth = depth
     this.seaStart = Math.floor(depth * SEA_FRACTION)
+    this.seaLevel = ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT
     const size = width * depth
     this.rock = new Float32Array(size)
     this.sand = new Float32Array(size)
@@ -103,16 +107,19 @@ export class Grid {
     for (let z = 0; z < this.depth; z++) {
       for (let x = 0; x < this.width; x++) {
         const i = this.idx(x, z)
-        this.rock[i] = 1.0
+        this.rock[i] = ROCK_BASE_HEIGHT
 
         if (z >= this.seaStart) {
           this.sand[i] = 0
-          this.water[i] = 1.0
+          this.water[i] = SEA_WATER_HEIGHT
         } else {
           const t = z / this.seaStart
           const base = 8 * Math.pow(1 - t, 2)
           const noise = Grid.fractalNoise(x, z) * 6
           this.sand[i] = Math.max(0, base + noise)
+
+          const surface = this.rock[i] + this.sand[i]
+          this.water[i] = surface < this.seaLevel ? this.seaLevel - surface : 0
         }
       }
     }
@@ -120,7 +127,7 @@ export class Grid {
 
   initSpring(rate: number): void {
     const x = Math.floor(this.width / 2)
-    const z = Math.floor(this.seaStart * 0.1)
+    const z = Math.floor(this.seaStart * 0.01)
     this.setSourceRate(x, z, rate)
   }
 
