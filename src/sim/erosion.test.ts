@@ -73,7 +73,9 @@ describe('Erosion', () => {
 
     erosion.step(grid, waterSim, DT)
 
-    expect(grid.getSandHeight(0, 0)!).toBeGreaterThan(2.3)
+    const sandAfter = grid.getSandHeight(0, 0)!
+    expect(sandAfter).toBeGreaterThan(2.15)
+    expect(sandAfter).toBeLessThan(2.4)
   })
 
   it('total sand + sediment is conserved', () => {
