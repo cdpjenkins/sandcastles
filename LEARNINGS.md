@@ -10,7 +10,19 @@
 
 ## Decisions Made
 
-(none yet)
+### Flow arrow direction is projected through the isometric camera basis
+- **Options considered**: map `flowX`/`flowZ` directly to screen arrows (treats the
+  grid as a top-down map); or project the flow vector through the camera's actual
+  right/up basis vectors before picking an arrow.
+- **Decision**: project through the camera basis, via a new
+  `src/render/isoProjection.ts` shared by `IsoCamera` and `LookInfo`.
+- **Rationale**: the game renders through a fixed isometric camera (45° yaw, ~35.26°
+  pitch — see `IsoCamera.ts`), so a world `+x` flow visually moves down-right on
+  screen, not directly right. Any future screen-space direction indicator (wind,
+  particles, etc.) should reuse `worldToScreenDirection` rather than re-deriving this.
+- **Trade-offs**: couples `LookInfo` (previously camera-agnostic) to the fixed iso
+  angles; acceptable since the camera's orientation is a constant, not something the
+  player can rotate.
 
 ## Edge Cases
 
