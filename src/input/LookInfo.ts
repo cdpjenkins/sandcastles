@@ -1,5 +1,6 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from '../sim/WaterSim.ts'
+import { worldToScreenDirection } from '../render/isoProjection.ts'
 
 export interface LookInfo {
   readonly x: number
@@ -16,13 +17,14 @@ export interface LookInfo {
   readonly velocity: number
 }
 
-const FLOW_ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗']
+const FLOW_ARROWS = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘']
 const FLOW_EPSILON = 1e-4
 
 function flowArrow(flowX: number, flowZ: number): string {
   if (Math.hypot(flowX, flowZ) < FLOW_EPSILON) return '·'
-  const angle = Math.atan2(flowZ, flowX)
-  const sector = Math.round(angle / (Math.PI / 4) + 8) % 8
+  const { right, up } = worldToScreenDirection(flowX, flowZ)
+  const angle = Math.atan2(up, right)
+  const sector = (Math.round(angle / (Math.PI / 4)) + 8) % 8
   return FLOW_ARROWS[sector]!
 }
 

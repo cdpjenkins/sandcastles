@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-
-const ISO_ANGLE_Y = Math.PI / 4
-const ISO_ANGLE_X = Math.atan(1 / Math.sqrt(2))
+import { ISO_ANGLE_X, ISO_ANGLE_Y } from './isoProjection.ts'
 
 const MIN_ZOOM = 20
 const MAX_ZOOM = 300

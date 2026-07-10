@@ -62,3 +62,22 @@ using current grid/waterSim state; add `L` line to the help overlay.
 
 **Done when**: toggling `L` shows/hides the panel; panel text updates live while
 hovering and as the simulation runs.
+
+### Step 5: Fix flow arrow to account for isometric projection
+
+**Test**: `src/render/isoProjection.test.ts` — `worldToScreenDirection(dx, dz)` for
+the world x/z axes and both diagonals returns the on-screen direction matching the
+camera's actual basis (derived from `IsoCamera`'s lookAt geometry): world `(1,0)` and
+`(0,1)` are two of the four "down" diagonals on screen, `(1,1)` is straight down,
+`(1,-1)` is straight right. `formatLookInfo`'s flow arrows are updated to match (e.g.
+pure `+x` flow renders `↘`, not `→`).
+
+**Implementation**: extract `ISO_ANGLE_X`/`ISO_ANGLE_Y` out of `IsoCamera.ts` into a
+new `src/render/isoProjection.ts`, add `worldToScreenDirection(dx, dz)` computing the
+camera's right/up basis vectors from those angles and projecting the flow vector onto
+them; `IsoCamera.ts` imports the angles from there instead of redeclaring them;
+`LookInfo.ts`'s `flowArrow` uses the projected `(right, up)` for `atan2` instead of
+raw `(flowX, flowZ)`.
+
+**Done when**: tests pass; arrow in the browser visibly points the way water is
+flowing on screen, not along the raw grid axes.

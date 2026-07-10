@@ -77,15 +77,15 @@ describe('formatLookInfo', () => {
   })
 
   it.each([
-    [1, 0, '→'],
-    [1, 1, '↘'],
-    [0, 1, '↓'],
-    [-1, 1, '↙'],
-    [-1, 0, '←'],
-    [-1, -1, '↖'],
-    [0, -1, '↑'],
-    [1, -1, '↗'],
-  ])('renders flowX=%d flowZ=%d as %s', (flowX, flowZ, arrow) => {
+    [1, 0, '↘'],
+    [0, 1, '↙'],
+    [-1, 0, '↖'],
+    [0, -1, '↗'],
+    [1, 1, '↓'],
+    [1, -1, '→'],
+    [-1, -1, '↑'],
+    [-1, 1, '←'],
+  ])('renders flowX=%d flowZ=%d (world axes) as %s on screen', (flowX, flowZ, arrow) => {
     const text = formatLookInfo(makeInfo({ flowX, flowZ, velocity: 1.4 }))
 
     expect(text).toContain(`Flow 1.40 ${arrow}`)
