@@ -12,6 +12,8 @@ import { Slope } from '../sim/Slope.ts'
 import { Waves } from '../sim/Waves.ts'
 import { orInto } from '../sim/combineDirty.ts'
 import { WaveAudio } from '../audio/WaveAudio.ts'
+import { getLookInfo, formatLookInfo } from '../input/LookInfo.ts'
+import type { GridCoord } from '../types.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
@@ -34,10 +36,13 @@ export class Game {
   private readonly picker: Picker
   private readonly hud: HTMLDivElement
   private readonly helpOverlay: HTMLDivElement
+  private readonly lookPanel: HTMLDivElement
 
   private toolMode: ToolMode = ToolMode.Spade
   private simAccumulator = 0
   private lastTime = 0
+  private lookEnabled = false
+  private hoverCell: GridCoord | null = null
 
   constructor() {
     const canvas = document.createElement('canvas')
@@ -65,9 +70,16 @@ export class Game {
       'R        Reset water',
       'Pinch    Zoom',
       '2-finger Pan',
+      'L        Toggle Look tool',
       '?        Toggle this help',
     ].join('\n')
     document.body.appendChild(this.helpOverlay)
+
+    this.lookPanel = document.createElement('div')
+    this.lookPanel.style.cssText =
+      'display:none;position:fixed;top:12px;right:12px;color:#fff;font:14px/1.5 monospace;' +
+      'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre'
+    document.body.appendChild(this.lookPanel)
 
     this.grid = new Grid(256, 256)
     this.grid.initBeach()
@@ -93,6 +105,9 @@ export class Game {
       this.grid.depth,
     )
     this.picker.onCellPick(({ x, z }) => this.onCellPick(x, z))
+    this.picker.onHover((coord) => {
+      this.hoverCell = coord
+    })
 
     window.addEventListener('keydown', this.onKeyDown)
 
@@ -140,6 +155,10 @@ export class Game {
       const visible = this.helpOverlay.style.display === 'block'
       this.helpOverlay.style.display = visible ? 'none' : 'block'
     }
+    if (e.key === 'l' || e.key === 'L') {
+      this.lookEnabled = !this.lookEnabled
+      this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
+    }
   }
 
   private resetWater(): void {
@@ -164,6 +183,16 @@ export class Game {
     this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}`
   }
 
+  private updateLookPanel(): void {
+    if (!this.lookEnabled) return
+    if (this.hoverCell === null) {
+      this.lookPanel.textContent = 'Look: hover over the sand'
+      return
+    }
+    const info = getLookInfo(this.grid, this.waterSim, this.hoverCell.x, this.hoverCell.z)
+    this.lookPanel.textContent = formatLookInfo(info)
+  }
+
   private loop = (timestamp: number): void => {
     const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1)
     this.lastTime = timestamp
@@ -175,6 +204,7 @@ export class Game {
     }
 
     this.updateHud()
+    this.updateLookPanel()
     this.renderer.render(this.isoCamera.camera)
     requestAnimationFrame(this.loop)
   }
