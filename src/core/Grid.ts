@@ -103,6 +103,12 @@ export class Grid {
     return this.rock[i] + this.sand[i]
   }
 
+  getTotalSandHeight(): number {
+    let total = 0
+    for (let i = 0; i < this.sand.length; i++) total += this.sand[i]!
+    return total
+  }
+
   initBeach(): void {
     for (let z = 0; z < this.depth; z++) {
       for (let x = 0; x < this.width; x++) {

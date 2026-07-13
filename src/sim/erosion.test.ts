@@ -52,7 +52,7 @@ describe('Erosion', () => {
     expect(grid.getRockHeight(0, 0)!).toBeCloseTo(1)
   })
 
-  it('fast-flowing cell loses at least a fifth of its sand within a second', () => {
+  it('fast-flowing cell loses more than a quarter of its sand within a second', () => {
     const { grid, waterSim, erosion } = makeScene()
     grid.setSandHeight(0, 0, 5)
     grid.setWaterHeight(0, 0, 3)
@@ -62,7 +62,7 @@ describe('Erosion', () => {
       erosion.step(grid, waterSim, DT)
     }
 
-    expect(grid.getSandHeight(0, 0)!).toBeLessThan(4)
+    expect(grid.getSandHeight(0, 0)!).toBeLessThan(3.85)
   })
 
   it('cell with large sediment surplus deposits a substantial amount in one step', () => {
@@ -91,6 +91,35 @@ describe('Erosion', () => {
     }
 
     expect(totalSandAndSediment(grid, 4, 1)).toBeCloseTo(before, 1)
+  })
+})
+
+describe('Erosion sediment transport', () => {
+  it('eroded sediment moves downstream instead of redepositing in place', () => {
+    const w = 10
+    const grid = new Grid(w, 1)
+    for (let x = 0; x < w; x++) {
+      grid.setRockHeight(x, 0, w - x)
+      grid.setSandHeight(x, 0, 2)
+    }
+    grid.setSourceRate(0, 0, 3.0)
+    const waterSim = new WaterSim(w, 1)
+    const erosion = new Erosion(w, 1)
+
+    const samples: number[] = []
+    for (let i = 0; i < 600; i++) {
+      waterSim.step(grid, DT)
+      erosion.step(grid, waterSim, DT)
+      if (i % 60 === 59) samples.push(grid.getSandHeight(2, 0)!)
+    }
+
+    for (let i = 1; i < samples.length; i++) {
+      expect(samples[i]!).toBeLessThanOrEqual(samples[i - 1]! + 1e-3)
+    }
+    expect(samples.at(-1)!).toBeLessThan(2)
+
+    const downstreamSediment = grid.getSediment(w - 1, 0)! + grid.getSandHeight(w - 1, 0)!
+    expect(downstreamSediment).toBeGreaterThan(2)
   })
 })
 

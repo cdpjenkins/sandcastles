@@ -1,7 +1,7 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from './WaterSim.ts'
 
-const EROSION_K = 2.0
+const EROSION_K = 2.5
 const DEPOSITION_K = 0.5
 const MIN_WATER_TO_ERODE = 1e-5
 const DIRTY_EPSILON = 1e-4
@@ -16,6 +16,8 @@ export class Erosion {
   step(grid: Grid, waterSim: WaterSim, dt: number): Uint8Array {
     const W = grid.width
     const D = grid.depth
+
+    this.transportSediment(grid, waterSim, dt)
 
     this.dirty.fill(0)
 
@@ -49,5 +51,76 @@ export class Erosion {
     }
 
     return this.dirty
+  }
+
+  private transportSediment(grid: Grid, waterSim: WaterSim, dt: number): void {
+    const W = grid.width
+    const D = grid.depth
+    const N = W * D
+
+    const concentration = new Float32Array(N)
+    for (let z = 0; z < D; z++) {
+      for (let x = 0; x < W; x++) {
+        const i = z * W + x
+        const water = grid.getWaterHeight(x, z) ?? 0
+        const sediment = grid.getSediment(x, z) ?? 0
+        concentration[i] = water > MIN_WATER_TO_ERODE ? sediment / water : 0
+      }
+    }
+
+    // Sediment flux across each edge, carried at the upwind cell's concentration
+    // (the same pipes WaterSim used to move water this tick move sediment with it).
+    const edgeFluxX = new Float32Array(N)
+    const edgeFluxZ = new Float32Array(N)
+    for (let z = 0; z < D; z++) {
+      for (let x = 0; x < W; x++) {
+        const i = z * W + x
+        if (x + 1 < W) {
+          const flow = waterSim.getFlowX(x, z)
+          edgeFluxX[i] = flow * (flow >= 0 ? concentration[i] : concentration[i + 1])
+        }
+        if (z + 1 < D) {
+          const flow = waterSim.getFlowZ(x, z)
+          edgeFluxZ[i] = flow * (flow >= 0 ? concentration[i] : concentration[i + W])
+        }
+      }
+    }
+
+    // Scale down outflows so no cell loses more sediment than it has.
+    for (let z = 0; z < D; z++) {
+      for (let x = 0; x < W; x++) {
+        const i = z * W + x
+        const sediment = grid.getSediment(x, z) ?? 0
+
+        let outflow = 0
+        if (x + 1 < W && edgeFluxX[i] > 0) outflow += edgeFluxX[i]
+        if (x > 0 && edgeFluxX[i - 1] < 0) outflow -= edgeFluxX[i - 1]
+        if (z + 1 < D && edgeFluxZ[i] > 0) outflow += edgeFluxZ[i]
+        if (z > 0 && edgeFluxZ[i - W] < 0) outflow -= edgeFluxZ[i - W]
+
+        const maxOut = sediment / dt
+        if (outflow > maxOut && outflow > 0) {
+          const scale = maxOut / outflow
+          if (x + 1 < W && edgeFluxX[i] > 0) edgeFluxX[i] *= scale
+          if (x > 0 && edgeFluxX[i - 1] < 0) edgeFluxX[i - 1] *= scale
+          if (z + 1 < D && edgeFluxZ[i] > 0) edgeFluxZ[i] *= scale
+          if (z > 0 && edgeFluxZ[i - W] < 0) edgeFluxZ[i - W] *= scale
+        }
+      }
+    }
+
+    for (let z = 0; z < D; z++) {
+      for (let x = 0; x < W; x++) {
+        const i = z * W + x
+        let delta = 0
+        if (x + 1 < W) delta -= edgeFluxX[i]
+        if (x > 0) delta += edgeFluxX[i - 1]
+        if (z + 1 < D) delta -= edgeFluxZ[i]
+        if (z > 0) delta += edgeFluxZ[i - W]
+
+        const sediment = grid.getSediment(x, z) ?? 0
+        grid.setSediment(x, z, Math.max(0, sediment + delta * dt))
+      }
+    }
   }
 }

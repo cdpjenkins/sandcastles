@@ -207,6 +207,7 @@ export class Game {
 
     this.updateHud()
     this.updateLookPanel()
+    // console.log('total sand height:', this.grid.getTotalSandHeight())
     this.renderer.render(this.isoCamera.camera)
     requestAnimationFrame(this.loop)
   }

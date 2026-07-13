@@ -2,6 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { Grid } from './Grid.ts'
 
 describe('Grid', () => {
+  it('getTotalSandHeight sums sand height across the whole grid', () => {
+    const grid = new Grid(4, 4)
+    grid.setSandHeight(0, 0, 2)
+    grid.setSandHeight(1, 2, 3.5)
+    grid.setSandHeight(3, 3, 1.25)
+    expect(grid.getTotalSandHeight()).toBeCloseTo(6.75)
+  })
+
+  it('getTotalSandHeight is zero for a fresh grid', () => {
+    const grid = new Grid(8, 8)
+    expect(grid.getTotalSandHeight()).toBe(0)
+  })
+
   it('has the correct dimensions', () => {
     const grid = new Grid(256, 256)
     expect(grid.width).toBe(256)
