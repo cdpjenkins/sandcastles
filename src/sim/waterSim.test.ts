@@ -69,6 +69,17 @@ describe('WaterSim', () => {
     expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(2.0 * DT, 4)
   })
 
+  it('flow does not overshoot into a strong reversal while settling', () => {
+    const grid = flatGrid(2, 1)
+    grid.setWaterHeight(0, 0, 4)
+    grid.setWaterHeight(1, 0, 0)
+    const sim = new WaterSim(grid.width, grid.depth)
+
+    for (let i = 0; i < 30; i++) sim.step(grid, DT)
+
+    expect(sim.getFlowX(0, 0)).toBeGreaterThan(-1.4)
+  })
+
   it('water blocked by higher terrain does not cross', () => {
     const grid = flatGrid(3, 1)
     grid.setRockHeight(1, 0, 10)

@@ -1,7 +1,7 @@
 import type { Grid } from '../core/Grid.ts'
 
 const GRAVITY = 9.8
-const DAMPING = 0.99
+const DAMPING = 0.95
 const MAX_FLOW = 4.0
 const DIRTY_EPSILON = 1e-4
 
