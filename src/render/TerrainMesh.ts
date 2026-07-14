@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import type { Grid } from '../core/Grid.ts'
 import { sandColour } from './sandColour.ts'
+import { rockColour } from './rockColour.ts'
+import { groundColour } from './groundColour.ts'
 import { waterColour } from './waterColour.ts'
 import { cellNoise } from './cellNoise.ts'
 
@@ -74,7 +76,8 @@ export class TerrainMesh {
     this.positions[vi + 2] = z
 
     const moisture = this.grid.getMoisture(x, z) ?? 0
-    const dryCol = sandColour(moisture)
+    const sandDepth = this.grid.getSandHeight(x, z) ?? 0
+    const dryCol = groundColour(sandColour(moisture), rockColour(moisture), sandDepth)
     const col = water > 0 ? waterColour(dryCol, water) : dryCol
     const jitter = water > 0 ? 0 : cellNoise(x, z) * JITTER
     this.colors[vi] = Math.max(0, Math.min(1, col.r + jitter))
