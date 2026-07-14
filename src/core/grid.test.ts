@@ -150,6 +150,29 @@ describe('Grid', () => {
     }
   })
 
+  it('rock height decreases toward the sea edge, like sand', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const highGround = grid.getRockHeight(128, 0)!
+    const lowGround = grid.getRockHeight(128, 200)!
+    expect(highGround).toBeGreaterThan(lowGround)
+  })
+
+  it('rock height inland has substantial fractal bumpiness', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    let sum = 0
+    let sumSq = 0
+    const N = 256
+    for (let x = 0; x < N; x++) {
+      const h = grid.getRockHeight(x, 10)!
+      sum += h
+      sumSq += h * h
+    }
+    const variance = sumSq / N - (sum / N) ** 2
+    expect(variance).toBeGreaterThan(7)
+  })
+
   it('setHeight and getSandHeight round-trip', () => {
     const grid = new Grid(256, 256)
     grid.setSandHeight(10, 20, 4.5)
