@@ -164,7 +164,7 @@ export class Game {
   }
 
   private resetWater(): void {
-    for (let z = 0; z < this.grid.depth; z++) {
+    for (let z = 0; z < this.grid.seaStart; z++) {
       for (let x = 0; x < this.grid.width; x++) {
         this.grid.setWaterHeight(x, z, 0)
         this.grid.setSourceRate(x, z, 0)
