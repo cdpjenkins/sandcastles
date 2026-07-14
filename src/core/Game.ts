@@ -185,7 +185,8 @@ export class Game {
     }
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
-    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}`
+    const seaLevel = `sea level: ${(BASE_SEA_LEVEL + this.tide.offset).toFixed(2)}`
+    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}   ${seaLevel}`
   }
 
   private updateLookPanel(): void {
