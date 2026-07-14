@@ -1,5 +1,5 @@
 const DEFAULT_PERIOD = 180
-const DEFAULT_RANGE = 0.4
+const DEFAULT_RANGE = 0.8
 
 export class Tide {
   readonly period: number

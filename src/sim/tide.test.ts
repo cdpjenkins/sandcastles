@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { Tide } from './Tide.ts'
 
 describe('Tide', () => {
-  it('defaults to a 180s period and a ±0.4 range', () => {
+  it('defaults to a 180s period and a ±0.8 range', () => {
     const tide = new Tide()
     expect(tide.period).toBe(180)
-    expect(tide.range).toBe(0.4)
+    expect(tide.range).toBe(0.8)
   })
 
   it('starts at zero offset', () => {
