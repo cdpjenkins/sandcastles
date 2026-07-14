@@ -1,6 +1,9 @@
 const SEA_FRACTION = 0.78
 const ROCK_BASE_HEIGHT = 1.0
 const SEA_WATER_HEIGHT = 1.0
+const ROCK_NOISE_AMPLITUDE = 0.6
+const ROCK_NOISE_OFFSET = 1000
+const MIN_ROCK_HEIGHT = 0.2
 
 export class Grid {
   readonly width: number
@@ -113,12 +116,15 @@ export class Grid {
     for (let z = 0; z < this.depth; z++) {
       for (let x = 0; x < this.width; x++) {
         const i = this.idx(x, z)
-        this.rock[i] = ROCK_BASE_HEIGHT
 
         if (z >= this.seaStart) {
+          this.rock[i] = ROCK_BASE_HEIGHT
           this.sand[i] = 0
           this.water[i] = SEA_WATER_HEIGHT
         } else {
+          const rockNoise = Grid.fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET) * ROCK_NOISE_AMPLITUDE
+          this.rock[i] = Math.max(MIN_ROCK_HEIGHT, ROCK_BASE_HEIGHT + rockNoise)
+
           const t = z / this.seaStart
           const base = 10 * Math.pow(1 - t, 2)
           const noise = Grid.fractalNoise(x, z) * 8.5

@@ -134,6 +134,22 @@ describe('Grid', () => {
     expect(heights.size).toBeGreaterThan(32)
   })
 
+  it('rock height has fractal variation across land cells at the same depth', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const heights = new Set<number>()
+    for (let x = 0; x < 64; x++) heights.add(grid.getRockHeight(x, 50)!)
+    expect(heights.size).toBeGreaterThan(32)
+  })
+
+  it('rock height stays flat under the sea', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    for (let x = 0; x < 256; x += 16) {
+      expect(grid.getRockHeight(x, grid.seaStart)).toBeCloseTo(1.0)
+    }
+  })
+
   it('setHeight and getSandHeight round-trip', () => {
     const grid = new Grid(256, 256)
     grid.setSandHeight(10, 20, 4.5)
