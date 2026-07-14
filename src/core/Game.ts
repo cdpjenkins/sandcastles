@@ -17,7 +17,7 @@ import type { GridCoord } from '../types.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
-const BUCKET_CAPACITY = 10
+const BUCKET_CAPACITY = 100
 const STREAM_RATE = 3.0
 const WAVE_SEA_OFFSET = 4
 
