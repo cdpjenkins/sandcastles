@@ -158,6 +158,28 @@ describe('Grid', () => {
     expect(highGround).toBeGreaterThan(lowGround)
   })
 
+  it('rock height stays close to the sea floor immediately next to seaStart', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const z = grid.seaStart - 1
+    let max = -Infinity
+    for (let x = 0; x < 256; x++) {
+      max = Math.max(max, grid.getRockHeight(x, z)!)
+    }
+    expect(max).toBeLessThan(2.0)
+  })
+
+  it('rock height still has full bumpiness 25 units from seaStart', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const z = grid.seaStart - 25
+    let max = -Infinity
+    for (let x = 0; x < 256; x++) {
+      max = Math.max(max, grid.getRockHeight(x, z)!)
+    }
+    expect(max).toBeGreaterThan(4.0)
+  })
+
   it('rock height inland has substantial fractal bumpiness', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
