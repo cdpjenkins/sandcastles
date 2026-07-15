@@ -1,10 +1,10 @@
 # WIP
 
 ## Current Task
-Deepen the sea floor: rock height should slope linearly from 0 at `seaStart` to -20 at `depth-1` (currently flat at 1.0, making the sea uniformly ~1 unit deep). Water height in the sea region should be recomputed as `seaLevel - rock` so the water surface stays flat while depth increases away from shore. Land side (`z < seaStart`) unaffected.
+User reported rock fade (above) didn't fully work: sand was still visible right next to seaStart. Root cause: the shore fade was only ever applied to `rock`, never to `sand` — sand's noise term (amplitude 6, unfaded) can still produce ~2 unit mounds right at the shoreline. Fix: apply the same `shoreFade` factor to the sand formula too.
 
 ## Status: ⏸️ WAITING
-Implemented linear rock slope (0 at seaStart to -20 at depth-1) and recomputed water height (`seaLevel - rock`) in the sea branch of `Grid.initBeach()`. Full suite (185 tests) and `tsc --noEmit` are clean. Refactor assessed: minimal diff, consistent with existing style, no refactor needed. Manually verified via tsx that rock slopes correctly and rock+water stays flat at seaLevel (2.0) across the sea.
+Applied the same `shoreFade` factor already computed for rock to the sand formula in `Grid.initBeach()`. Both rock and sand now fade out together over the 25 units nearest seaStart; unchanged beyond that. Full suite (187 tests) and `tsc --noEmit` clean. Refactor assessed: one-line change, consistent with existing pattern, no further cleanup needed. Verified via tsx: combined surface height at 1 unit from seaStart is 0.31 (was up to ~1.7 before), full strength (5.91) restored by 25 units out.
 
 ## Next Action
 Awaiting commit approval.

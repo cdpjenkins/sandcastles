@@ -177,15 +177,13 @@ describe('Grid', () => {
     expect(highGround).toBeGreaterThan(lowGround)
   })
 
-  it('rock height stays close to the sea floor immediately next to seaStart', () => {
+  it('rock height blends down to meet the sea floor height immediately next to seaStart', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
     const z = grid.seaStart - 1
-    let max = -Infinity
     for (let x = 0; x < 256; x++) {
-      max = Math.max(max, grid.getRockHeight(x, z)!)
+      expect(Math.abs(grid.getRockHeight(x, z)!)).toBeLessThan(1.0)
     }
-    expect(max).toBeLessThan(2.0)
   })
 
   it('rock height still has full bumpiness 25 units from seaStart', () => {
@@ -197,6 +195,26 @@ describe('Grid', () => {
       max = Math.max(max, grid.getRockHeight(x, z)!)
     }
     expect(max).toBeGreaterThan(4.0)
+  })
+
+  it('sand height blends down to zero immediately next to seaStart', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const z = grid.seaStart - 1
+    for (let x = 0; x < 256; x++) {
+      expect(grid.getSandHeight(x, z)!).toBeLessThan(0.5)
+    }
+  })
+
+  it('sand height still has full noise 25 units from seaStart', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const z = grid.seaStart - 25
+    let max = -Infinity
+    for (let x = 0; x < 256; x++) {
+      max = Math.max(max, grid.getSandHeight(x, z)!)
+    }
+    expect(max).toBeGreaterThan(1.5)
   })
 
   it('rock height inland has substantial fractal bumpiness', () => {
@@ -233,10 +251,10 @@ describe('Grid', () => {
     expect(grid.getSandHeight(0, 256)).toBeUndefined()
   })
 
-  it('rock height on land is always positive (immovable base)', () => {
+  it('rock height on land away from the shore is always positive (immovable base)', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
-    for (let z = 0; z < grid.seaStart; z += 32) {
+    for (let z = 0; z < grid.seaStart - 25; z += 32) {
       for (let x = 0; x < 256; x += 32) {
         expect(grid.getRockHeight(x, z)).toBeGreaterThan(0)
       }

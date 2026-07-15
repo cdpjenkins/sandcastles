@@ -5,7 +5,7 @@ const ROCK_RIDGE_AMPLITUDE = 12
 const ROCK_NOISE_AMPLITUDE = 12
 const ROCK_NOISE_OFFSET = 1000
 const MIN_ROCK_HEIGHT = 0.2
-const ROCK_NOISE_FADE_DISTANCE = 25
+const ROCK_SHORE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
@@ -132,13 +132,14 @@ export class Grid {
           const ridge = Math.pow(1 - t, 2)
 
           const distFromSea = this.seaStart - z
-          const rockNoiseFade = Math.min(1, distFromSea / ROCK_NOISE_FADE_DISTANCE)
-          const rockNoise = Grid.fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET) * ROCK_NOISE_AMPLITUDE * rockNoiseFade
-          this.rock[i] = Math.max(MIN_ROCK_HEIGHT, ROCK_BASE_HEIGHT + ROCK_RIDGE_AMPLITUDE * ridge + rockNoise)
+          const shoreFade = Math.min(1, distFromSea / ROCK_SHORE_FADE_DISTANCE)
+          const rockNoise = Grid.fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET) * ROCK_NOISE_AMPLITUDE
+          const unfadedRock = ROCK_BASE_HEIGHT + ROCK_RIDGE_AMPLITUDE * ridge + rockNoise
+          this.rock[i] = shoreFade < 1 ? unfadedRock * shoreFade : Math.max(MIN_ROCK_HEIGHT, unfadedRock)
 
           const base = SAND_RIDGE_AMPLITUDE * ridge
           const noise = Grid.fractalNoise(x, z) * SAND_NOISE_AMPLITUDE
-          this.sand[i] = Math.max(0, base + noise)
+          this.sand[i] = Math.max(0, (base + noise) * shoreFade)
 
           const surface = this.rock[i] + this.sand[i]
           this.water[i] = surface < this.seaLevel ? this.seaLevel - surface : 0
