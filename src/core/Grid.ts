@@ -8,6 +8,7 @@ const MIN_ROCK_HEIGHT = 0.2
 const ROCK_NOISE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
+const SEA_FLOOR_END_HEIGHT = -20
 
 export class Grid {
   readonly width: number
@@ -122,9 +123,10 @@ export class Grid {
         const i = this.idx(x, z)
 
         if (z >= this.seaStart) {
-          this.rock[i] = ROCK_BASE_HEIGHT
+          const seaT = (z - this.seaStart) / ((this.depth - 1) - this.seaStart)
+          this.rock[i] = SEA_FLOOR_END_HEIGHT * seaT
           this.sand[i] = 0
-          this.water[i] = SEA_WATER_HEIGHT
+          this.water[i] = this.seaLevel - this.rock[i]
         } else {
           const t = z / this.seaStart
           const ridge = Math.pow(1 - t, 2)

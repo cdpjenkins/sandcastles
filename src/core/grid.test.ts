@@ -142,11 +142,30 @@ describe('Grid', () => {
     expect(heights.size).toBeGreaterThan(32)
   })
 
-  it('rock height stays flat under the sea', () => {
+  it('rock height starts at 0 at seaStart and slopes to -20 at the far edge', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
     for (let x = 0; x < 256; x += 16) {
-      expect(grid.getRockHeight(x, grid.seaStart)).toBeCloseTo(1.0)
+      expect(grid.getRockHeight(x, grid.seaStart)).toBeCloseTo(0)
+      expect(grid.getRockHeight(x, grid.depth - 1)).toBeCloseTo(-20)
+    }
+  })
+
+  it('rock height varies linearly across the sea floor', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const x = 128
+    const midZ = Math.round((grid.seaStart + (grid.depth - 1)) / 2)
+    const expectedMid = -20 * ((midZ - grid.seaStart) / ((grid.depth - 1) - grid.seaStart))
+    expect(grid.getRockHeight(x, midZ)).toBeCloseTo(expectedMid, 1)
+  })
+
+  it('sea water surface stays flat at seaLevel despite the sloped sea floor', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    for (let z = grid.seaStart; z < grid.depth; z += 16) {
+      const surface = grid.getSurfaceHeight(128, z)! + grid.getWaterHeight(128, z)!
+      expect(surface).toBeCloseTo(grid.seaLevel)
     }
   })
 
@@ -214,10 +233,10 @@ describe('Grid', () => {
     expect(grid.getSandHeight(0, 256)).toBeUndefined()
   })
 
-  it('rock height is always positive (immovable base)', () => {
+  it('rock height on land is always positive (immovable base)', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
-    for (let z = 0; z < 256; z += 32) {
+    for (let z = 0; z < grid.seaStart; z += 32) {
       for (let x = 0; x < 256; x += 32) {
         expect(grid.getRockHeight(x, z)).toBeGreaterThan(0)
       }
