@@ -1,10 +1,19 @@
 import type { Grid } from '../core/Grid.ts'
 
 const GRAVITY = 9.8
-const DAMPING = 0.95
+const MANNING_N = 0.03
 const MAX_VELOCITY = 8.0
 const DRY_DEPTH = 1e-6
 const DIRTY_EPSILON = 1e-4
+
+// Manning bed friction, solved semi-implicitly for the new flux rather than
+// subtracting a term built from the old one. That form is stable at any depth and
+// can never flip the flux's sign, which an explicit term does once h gets small.
+const withDrag = (q: number, depth: number, dt: number): number => {
+  if (depth <= DRY_DEPTH) return 0
+  const h73 = depth * depth * Math.cbrt(depth)
+  return q / (1 + (GRAVITY * MANNING_N * MANNING_N * Math.abs(q) * dt) / h73)
+}
 
 export class WaterSim {
   private readonly flowX: Float32Array
@@ -75,9 +84,10 @@ export class WaterSim {
           const duDz  = vAvg >= 0 ? uHere - uUp : uDown - uHere
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
-          this.flowX[i] = Math.max(-maxFlux, Math.min(maxFlux,
-            (this.flowX[i] + GRAVITY * edgeDepth * (hi - hj) * dt - vAvg * duDz * dt) * DAMPING
-          ))
+          this.flowX[i] = Math.max(-maxFlux, Math.min(maxFlux, withDrag(
+            this.flowX[i] + GRAVITY * edgeDepth * (hi - hj) * dt - vAvg * duDz * dt,
+            edgeDepth, dt,
+          )))
         }
 
         if (z + 1 < D) {
@@ -96,9 +106,10 @@ export class WaterSim {
           const dvDx   = uAvg >= 0 ? vHere - vLeft : vRight - vHere
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
-          this.flowZ[i] = Math.max(-maxFlux, Math.min(maxFlux,
-            (this.flowZ[i] + GRAVITY * edgeDepth * (hi - hj) * dt - uAvg * dvDx * dt) * DAMPING
-          ))
+          this.flowZ[i] = Math.max(-maxFlux, Math.min(maxFlux, withDrag(
+            this.flowZ[i] + GRAVITY * edgeDepth * (hi - hj) * dt - uAvg * dvDx * dt,
+            edgeDepth, dt,
+          )))
         }
       }
     }

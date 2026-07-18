@@ -66,7 +66,33 @@
 - **Solution**: measure what the old numbers actually meant before adopting them as a target. The
   distribution, not the aggregate, was the tell.
 
+### The same test broke three times, because it was pinned to the crutch each time
+- **Context**: `flow does not overshoot into a strong reversal while settling` (`getFlowX > -1.4`)
+  → re-derived at Step 2 to `a sloshing basin settles to a level surface` → re-derived again at
+  Step 5 to `a sloshing basin loses energy rather than gaining it`.
+- **Issue**: each form was pinned to whatever artificial dissipation happened to exist. `-1.4`
+  measured `MAX_FLOW`. "Settles within 10s" measured `DAMPING = 0.95`. Both looked like physics
+  assertions and were really assertions about a stability crutch — so each crutch removal broke the
+  test again.
+- **Solution**: the form that finally survives asserts the *invariant* rather than an outcome:
+  energy decays rather than grows. That is true of the real system regardless of how the
+  dissipation is modelled. When a test breaks every time you improve the model, the test is probably
+  describing the model's flaws rather than its behaviour.
+
 ## Patterns That Worked
+
+### Verify a physics change against an independent analytical law
+- **What**: Step 5's payoff was checked against Green's law (`A ∝ h^(-1/4)` for a shoaling wave),
+  not against "the waves look bigger now". Measured 1.016/1.041/1.127/1.224 at depths
+  16.6/14.8/12.2/9.2 against predictions of 1.014/1.043/1.094/1.174, with average crest speed
+  11.3 cells/s matching `sqrt(9.8 * 13)` for the mean depth.
+- **Why it works**: the law is derived independently of this code, so agreeing with it is real
+  evidence rather than confirmation of an expectation. It also localises errors — a constant offset
+  would indicate a measurement artifact (as in Step 3), while a divergence that grows with the swept
+  parameter would indicate a physics error.
+- **Bonus**: the measured amplitude slightly *exceeds* Green's law as the wave shallows (1.224 vs
+  1.174), which is the expected signature of nonlinear steepening on top of the linear prediction —
+  the beginnings of the breaker the plan defers to a later reassessment.
 
 ### Verify a new test is RED against the old code, even mid-step
 - **What**: Step 4's implementation was already written when the erosion-level test was added, so

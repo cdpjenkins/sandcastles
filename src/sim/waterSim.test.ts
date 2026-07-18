@@ -69,20 +69,30 @@ describe('WaterSim', () => {
     expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(2.0 * DT, 4)
   })
 
-  it('a sloshing basin settles to a level surface', () => {
-    // A 4-unit head collapsing in a two-cell basin genuinely oscillates — real
-    // water in a bath does the same.  What matters is that the slosh decays and
-    // the basin comes to rest, not that any single swing stays small.
+  it('a sloshing basin loses energy rather than gaining it', () => {
+    // A 4-unit head collapsing in a two-cell basin oscillates, and bed friction
+    // at this depth is genuinely feeble, so it slooshes for a long time — real
+    // water does too.  The invariant worth holding is that the swing decays: a
+    // scheme that fed energy back in would grow it instead.
     const grid = flatGrid(2, 1)
     grid.setWaterHeight(0, 0, 4)
     grid.setWaterHeight(1, 0, 0)
     const sim = new WaterSim(grid.width, grid.depth)
 
-    for (let i = 0; i < 300; i++) sim.step(grid, DT)
+    const peakFluxOver = (steps: number): number => {
+      let peak = 0
+      for (let i = 0; i < steps; i++) {
+        sim.step(grid, DT)
+        peak = Math.max(peak, Math.abs(sim.getFlowX(0, 0)))
+      }
+      return peak
+    }
 
-    expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(2, 2)
-    expect(grid.getWaterHeight(1, 0)!).toBeCloseTo(2, 2)
-    expect(Math.abs(sim.getFlowX(0, 0))).toBeLessThan(0.05)
+    const early = peakFluxOver(30 * 2)
+    peakFluxOver(30 * 60)
+    const late = peakFluxOver(30 * 2)
+
+    expect(late).toBeLessThan(early)
   })
 
   it('water blocked by higher terrain does not cross', () => {
@@ -120,6 +130,46 @@ describe('WaterSim wave celerity', () => {
   it('a disturbance travels further in deeper water', () => {
     expect(spreadIn(20, 2)).toBeGreaterThan(spreadIn(5, 2))
     expect(spreadIn(5, 2)).toBeGreaterThan(spreadIn(1, 2))
+  })
+})
+
+describe('WaterSim drag', () => {
+  it('a wave still has amplitude after crossing the width of the sea', () => {
+    // The sea is ~56 rows across.  At depth 20, c = sqrt(9.8*20) = 14 cells/s,
+    // so a wave needs about 4s to make the crossing.  Real bed friction is
+    // negligible in water this deep, so it should arrive with plenty left.
+    const depth = 20
+    const W = 200
+    const start = 20
+    const grid = flatGrid(W, 1, 0)
+    for (let x = 0; x < W; x++) grid.setWaterHeight(x, 0, depth)
+    grid.setWaterHeight(start, 0, depth + 1)
+    const sim = new WaterSim(W, 1)
+
+    for (let i = 0; i < 30 * 4; i++) sim.step(grid, DT)
+
+    let peak = 0
+    for (let x = start + 56; x < W; x++) {
+      peak = Math.max(peak, Math.abs((grid.getWaterHeight(x, 0) ?? 0) - depth))
+    }
+    expect(peak).toBeGreaterThan(0.05)
+  })
+
+  it('drag slows a thin sheet but barely touches deep water', () => {
+    // Flat water carrying a uniform flux: no surface gradient and no advection,
+    // so drag is the only thing acting on the flux in a single step.
+    const fluxAfterOneStep = (depth: number): number => {
+      const grid = flatGrid(4, 1, 0)
+      for (let x = 0; x < 4; x++) grid.setWaterHeight(x, 0, depth)
+      const sim = new WaterSim(4, 1)
+      for (let x = 0; x < 3; x++) sim.setFlowX(x, 0, 0.5)
+
+      sim.step(grid, DT)
+
+      return sim.getFlowX(1, 0)
+    }
+
+    expect(fluxAfterOneStep(0.1)).toBeLessThan(fluxAfterOneStep(20))
   })
 })
 
