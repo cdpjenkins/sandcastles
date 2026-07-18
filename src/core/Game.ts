@@ -9,7 +9,7 @@ import { WaterSim } from '../sim/WaterSim.ts'
 import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
 import { Slope } from '../sim/Slope.ts'
-import { Waves, BASE_SEA_LEVEL } from '../sim/Waves.ts'
+import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { orInto } from '../sim/combineDirty.ts'
 import { WaveAudio } from '../audio/WaveAudio.ts'
@@ -185,7 +185,7 @@ export class Game {
     }
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
-    const seaLevel = `sea level: ${(BASE_SEA_LEVEL + this.tide.offset).toFixed(2)}`
+    const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset).toFixed(2)}`
     this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}   ${seaLevel}`
   }
 
@@ -218,8 +218,8 @@ export class Game {
 
   private simStep(dt: number): void {
     this.tide.step(dt)
-    const seaLevel = BASE_SEA_LEVEL + this.tide.offset
-    const wavesDirty = this.waves.step(this.grid, dt, this.grid.seaStart + WAVE_SEA_OFFSET, seaLevel)
+    const seaSurface = this.grid.seaLevel + this.tide.offset
+    const wavesDirty = this.waves.step(this.grid, dt, this.grid.seaStart + WAVE_SEA_OFFSET, seaSurface)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)

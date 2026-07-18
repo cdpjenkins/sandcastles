@@ -3,7 +3,6 @@ import type { Grid } from '../core/Grid.ts'
 const PERIOD = 20
 const SURGE_HEIGHT = 10
 const SURGE_ROWS = 4
-export const BASE_SEA_LEVEL = 1.0
 const DIRTY_EPSILON = 1e-4
 
 export class Waves {
@@ -19,7 +18,7 @@ export class Waves {
     this.dirty = new Uint8Array(width * depth)
   }
 
-  step(grid: Grid, dt: number, seaZ: number, seaLevel: number): Uint8Array {
+  step(grid: Grid, dt: number, seaZ: number, seaSurface: number): Uint8Array {
     this.fired = false
     this.timeUntilWave -= dt
     this.dirty.fill(0)
@@ -43,9 +42,11 @@ export class Waves {
 
     for (let z = seaZ; z < D; z++) {
       for (let x = 0; x < W; x++) {
+        const bed = grid.getSurfaceHeight(x, z) ?? 0
+        const target = Math.max(0, seaSurface - bed)
         const w = grid.getWaterHeight(x, z) ?? 0
-        if (Math.abs(w - seaLevel) > DIRTY_EPSILON) {
-          grid.setWaterHeight(x, z, seaLevel)
+        if (Math.abs(w - target) > DIRTY_EPSILON) {
+          grid.setWaterHeight(x, z, target)
           this.dirty[z * this.width + x] = 1
         }
       }

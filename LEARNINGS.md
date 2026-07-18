@@ -1,4 +1,53 @@
+# Learnings: Realistic waves and shoreline
+
+## Gotchas
+
+### A unit conflation can hide indefinitely while the two units coincide numerically
+- **Context**: `Waves` wrote sea level as a *depth*; `Grid.initBeach` computed it as an
+  *elevation*. Introduced whenever `BASE_SEA_LEVEL` was added, but harmless for as long as the sea
+  bed was flat at `rock = 1` and the depth was uniformly `1.0` — depth and elevation produced the
+  same number, so nothing diverged.
+- **Issue**: commit `8ad9b88` sloped the sea bed to −20. The two conventions instantly diverged and
+  the sea surface became a ramp diving to −18.91, defeating that commit's own stated intent on the
+  very next tick.
+- **Solution**: `Grid.seaLevel` is now the single source of truth and is unambiguously an
+  *elevation*; `Waves.step` takes a `seaSurface` elevation and derives depth as
+  `max(0, seaSurface - bed)`. When a value can be read as either a depth or an elevation, name it
+  for which one it is.
+
+## Patterns That Worked
+
+### Measuring the real classes before proposing a design
+- **What**: before writing `WATER_SIM_OPTIONS.md`, drove `Grid`/`WaterSim`/`Waves`/`Tide` from a
+  throwaway `tsx` script and measured celerity, damping, and sea-surface elevation.
+- **Why it works**: two of the three headline claims were things I'd have asserted from reading the
+  code anyway — but the sea-surface bug was only visible by *running* it. The unit conflation is
+  invisible in either file alone; it only exists in the composition.
+
+## Decisions Made
+
+### `Grid.seaLevel = 2.0` (elevation) wins over `BASE_SEA_LEVEL = 1.0` (depth)
+- **Options considered**: reconcile both constants at `1.0`, or make `Grid.seaLevel = 2.0`
+  authoritative and delete `BASE_SEA_LEVEL`.
+- **Decision**: `Grid.seaLevel` authoritative.
+- **Rationale**: `initBeach` already uses it as an elevation in *both* branches (sea and beach), so
+  it was already the de facto source of truth; `BASE_SEA_LEVEL` was the interloper.
+- **Trade-offs**: the resting waterline moves — the sea gains a unit of depth at the shoreline and
+  the HUD now reads `2.00` where it read `1.00`. This restores `initBeach`'s intent rather than
+  changing it, but it is a visible change and was flagged as PLAN.md open question 1.
+
+## Edge Cases
+
+- Sea-region cells whose bed sits *above* the sea surface (a sandbar, or erosion depositing into the
+  sea) would get a negative depth from `seaSurface - bed`; clamped with `max(0, …)` so they go dry
+  instead.
+
+---
+
 # Learnings: Look tool
+
+> ⚠️ This section predates the current feature and appears never to have been merged into CLAUDE.md
+> or an ADR. The `isoProjection` decision below is still worth keeping somewhere permanent.
 
 ## Gotchas
 
