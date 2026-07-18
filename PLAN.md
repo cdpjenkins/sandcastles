@@ -10,14 +10,21 @@ runs up and washes back — instead of being teleported in four rows from shore.
 
 ## Acceptance Criteria
 
-- [ ] At rest, the sea surface is flat at a constant *elevation* across the sloping floor
-- [ ] Wave speed scales with depth, measurably close to `c = √(g·h)`
-- [ ] A wave launched at the deep boundary arrives at the beach with usable amplitude
-- [ ] Crests visibly refract toward shore-parallel as they cross the sloping floor
-- [ ] Run-up and backwash are visible on the beach
-- [ ] `Erosion` is driven by true velocity (`flux/depth`), so thin fast swash scours harder than a deep slow lagoon
-- [ ] Volume is still conserved where it should be, and the sim is still unconditionally robust
-- [ ] `npm test` and `tsc --noEmit` clean at every step
+- [x] At rest, the sea surface is flat at a constant *elevation* across the sloping floor — Step 1
+- [x] Wave speed scales with depth, measurably close to `c = √(g·h)` — Step 3; crest-tracked
+      3/4/6/10/14 cells/s at depths 1/2/5/10/20 vs 3.13/4.43/7.00/9.90/14.00
+- [x] A wave launched at the deep boundary arrives at the beach with usable amplitude — Steps 5, 8;
+      range 0.701 at depth 13.4 growing to 1.207 at depth 2.62, per Green's law
+- [ ] **Crests visibly refract toward shore-parallel as they cross the sloping floor — NOT MET.** The
+      physics is present and verified (`c = √(g·h)`), but `Waves.surfaceAt(z)` has no `x` term, so
+      the swell arrives with crests already shore-parallel and nothing refracts. Needs oblique swell:
+      an `x` term in the phase, and a per-*cell* sponge target rather than the per-row one. A small
+      step 10, not a gap in the model.
+- [x] Run-up and backwash are visible on the beach — Step 8; swash edge swings z=135..168, 33 rows
+- [x] `Erosion` is driven by true velocity (`flux/depth`) — Step 4
+- [x] Volume is still conserved where it should be, and the sim is still unconditionally robust —
+      sand + sediment exactly 144504 on every tick; sea intact at `EROSION_K` up to 5.0
+- [x] `npm test` and `tsc --noEmit` clean at every step
 
 ## Steps
 
@@ -186,10 +193,25 @@ dissipation that kills grid-scale noise while leaving physical waves alone (a re
 of ~0.999/step costs a wave ~11% over a 4s crossing and would kill accumulating noise over ~1000
 steps). Decide once the swell is in and the real forcing is visible.
 
-**Test**: a mechanism needs one — e.g. erosion cannot move the bed more than X per step. Tuning does
-not.
+**Test**: `saturates the rate the bed drops rather than eroding ever faster`, plus its deposition
+twin. Stated as comparisons, so they hold at any `EROSION_K`.
 **Done when**: the shore visibly reshapes over minutes without dissolving, the sand budget plateaus,
 and erosion cannot destabilise the sim at any setting a player could reach.
+
+> **Resolved with `MAX_BED_RATE = 0.3` units/s**, capping how far erosion or deposition may move the
+> bed per step. It clips the rare extreme cells that drive the feedback while leaving the bulk — the
+> velocity distribution is heavily skewed (p50 = 0.02, p90 = 0.6, p100 = 8), so almost nothing normal
+> touches the cap. Stability is now decoupled from the knob: sea error 1.36 / 1.24 / 1.20 at
+> `EROSION_K` = 0.5 / 2.0 / 5.0, all intact, while erosion still scales (9.1% / 23.8% / 33.8%
+> suspended). `EROSION_K` restored to **0.5** — the value chosen at Step 4 and forced down to 0.1 at
+> Step 6 — which now delivers 6.8% suspended at 120s against the 6.9% it was picked for.
+
+> **The diagnosis took three wrong hypotheses.** Grid-scale noise (Step 6) — wrong, the sponge helped
+> and grid noise never reaches a boundary. Sea sloshing — wrong, all 98 high-flux cells were on the
+> *beach*, at z < 179, with a coherent sign pattern rather than a checkerboard. It was the stream
+> incising its channel: scour deepens it, the channel speeds the water, the water scours harder.
+> `maxFlux > 100` was also a poor failure proxy — a fast stream in a deep gorge is not a blowup. The
+> criterion that discriminates is whether the *sea* departs from where the swell says it should be.
 
 ## Then stop and reassess
 

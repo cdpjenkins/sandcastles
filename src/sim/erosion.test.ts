@@ -64,6 +64,35 @@ describe('Erosion', () => {
     expect(grid.getRockHeight(0, 0)!).toBeCloseTo(1)
   })
 
+  it('saturates the rate the bed drops rather than eroding ever faster', () => {
+    // Erosion moving the bed in a single step is a step change in the water's
+    // surface, which shoves the sim.  Left proportional to velocity it feeds
+    // back -- scour deepens the channel, which speeds the water, which scours --
+    // and the sea tears itself apart.  Past some rate the bed must stop dropping
+    // faster however fast the water gets.
+    const erodedAtFlux = (flux: number): number => {
+      const w = 4
+      const grid = new Grid(w, 1)
+      for (let x = 0; x < w; x++) {
+        grid.setRockHeight(x, 0, 1)
+        grid.setSandHeight(x, 0, 5)
+        grid.setWaterHeight(x, 0, 0.5)
+      }
+      const waterSim = new WaterSim(w, 1)
+      const erosion = new Erosion(w, 1)
+      for (let x = 0; x < w - 1; x++) waterSim.setFlowX(x, 0, flux)
+
+      waterSim.step(grid, DT)
+      erosion.step(grid, waterSim, DT)
+
+      return 5 - grid.getSandHeight(1, 0)!
+    }
+
+    // Both are past the limit, so they should match. Unlimited, doubling the
+    // flux doubles the scour.
+    expect(erodedAtFlux(1)).toBeCloseTo(erodedAtFlux(2), 6)
+  })
+
   it('a thin sheet scours more than a deep pool carrying the same flux', () => {
     // Flat water over flat ground, given a uniform flux: no surface gradient, so
     // the only difference between the two runs is how deep the water is.  The
@@ -90,17 +119,21 @@ describe('Erosion', () => {
     expect(erodedAtDepth(1)).toBeGreaterThan(erodedAtDepth(4))
   })
 
-  it('cell with large sediment surplus deposits a substantial amount in one step', () => {
-    const { grid, waterSim, erosion } = makeScene()
-    grid.setSandHeight(0, 0, 2)
-    grid.setWaterHeight(0, 0, 0.01)
-    grid.setSediment(0, 0, 10)
+  it('saturates the rate the bed rises, just as it does the rate it drops', () => {
+    // Deposition shoves the water surface exactly as scour does, so the same
+    // bound applies to the bed coming up as to it going down.
+    const depositedFromSurplus = (sediment: number): number => {
+      const { grid, waterSim, erosion } = makeScene()
+      grid.setSandHeight(0, 0, 2)
+      grid.setWaterHeight(0, 0, 0.01)
+      grid.setSediment(0, 0, sediment)
 
-    erosion.step(grid, waterSim, DT)
+      erosion.step(grid, waterSim, DT)
 
-    const sandAfter = grid.getSandHeight(0, 0)!
-    expect(sandAfter).toBeGreaterThan(2.1)
-    expect(sandAfter).toBeLessThan(2.2)
+      return grid.getSandHeight(0, 0)! - 2
+    }
+
+    expect(depositedFromSurplus(10)).toBeCloseTo(depositedFromSurplus(20), 6)
   })
 
   it('total sand + sediment is conserved', () => {

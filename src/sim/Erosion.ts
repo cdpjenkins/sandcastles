@@ -1,8 +1,13 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from './WaterSim.ts'
 
-const EROSION_K = 0.1
+const EROSION_K = 0.5
 const DEPOSITION_K = 0.5
+// The most the bed may move in a second. Moving it is a step change in the water
+// surface above it, so an unbounded rate feeds back on itself: scour deepens the
+// channel, the channel speeds the water, the faster water scours harder. This
+// decouples stability from EROSION_K, leaving that free as a tuning knob.
+const MAX_BED_RATE = 0.3
 const MIN_WATER_TO_ERODE = 1e-5
 const DIRTY_EPSILON = 1e-4
 
@@ -33,12 +38,12 @@ export class Erosion {
 
         let newSand = sand
         if (sediment < capacity && sand > 0) {
-          const erode = Math.min((capacity - sediment) * dt, sand)
+          const erode = Math.min((capacity - sediment) * dt, sand, MAX_BED_RATE * dt)
           newSand = sand - erode
           grid.setSandHeight(x, z, newSand)
           grid.setSediment(x, z, sediment + erode)
         } else if (sediment > capacity) {
-          const deposit = Math.min((sediment - capacity) * DEPOSITION_K * dt, sediment)
+          const deposit = Math.min((sediment - capacity) * DEPOSITION_K * dt, sediment, MAX_BED_RATE * dt)
           newSand = sand + deposit
           grid.setSandHeight(x, z, newSand)
           grid.setSediment(x, z, sediment - deposit)

@@ -91,16 +91,17 @@
   to exceed its stated job. Bisect rather than guess — turning tide/stream/slope/erosion on one at a
   time found the real culprit in one run, after two wrong hypotheses.
 
-### Erosion can destabilise the water sim, and the knob has a stability ceiling
+### Erosion can destabilise the water sim
 - **Context**: choosing `EROSION_K` once the sea was open.
 - **Issue**: it is not just a taste knob. Bisected on the open sea, tide, stream and slope are all
   stable indefinitely; only erosion blows the sim up — 0.5 at 122s, 0.25 at 147s, 0.1 stable past
-  600s. Likely mechanism: erosion drops the bed by up to `capacity·dt` in a step, a step change in
-  `H = b + w` that injects grid-scale energy. Deep water has no Manning drag to dissipate it, and
-  grid-scale noise has near-zero group velocity in a staggered scheme so it never reaches the sponge
-  either — it accumulates, raising velocity, raising erosion.
-- **Solution**: `EROSION_K = 0.1` for now, forced rather than chosen. The real fix is a mechanism
-  (rate-limit bed change per step, or a small interior dissipation to kill grid noise), not a number.
+  600s.
+- **Mechanism** (settled at Step 9; the guess recorded here first — grid-scale noise — was wrong, see
+  *Diagnose location and structure before choosing a mechanism*): the stream incises its own channel.
+  Scour deepens it, the channel speeds the water, the faster water scours harder. Moving the bed is a
+  step change in `H = b + w`, so an unbounded scour rate keeps shoving the sim.
+- **Solution**: `MAX_BED_RATE`, capping how far the bed may move per step — a mechanism, not a
+  number. `EROSION_K` is a free knob again.
 - **Tell**: "smaller value survives longer" is the signature of a slow fuse, not a fix — 10 blew up
   at 25s and 1 at 240s. A genuine threshold looks different: 0.25 fails at 147s while 0.1 survives
   600s+, i.e. a discontinuity, not a scaling.
@@ -124,7 +125,41 @@
 - **Solution**: launch a smooth `cos²` hump ~24 cells wide. Narrow spectrum, travels as a coherent
   packet, background drops to ~0.0003 and the reflection becomes unambiguous.
 
+### A failure proxy can be wrong about what failure even is
+- **Context**: `maxFlux > 100` was used to decide whether erosion had destabilised the sim.
+- **Issue**: it conflated two unrelated things. A stream carving a deep channel reaches high flux and
+  is *working as intended*; a sea tearing itself apart is a failure. Chasing the proxy produced
+  "blew up at 296s" for a run whose flux was 26/18/42 at the samples either side — a transient spike,
+  not a divergence — and pointed the diagnosis at the sea when all 98 high-flux cells were on the
+  beach.
+- **Solution**: state the failure in terms of the thing you actually care about. Here: does the *sea
+  surface* depart from where the swell says it should be, and is there NaN or negative water. That
+  criterion separates "vigorous stream" from "sea destroyed" cleanly.
+
+### Diagnose location and structure before choosing a mechanism
+- **Context**: erosion destabilising the sim. Three hypotheses in a row were wrong: grid-scale noise
+  (Step 6), then "the sponge fixes it so it must be sloshing" (Step 7), then a vague sea instability.
+- **Issue**: each was reasoned from behaviour at a distance rather than measured. Grid noise was
+  refuted by the sponge helping at all — noise with near-zero group velocity never reaches a
+  boundary — but that refutation took a whole step to notice.
+- **Solution**: one probe printing *where* the high flux was, and the *sign pattern* around it,
+  answered it immediately: all of it on the beach, at z < 179, coherent rather than checkerboard. It
+  was the stream incising its own channel. Ten minutes of measurement would have saved three steps of
+  theorising.
+
 ## Patterns That Worked
+
+### Cap the mechanism, not the knob
+- **What**: erosion could destabilise the sim, and `EROSION_K` was being held at 0.1 to contain it —
+  a knob doing a mechanism's job, and one that got taken back every time the sim gained energy.
+  `MAX_BED_RATE` caps how far the bed may move per step instead.
+- **Why it works**: the velocity distribution is heavily skewed (p50 = 0.02, p90 = 0.6, p100 = 8), so
+  the feedback is driven by a thin tail while the bulk is harmless. Capping the rate clips the tail
+  and leaves the bulk, which decouples stability from the knob entirely: sea error 1.36 / 1.24 / 1.20
+  at `EROSION_K` = 0.5 / 2.0 / 5.0, all intact, erosion still scaling 9.1% / 23.8% / 33.8%.
+- **The tell that a knob is doing a mechanism's job**: its safe value keeps shrinking as the system
+  improves. 0.5 → 0.1 at Step 6, still 0.1 after the sponge, still 0.1 after the swell. A knob that
+  has to be re-lowered every time something else gets better is holding back a missing mechanism.
 
 ### Verify a physics change against an independent analytical law
 - **What**: Step 5's payoff was checked against Green's law (`A ∝ h^(-1/4)` for a shoaling wave),
