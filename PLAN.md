@@ -98,45 +98,79 @@ unconditionally stable and cannot flip the flux's sign, which an explicit drag t
 > `waterSim.test.ts`'s `flow does not overshoot into a strong reversal while settling` asserts
 > `getFlowX > -1.4`. That threshold is tuned to `DAMPING = 0.95` and will need re-deriving here.
 
-### Step 6: The sea interior is simulated; only the outer boundary row is held
+### Step 6: The sea interior is simulated, and the surge injection goes with it
 
-**Test**: place a bump mid-sea (z = 230) and step; assert it survives. Currently `Waves.step` resets
-every cell from `seaStart + 4` outward → annihilated → RED.
-**Implementation**: hold only the outermost row(s) at the target elevation; let everything inshore of
-it flow.
-**Done when**: disturbances propagate across the sea; the sea still settles flat at rest.
+**Revised mid-flight (approved).** Originally "hold only the outer boundary row", with the surge
+removed at Step 9. That ordering does not work: the old pin was not merely reflecting the surge, it
+was **deleting its water every tick**, resetting everything from `seaStart + 4` outward. With an open
+sea the surge's ~10,240 units per period have nowhere to go and the sea is destroyed (maxFlux 373,
+surface swinging −16 to +26). Shrinking the surge only postpones it — height 10 blows up at ~25s,
+height 1 at ~240s — because the real problem is that the sea has **no energy sink at all**: Manning
+is negligible at depth 20 and the boundary reflects, so any periodic forcing accumulates without
+bound. Measured: tide-only is stable past 300s (maxFlux 4–15, sea flat, water cycling cleanly with
+the tide).
 
-> The tide now enters through the boundary rather than by fiat, which is physically right. The sea
-> takes ~4 s to equilibrate (56 rows at `c ≈ 14` cells/s) against a 180 s tide period — comfortable.
-> Expect a startup transient as the sea settles.
+**Test**: place a bump mid-sea (z = 230) and step; assert it survives. Currently annihilated → RED.
+Delete the surge's own tests along with the surge.
+**Implementation**: hold only the outermost row at the target elevation. Delete `SURGE_HEIGHT`,
+`SURGE_ROWS` and the injection loop. `seaZ` falls out of `Waves.step`'s signature with them.
+**Done when**: disturbances propagate across the sea; the sea settles flat and tracks the tide by
+filling and draining through the boundary.
 
-### Step 7: The boundary row is driven by a swell oscillator
+> Keeps `timeUntilWave` / `fired` ticking so `WaveAudio` and the HUD countdown stay wired. For two
+> steps that means a wave sound with no wave — odd, but Step 8 gives it a real trigger and it avoids
+> tearing out and re-adding the wiring. This is the interim answer to open question 2.
+
+### Step 7: A sponge layer absorbs outgoing waves
+
+**Moved ahead of the swell oscillator.** It was Step 8, on the assumption it was polish. It is not:
+it is the energy sink the whole open-sea design depends on, and driving swell into a sea without one
+would blow up exactly as the surge does.
+
+**Test**: send a wave seaward; assert its reflected amplitude is attenuated below a threshold. This
+is testable without the swell driver — fire a bump at the boundary and watch what returns.
+**Implementation**: graded flux damping over the outermost N rows, blending to zero at the interior
+edge.
+**Done when**: a wave sent at the boundary is absorbed rather than returning; the sea stays calm
+under sustained forcing.
+
+### Step 8: The boundary row is driven by a swell oscillator
 
 **Test**: assert the boundary elevation oscillates at the configured period/amplitude, and that an
 interior cell several rows inshore oscillates too, phase-lagged. RED: currently static.
 **Implementation**: drive the held row at `H = seaLevel + A·sin(2πt/T)`. A single sinusoid first; a
 Gerstner sum (`WATER_SIM_OPTIONS.md` §5 option D) is a later refinement if one sinusoid reads too
-regular.
+regular. Retie `fired` to the swell period so `WaveAudio` and the HUD countdown mean something
+again — the real answer to open question 2.
 **Done when**: waves visibly travel in from deep water, shoal, and run up the beach.
 
-### Step 8: A sponge layer absorbs outgoing waves
+### Step 9: Make erosion stable enough to tune, then tune it against real swell
 
-**Test**: send a wave seaward; assert its reflected amplitude is attenuated below a threshold.
-**Implementation**: graded flux damping over the outermost N rows, blending to zero at the interior
-edge.
-**Done when**: backwash leaves the domain instead of bouncing off the driven boundary and resonating.
+**Scope grew at Step 6.** This was going to be a knob turn. It is not: erosion can *destabilise the
+sim*. Measured on the open sea, with everything else held constant — tide, stream and slope are all
+stable indefinitely, and only erosion blows the sim up: `EROSION_K = 0.5` at 122s, `0.25` at 147s,
+`0.1` stable past 600s. That is a genuine stability threshold somewhere in (0.1, 0.25), not a slow
+fuse.
 
-> Not optional. A driven boundary without a sponge reflects the backwash straight back in.
+The likely mechanism is a feedback loop with no brake. Erosion drops the bed by up to
+`capacity·dt` in a single step, which is a step change in `H = b + w`, which injects grid-scale
+energy. Deep water has essentially no Manning drag to dissipate it, and grid-scale noise has near-zero
+group velocity in a staggered scheme, so it does not propagate to the sponge either — it sits and
+accumulates, driving velocity up, which drives erosion up.
 
-### Step 9: Remove the surge injection
+`EROSION_K = 0.1` is therefore forced for now (1.9% suspended at 120s, plateauing), overriding the
+0.5 chosen at Step 4 — 0.5 is not a preference that is available.
 
-**Test**: existing surge tests are deleted; assert wave arrival at the beach still occurs, now via
-the boundary.
-**Implementation**: delete `SURGE_HEIGHT` / `SURGE_ROWS` and the injection loop.
-**Done when**: `Waves` is a boundary condition, not a teleporter, and the beach still gets waves.
+**Expect the swell to lower the threshold further**, since it adds energy. So this step likely needs
+a *mechanism*, not a number: rate-limit how far the bed may move per step, or add a small interior
+dissipation that kills grid-scale noise while leaving physical waves alone (a residual linear damping
+of ~0.999/step costs a wave ~11% over a 4s crossing and would kill accumulating noise over ~1000
+steps). Decide once the swell is in and the real forcing is visible.
 
-> Blocked on the open question below — `waves.fired` currently drives both `WaveAudio` and the HUD
-> countdown, and continuous swell has no discrete "fire" event.
+**Test**: a mechanism needs one — e.g. erosion cannot move the bed more than X per step. Tuning does
+not.
+**Done when**: the shore visibly reshapes over minutes without dissolving, the sand budget plateaus,
+and erosion cannot destabilise the sim at any setting a player could reach.
 
 ## Then stop and reassess
 

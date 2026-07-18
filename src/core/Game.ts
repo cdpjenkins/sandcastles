@@ -20,7 +20,6 @@ const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
 const BUCKET_CAPACITY = 100
 const STREAM_RATE = 3.0
-const WAVE_SEA_OFFSET = 4
 
 export class Game {
   private readonly grid: Grid
@@ -219,7 +218,7 @@ export class Game {
   private simStep(dt: number): void {
     this.tide.step(dt)
     const seaSurface = this.grid.seaLevel + this.tide.offset
-    const wavesDirty = this.waves.step(this.grid, dt, this.grid.seaStart + WAVE_SEA_OFFSET, seaSurface)
+    const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)

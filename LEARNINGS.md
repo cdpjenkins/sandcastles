@@ -79,6 +79,32 @@
   dissipation is modelled. When a test breaks every time you improve the model, the test is probably
   describing the model's flaws rather than its behaviour.
 
+### Removing a crutch reveals what else was leaning on it
+- **Context**: the old `Waves` pinned everything from `seaStart + 4` outward to sea level every tick.
+  It read as a boundary condition. It was also, silently, a **mass sink** — it deleted the surge's
+  ~10,240 units per period, and an energy sink, since it erased anything that reached it.
+- **Issue**: Step 6 unpinned the sea and three separate things fell over that had been quietly
+  depending on the pin: the surge (its water now had nowhere to go), the absence of any energy sink
+  (any periodic forcing accumulates without bound), and erosion (see below). None of these were
+  visible while the pin was deleting the evidence.
+- **Solution**: when removing something that has been in place a long time, expect the blast radius
+  to exceed its stated job. Bisect rather than guess — turning tide/stream/slope/erosion on one at a
+  time found the real culprit in one run, after two wrong hypotheses.
+
+### Erosion can destabilise the water sim, and the knob has a stability ceiling
+- **Context**: choosing `EROSION_K` once the sea was open.
+- **Issue**: it is not just a taste knob. Bisected on the open sea, tide, stream and slope are all
+  stable indefinitely; only erosion blows the sim up — 0.5 at 122s, 0.25 at 147s, 0.1 stable past
+  600s. Likely mechanism: erosion drops the bed by up to `capacity·dt` in a step, a step change in
+  `H = b + w` that injects grid-scale energy. Deep water has no Manning drag to dissipate it, and
+  grid-scale noise has near-zero group velocity in a staggered scheme so it never reaches the sponge
+  either — it accumulates, raising velocity, raising erosion.
+- **Solution**: `EROSION_K = 0.1` for now, forced rather than chosen. The real fix is a mechanism
+  (rate-limit bed change per step, or a small interior dissipation to kill grid noise), not a number.
+- **Tell**: "smaller value survives longer" is the signature of a slow fuse, not a fix — 10 blew up
+  at 25s and 1 at 240s. A genuine threshold looks different: 0.25 fails at 147s while 0.1 survives
+  600s+, i.e. a discontinuity, not a scaling.
+
 ## Patterns That Worked
 
 ### Verify a physics change against an independent analytical law

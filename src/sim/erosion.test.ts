@@ -14,20 +14,29 @@ const makeScene = (w = 4, d = 1) => {
 }
 
 describe('Erosion', () => {
-  it('fast-flowing cell loses a non-negligible amount of sand within a second', () => {
-    // A loose floor, deliberately: the exact rate is set by EROSION_K, which is a
-    // game knob and due another pass once real waves arrive.  This catches
-    // erosion being off or broken without pinning the knob to today's value.
-    const { grid, waterSim, erosion } = makeScene()
-    grid.setSandHeight(0, 0, 5)
-    grid.setWaterHeight(0, 0, 3)
+  it('erodes under moving water but leaves still water alone', () => {
+    // Stated as a comparison rather than an amount.  How much a given scene
+    // erodes is set by EROSION_K, a knob that has already moved twice and will
+    // move again; that erosion happens at all under flow and never without it is
+    // true at any setting above zero.
+    const erodedWhere = (still: boolean): number => {
+      const { grid, waterSim, erosion } = makeScene()
+      for (let x = 0; x < 4; x++) {
+        grid.setSandHeight(x, 0, 5)
+        if (still) grid.setWaterHeight(x, 0, 3)
+      }
+      if (!still) grid.setWaterHeight(0, 0, 3)
 
-    for (let i = 0; i < 30; i++) {
-      waterSim.step(grid, DT)
-      erosion.step(grid, waterSim, DT)
+      for (let i = 0; i < 30; i++) {
+        waterSim.step(grid, DT)
+        erosion.step(grid, waterSim, DT)
+      }
+
+      return 5 - grid.getSandHeight(0, 0)!
     }
 
-    expect(grid.getSandHeight(0, 0)!).toBeLessThan(4.95)
+    expect(erodedWhere(false)).toBeGreaterThan(erodedWhere(true))
+    expect(erodedWhere(true)).toBeCloseTo(0)
   })
 
   it('cell with sediment above capacity deposits sand', () => {

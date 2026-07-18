@@ -1,8 +1,7 @@
 import type { Grid } from '../core/Grid.ts'
 
 const PERIOD = 20
-const SURGE_HEIGHT = 10
-const SURGE_ROWS = 4
+const BOUNDARY_ROWS = 1
 const DIRTY_EPSILON = 1e-4
 
 export class Waves {
@@ -18,29 +17,23 @@ export class Waves {
     this.dirty = new Uint8Array(width * depth)
   }
 
-  step(grid: Grid, dt: number, seaZ: number, seaSurface: number): Uint8Array {
+  step(grid: Grid, dt: number, seaSurface: number): Uint8Array {
     this.fired = false
     this.timeUntilWave -= dt
     this.dirty.fill(0)
 
-    const W = grid.width
-    const D = grid.depth
-
     if (this.timeUntilWave <= 0) {
       this.fired = true
       this.timeUntilWave = PERIOD
-      for (let row = 0; row < SURGE_ROWS; row++) {
-        const z = seaZ - 1 - row
-        if (z < 0) continue
-        for (let x = 0; x < W; x++) {
-          const w = grid.getWaterHeight(x, z) ?? 0
-          grid.setWaterHeight(x, z, w + SURGE_HEIGHT)
-          this.dirty[z * this.width + x] = 1
-        }
-      }
     }
 
-    for (let z = seaZ; z < D; z++) {
+    const W = grid.width
+    const D = grid.depth
+
+    // Hold only the outermost rows, as an open boundary the sea flows through.
+    // Everything inshore of them is simulated, so waves can travel and the tide
+    // arrives by filling and draining rather than by fiat.
+    for (let z = D - BOUNDARY_ROWS; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const bed = grid.getSurfaceHeight(x, z) ?? 0
         const target = Math.max(0, seaSurface - bed)
