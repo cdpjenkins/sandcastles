@@ -67,15 +67,18 @@ const angleTangentsAt = (zs: number[], seconds: number, skip: number): number[] 
 }
 
 describe('Swell', () => {
+  // Both floors are deliberately far below any sensible swell: SWELL_AMPLITUDE is
+  // a game knob and has already moved once. These catch the driver being
+  // disconnected or silent, not a particular wave size.
   it('drives the boundary row up and down', () => {
-    expect(rangeAt(255, 12, 2)).toBeGreaterThan(0.5)
+    expect(rangeAt(255, 12, 2)).toBeGreaterThan(0.1)
   })
 
   it('sends swell travelling inshore, well past the sponge', () => {
     // The sponge occupies the outermost 12 rows (z >= 244).  A cell at z = 210
     // is 34 rows clear of it, so anything moving there arrived under its own
     // steam rather than being imposed.
-    expect(rangeAt(210, 20, 8)).toBeGreaterThan(0.2)
+    expect(rangeAt(210, 20, 8)).toBeGreaterThan(0.1)
   })
 
   it('turns the swell toward the shore as it shallows', () => {

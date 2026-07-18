@@ -5,7 +5,7 @@ import type { Grid } from '../core/Grid.ts'
 // against a 56-row sea -- under one -- and Snell, which assumes depth varies
 // slowly over a wavelength, simply did not apply. Nothing bent.
 const SWELL_PERIOD = 2.0
-const SWELL_AMPLITUDE = 0.5
+const SWELL_AMPLITUDE = 0.3
 // Celerity at the boundary depth, sqrt(9.8 * 20). Only sets the phase ramp
 // across the sponge; once inshore the sim carries the wave at its own sqrt(g*h).
 const SWELL_SPEED = 14
