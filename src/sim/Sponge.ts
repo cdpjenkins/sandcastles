@@ -14,14 +14,14 @@ export class Sponge {
     this.dirty = new Uint8Array(width * depth)
   }
 
-  // targetAt gives the surface elevation the sponge should relax row z toward. Passing
+  // targetAt gives the surface elevation the sponge should relax a cell toward. Passing
   // the incident swell rather than a flat sea is what lets one boundary both generate
   // and absorb: only departures from the wave we asked for get damped.
   step(
     grid: Grid,
     waterSim: WaterSim,
     dt: number,
-    targetAt: (z: number) => number,
+    targetAt: (x: number, z: number) => number,
   ): Uint8Array {
     const D = grid.depth
     const W = grid.width
@@ -34,9 +34,9 @@ export class Sponge {
       // a discontinuity for waves to reflect off.
       const t = (row + 1) / SPONGE_ROWS
       const k = Math.min(1, t * t * SPONGE_STRENGTH * dt)
-      const surface = targetAt(z)
 
       for (let x = 0; x < W; x++) {
+        const surface = targetAt(x, z)
         // Damping the flux alone only takes the wave's momentum; its surface
         // anomaly still carries the energy back out. Relax both.
         const bed = grid.getSurfaceHeight(x, z) ?? 0

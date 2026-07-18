@@ -15,11 +15,9 @@ runs up and washes back — instead of being teleported in four rows from shore.
       3/4/6/10/14 cells/s at depths 1/2/5/10/20 vs 3.13/4.43/7.00/9.90/14.00
 - [x] A wave launched at the deep boundary arrives at the beach with usable amplitude — Steps 5, 8;
       range 0.701 at depth 13.4 growing to 1.207 at depth 2.62, per Green's law
-- [ ] **Crests visibly refract toward shore-parallel as they cross the sloping floor — NOT MET.** The
-      physics is present and verified (`c = √(g·h)`), but `Waves.surfaceAt(z)` has no `x` term, so
-      the swell arrives with crests already shore-parallel and nothing refracts. Needs oblique swell:
-      an `x` term in the phase, and a per-*cell* sponge target rather than the per-row one. A small
-      step 10, not a gap in the model.
+- [x] Crests visibly refract toward shore-parallel as they cross the sloping floor — Step 10; the
+      angle closes 32.5° → 19.1° between z=250 and z=210, against Snell's 32.5° → 16.7°. Needed the
+      swell period shortened to 2s: see below.
 - [x] Run-up and backwash are visible on the beach — Step 8; swash edge swings z=135..168, 33 rows
 - [x] `Erosion` is driven by true velocity (`flux/depth`) — Step 4
 - [x] Volume is still conserved where it should be, and the sim is still unconditionally robust —
@@ -212,6 +210,40 @@ and erosion cannot destabilise the sim at any setting a player could reach.
 > incising its channel: scour deepens it, the channel speeds the water, the water scours harder.
 > `maxFlux > 100` was also a poor failure proxy — a fast stream in a deep gorge is not a blowup. The
 > criterion that discriminates is whether the *sea* departs from where the swell says it should be.
+
+### Step 10: The swell arrives at an angle, so it can refract
+
+Added after Step 9. The one acceptance criterion left unmet, and the last visible piece of the
+original goal.
+
+`c = √(g·h)` is verified, so Snell's law is already emergent — `sinθ/c` is conserved, and a wave
+slowing over the shallows must turn toward the shore-normal. Nothing bends today only because
+`Waves.surfaceAt(z)` has no `x` term: the swell arrives with crests already shore-parallel, so there
+is no obliquity to refract.
+
+**Test**: RMS(`flowX`)/RMS(`flowZ`) over a swell period is the tangent of the wave's angle from the
+shore-normal. Assert it is smaller in shallow water than deep — the wave has turned. A comparison,
+so it holds at any angle. RED: straight swell gives ~0 at both depths.
+**Implementation**: `surfaceAt(x, z)` with `phase = ωt + k·cosθ·(z − zB) − k·sinθ·x`. `Sponge.step`'s
+target callback goes per-cell rather than per-row.
+**Done when**: the wave's angle measurably decreases as it shallows, tracking Snell.
+
+> **The wavelength has to fit the sea, and at first it did not.** Snell assumes depth varies slowly
+> over a wavelength. At the 5s swell period the wavelength was `c·T` = 70 cells against a 56-row sea —
+> under one — and nothing bent: the angle read 29.8° → 27.3° where Snell wanted 30° → 16.3°.
+> Shortening the period to 2s (28-cell wavelength, ~2 across the sea) makes it work: 32.5° → 19.1° vs
+> Snell's 32.5° → 16.7°. At 1.2s it degenerates again, reading 60° in the shallows.
+>
+> Cost of the 2s period: waves arrive every 2s, so `WaveAudio` and the HUD countdown fire 2.5x as
+> often as at 5s. Chosen deliberately over losing refraction.
+
+> **Inside about z=210 the angle cannot be measured.** The surf zone and the beach's own x-roughness
+> swamp the wave's direction — a zero-angle control still reads 7° there. Read the angle seaward of
+> that.
+
+> **Watch the x-walls.** The domain is closed at x=0 and x=255, and an oblique wave will reflect off
+> them. Most of its energy goes shoreward and dies in the swash, but if cross-waves show up, that is
+> why.
 
 ## Then stop and reassess
 

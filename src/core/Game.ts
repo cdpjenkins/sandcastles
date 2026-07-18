@@ -20,7 +20,7 @@ import type { GridCoord } from '../types.ts'
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
 const BUCKET_CAPACITY = 100
-const STREAM_RATE = 3.0
+const STREAM_RATE = 0.1
 
 export class Game {
   private readonly grid: Grid
@@ -224,8 +224,8 @@ export class Game {
     const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
-    const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (z) =>
-      this.waves.surfaceAt(z, seaSurface))
+    const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (x, z) =>
+      this.waves.surfaceAt(x, z, seaSurface))
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)
     const slopeDirty = this.slope.step(this.grid)

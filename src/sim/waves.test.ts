@@ -115,7 +115,7 @@ describe('Waves on the real beach', () => {
     waves.step(grid, DT, grid.seaLevel)
 
     const surface = grid.getSurfaceHeight(x, z)! + grid.getWaterHeight(x, z)!
-    expect(surface).toBeCloseTo(waves.surfaceAt(z, grid.seaLevel), 5)
+    expect(surface).toBeCloseTo(waves.surfaceAt(x, z, grid.seaLevel), 5)
   })
 
   it('leaves the sea surface flat at seaLevel inshore of the boundary', () => {

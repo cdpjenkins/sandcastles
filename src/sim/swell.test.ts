@@ -28,7 +28,7 @@ const rangeAt = (z: number, seconds: number, skip: number): number => {
   for (let i = 0; i < 30 * seconds; i++) {
     waves.step(grid, DT, grid.seaLevel)
     sim.step(grid, DT)
-    sponge.step(grid, sim, DT, (zz) => waves.surfaceAt(zz, grid.seaLevel))
+    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(xx, zz, grid.seaLevel))
     if (i >= 30 * skip) {
       const s = surfaceAt(grid, z)
       min = Math.min(min, s)
@@ -36,6 +36,34 @@ const rangeAt = (z: number, seconds: number, skip: number): number => {
     }
   }
   return max - min
+}
+
+// RMS(flowX)/RMS(flowZ) over a swell period is the tangent of the wave's angle
+// away from the shore-normal: a wave running straight at the beach has no x-flow
+// at all, and one at 45 degrees has equal parts of each.  Both rows come from a
+// single run -- two sims would double an already slow test.
+const angleTangentsAt = (zs: number[], seconds: number, skip: number): number[] => {
+  const grid = beach()
+  const waves = new Waves(grid.width, grid.depth)
+  const sim = new WaterSim(grid.width, grid.depth)
+  const sponge = new Sponge(grid.width, grid.depth)
+
+  const sumX = zs.map(() => 0)
+  const sumZ = zs.map(() => 0)
+  for (let i = 0; i < 30 * seconds; i++) {
+    waves.step(grid, DT, grid.seaLevel)
+    sim.step(grid, DT)
+    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(xx, zz, grid.seaLevel))
+    if (i < 30 * skip) continue
+    zs.forEach((z, j) => {
+      // Sample away from the x-walls, which reflect an oblique wave.
+      for (let x = 64; x < 192; x += 8) {
+        sumX[j]! += sim.getFlowX(x, z) ** 2
+        sumZ[j]! += sim.getFlowZ(x, z) ** 2
+      }
+    })
+  }
+  return zs.map((_, j) => Math.sqrt(sumX[j]!) / Math.sqrt(sumZ[j]!))
 }
 
 describe('Swell', () => {
@@ -48,5 +76,16 @@ describe('Swell', () => {
     // is 34 rows clear of it, so anything moving there arrived under its own
     // steam rather than being imposed.
     expect(rangeAt(210, 20, 8)).toBeGreaterThan(0.2)
+  })
+
+  it('turns the swell toward the shore as it shallows', () => {
+    // Snell's law falls out of c = sqrt(g*h): sin(theta)/c is conserved, so a
+    // wave slowing over the shallows must swing toward the shore-normal.  z=240
+    // sits in ~17 units of water, z=210 in ~6.  Both are read well seaward of the
+    // surf zone: inside about z=210 the swash and the beach's own x-roughness
+    // swamp the wave's direction, and even square-on swell reads 7 degrees there.
+    const [deep, shallow] = angleTangentsAt([240, 210], 20, 10)
+
+    expect(shallow!).toBeLessThan(deep!)
   })
 })

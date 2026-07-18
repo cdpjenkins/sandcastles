@@ -147,6 +147,29 @@
   was the stream incising its own channel. Ten minutes of measurement would have saved three steps of
   theorising.
 
+### Refraction needs the wavelength to fit the geometry, not just the right physics
+- **Context**: `c = √(g·h)` was verified at Step 3, so Snell's law is emergent and crests *should*
+  bend. Step 10 gave the swell a 30° angle so there was something to bend. Nothing bent.
+- **Issue**: Snell assumes depth varies slowly over a wavelength. At the 5s swell period the
+  wavelength was `c·T` = 70 cells while the whole sea is 56 rows — the depth collapses from 22 to 2
+  in under one wavelength, so the approximation never applied. The physics was right and the geometry
+  made it unobservable.
+- **Solution**: shorten the period to 2s (28-cell wavelength, ~2 across the sea): 32.5° → 19.1°
+  against Snell's 32.5° → 16.7°. Going further, to 1.2s, degenerates again — the shallows read 60°
+  once the wavelength approaches the cell size.
+- **Generally**: "the physics is implemented" and "the phenomenon is visible" are different claims.
+  A model can be correct and still have no room to show a given effect.
+
+### A probe left on an old signature reports catastrophe
+- **Context**: after `surfaceAt(z)` became `surfaceAt(x, z)`, a scratch stability probe still called
+  the two-argument form. It reported NaN across 2.2M cells — the sim apparently destroyed.
+- **Issue**: `surfaceAt(z, seaSurface)` against the new signature binds `seaSurface` to `z` and leaves
+  the third parameter undefined. NaN in, NaN out. Nearly acted on it as a real regression.
+- **Tell**: **identical results across configurations that should differ.** All four period/angle
+  combinations returned exactly 2193344 NaN and 99.9% sand — including one that had shipped green a
+  commit earlier. Identical output from different inputs means you are measuring your harness, not
+  your system.
+
 ## Patterns That Worked
 
 ### Cap the mechanism, not the knob
@@ -226,6 +249,29 @@
 ## Gotchas
 
 (none yet)
+
+### Refraction needs the wavelength to fit the geometry, not just the right physics
+- **Context**: `c = √(g·h)` was verified at Step 3, so Snell's law is emergent and crests *should*
+  bend. Step 10 gave the swell a 30° angle so there was something to bend. Nothing bent.
+- **Issue**: Snell assumes depth varies slowly over a wavelength. At the 5s swell period the
+  wavelength was `c·T` = 70 cells while the whole sea is 56 rows — the depth collapses from 22 to 2
+  in under one wavelength, so the approximation never applied. The physics was right and the geometry
+  made it unobservable.
+- **Solution**: shorten the period to 2s (28-cell wavelength, ~2 across the sea): 32.5° → 19.1°
+  against Snell's 32.5° → 16.7°. Going further, to 1.2s, degenerates again — the shallows read 60°
+  once the wavelength approaches the cell size.
+- **Generally**: "the physics is implemented" and "the phenomenon is visible" are different claims.
+  A model can be correct and still have no room to show a given effect.
+
+### A probe left on an old signature reports catastrophe
+- **Context**: after `surfaceAt(z)` became `surfaceAt(x, z)`, a scratch stability probe still called
+  the two-argument form. It reported NaN across 2.2M cells — the sim apparently destroyed.
+- **Issue**: `surfaceAt(z, seaSurface)` against the new signature binds `seaSurface` to `z` and leaves
+  the third parameter undefined. NaN in, NaN out. Nearly acted on it as a real regression.
+- **Tell**: **identical results across configurations that should differ.** All four period/angle
+  combinations returned exactly 2193344 NaN and 99.9% sand — including one that had shipped green a
+  commit earlier. Identical output from different inputs means you are measuring your harness, not
+  your system.
 
 ## Patterns That Worked
 
