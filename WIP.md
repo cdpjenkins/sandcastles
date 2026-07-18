@@ -2,41 +2,45 @@
 
 ## Current Step
 
-Step 3 of 9: The pressure term is depth-weighted
+Step 4 of 9: `getVelocity` returns true velocity rather than flux
 
 ## Status
 
 ⏸️ WAITING - Awaiting commit approval
 
-Test added to `waterSim.test.ts`: a disturbance travels further in deeper water (probe 2 from
-WATER_SIM_OPTIONS.md, promoted). RED at `expected 8 to be greater than 8` — depths 5 and 20 spread
-identically, the analysis doc's central finding reproduced.
+Two tests added: `a shallower cell reports a higher velocity for the same flux` (RED at 0.475 vs
+0.475) and `a thin sheet scours more than a deep pool carrying the same flux` (verified RED against
+the old code by stashing WaterSim.ts — 0.0396 vs 0.0396).
 
-The pressure term is now `GRAVITY * edgeDepth * (hi - hj) * dt`, i.e. `g·h·∂H/∂x`. Two insertions of
-`edgeDepth *`; Step 2 had already named the quantity and cleared the flux cap that would have
-throttled it.
+`getVelocity` now returns `meanFlux / depth`, clamped to `MAX_VELOCITY`. The clamp is needed because
+at a wetting front the flux belongs to an edge shared with a far deeper neighbour, so dividing by
+this cell's depth overshot to 130.9 where the solver permits 8. Now p100 = 8.000 exactly, zero cells
+above it.
 
-191 tests pass, `tsc --noEmit` clean. All pre-existing tests still pass.
+**Plan deviation, approved:** `EROSION_K` recalibrated 2.5 → 0.5. Step 4 changed the *units* of what
+`Erosion` is fed, so the constant scaling it was silently invalidated: at 2.5 the beach dissolved to
+31.5% suspended in 2 minutes. Note my first instinct — match Step 3's 99% equilibrium — was wrong:
+under flux-as-velocity the beach's p50 velocity was 0.000 and the only fast water was in the
+sand-free sea, so that equilibrium *was* "erosion barely happening". Reproducing it would have
+defeated the step. See LEARNINGS.md. User chose 0.5 (6.9% suspended at 120s) from measured options;
+final tuning deferred to after Step 7, when real waves make the forcing realistic.
 
-**Celerity confirmed as `sqrt(g*h)`** by crest tracking: 3/4/6/10/14 cells/s at depths 1/2/5/10/20,
-against predictions of 3.13/4.43/7.00/9.90/14.00 (integers are cell-position quantisation, ±1
-cell/s). First attempt measured ~40% high at every depth — that was threshold detection catching the
-numerical precursor, not a physics error; see LEARNINGS.md.
+Merged `fast-flowing cell loses sand over time` and `fast-flowing cell loses more than a fifth...` —
+identical scenes differing only in threshold, and the tighter one pinned `EROSION_K` to 2.5. Now one
+test with a loose floor (< 4.95) that catches erosion being off without locking the knob.
 
-Stability over 180s of the full sim (one tide period, 9 surges): zero NaN, zero negative water on
-every tick. Flux spikes to ~28 on surge ticks and decays to ~1.1 within 5s. Tide correct: sea at
-1.200 at t=135s and 2.800 at t=45s, matching 2.0 ± 0.8. Erosion reaches a dynamic equilibrium at
-99.0% of initial sand rather than running away.
+192 tests pass, `tsc --noEmit` clean. Mass conservation verified exact: sand + sediment = 144504 on
+every tick across 120s.
 
-Refactor assessed: nothing to restructure — the pressure term now reads as the equation it
-implements.
+Refactor assessed: dropped a provenance comment on `EROSION_K` (belongs in the commit message);
+trimmed the clamp comment to the constraint it needs to state.
 
 ## Completed
 
 - [x] Step 1: Sea held at constant elevation, not constant depth (`c8c4f5b`)
 - [x] Step 2: Flux limit becomes a velocity limit (`a46e80b`)
-- [ ] Step 3: Pressure term depth-weighted ← current, awaiting approval
-- [ ] Step 4: `getVelocity` returns true velocity
+- [x] Step 3: Pressure term depth-weighted (`65ec0ab`)
+- [ ] Step 4: `getVelocity` returns true velocity ← current, awaiting approval
 - [ ] Step 5: Depth-dependent drag replaces flat `DAMPING`
 - [ ] Step 6: Sea interior simulated; only outer boundary held
 - [ ] Step 7: Boundary row driven by a swell oscillator
@@ -49,10 +53,9 @@ None.
 
 ## Next Action
 
-Awaiting commit approval for Step 3. Then Step 4: `getVelocity` returns `flux / depth` — now
-meaningful, since flux genuinely is `h·u`.
+Awaiting commit approval for Step 4. Then Step 5: Manning drag replaces the flat `DAMPING` — the
+step that finally makes Steps 3–5 visible, since waves still die in ~1s.
 
-Note for Step 5: in-game shoaling and refraction are physically present but not yet *visible*,
-because `DAMPING = 0.95` still kills a wave in ~1s (confirmed: the crest fails threshold detection
-at all after 60 cells). Refraction follows mathematically from `c = sqrt(g*h)` over the sloped bed,
-but visual confirmation of both has to wait for Step 5.
+Carry into Step 5: `EROSION_K = 0.5` is interim, tuned against today's surge-based flow. Step 7
+replaces that with real swell, at which point the erosive forcing changes completely and the knob
+needs another pass.

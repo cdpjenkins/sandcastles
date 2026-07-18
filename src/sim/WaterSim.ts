@@ -3,6 +3,7 @@ import type { Grid } from '../core/Grid.ts'
 const GRAVITY = 9.8
 const DAMPING = 0.95
 const MAX_VELOCITY = 8.0
+const DRY_DEPTH = 1e-6
 const DIRTY_EPSILON = 1e-4
 
 export class WaterSim {
@@ -139,10 +140,16 @@ export class WaterSim {
 
         delta = -fxRight + fxLeft - fzDown + fzUp
 
-        this.velocityArr[i] = (Math.abs(fxRight) + Math.abs(fxLeft) + Math.abs(fzDown) + Math.abs(fzUp)) / 4
+        const wBefore = grid.getWaterHeight(x, z) ?? 0
+        const meanFlux =
+          (Math.abs(fxRight) + Math.abs(fxLeft) + Math.abs(fzDown) + Math.abs(fzUp)) / 4
+        // At a wetting front the flux belongs to an edge shared with a far deeper
+        // neighbour, so dividing by this cell's depth overshoots the speed the
+        // solver actually permits per edge.
+        this.velocityArr[i] =
+          wBefore > DRY_DEPTH ? Math.min(meanFlux / wBefore, MAX_VELOCITY) : 0
 
         const source = grid.getSourceRate(x, z) ?? 0
-        const wBefore = grid.getWaterHeight(x, z) ?? 0
         const wAfter = Math.max(0, wBefore + delta * dt + source * dt)
         grid.setWaterHeight(x, z, wAfter)
 

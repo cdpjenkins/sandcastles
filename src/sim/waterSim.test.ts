@@ -220,6 +220,24 @@ describe('WaterSim velocity', () => {
     const sim = new WaterSim(grid.width, grid.depth)
     expect(sim.getVelocity(0, 0)).toBe(0)
   })
+
+  it('a shallower cell reports a higher velocity for the same flux', () => {
+    // Flat water carrying a uniform flux: no surface gradient, so the flux is
+    // simply carried over.  The same flux through a thin sheet is water moving
+    // fast; through a deep column it is water barely moving at all.
+    const speedAtDepth = (depth: number): number => {
+      const grid = flatGrid(4, 1, 0)
+      for (let x = 0; x < 4; x++) grid.setWaterHeight(x, 0, depth)
+      const sim = new WaterSim(4, 1)
+      for (let x = 0; x < 3; x++) sim.setFlowX(x, 0, 1.0)
+
+      sim.step(grid, DT)
+
+      return sim.getVelocity(1, 0)
+    }
+
+    expect(speedAtDepth(1)).toBeGreaterThan(speedAtDepth(4))
+  })
 })
 
 describe('WaterSim cross-advection', () => {

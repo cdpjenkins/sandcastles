@@ -44,7 +44,37 @@
   physics error would vary with the parameter. The `sqrt(h)` *scaling* was already near-exact
   (2.06/3.09/4.20 vs 2/3/4) while the absolute value was uniformly off — that pattern was the clue.
 
+### A tuning constant silently encodes the units of whatever feeds it
+- **Context**: `EROSION_K = 2.5` scaled `getVelocity` into sediment capacity. Step 4 changed
+  `getVelocity` from a flux to a true velocity — same name, same call site, ~5x larger number.
+- **Issue**: the beach steadily dissolved into suspension (31.5% of all sand suspended after 2
+  minutes, still climbing). Nothing was broken numerically — sand + sediment stayed at 144504, exact,
+  on every tick — but the equilibrium was gone.
+- **Solution**: recalibrate the constant as part of the same change. Any constant that scales
+  another module's output is coupled to that output's *units*, not just its value, and a change of
+  units is a silent breaking change to every such constant. Grep for consumers before changing what
+  an accessor means.
+
+### 'Preserve the old behaviour' is wrong when the old behaviour was the bug
+- **Context**: picking the new `EROSION_K`. The obvious target was to restore the previous
+  equilibrium — Step 3 plateaued at 99% sand, so match that.
+- **Issue**: that reasoning was backwards. Under flux-as-velocity, the beach's velocity percentiles
+  were p50 = 0.000 and p90 = 0.113 — beach cells had almost no velocity at all. The only high values
+  (~6.8) were out in the sea, **where there is no sand**. The tidy 99% equilibrium was not erosion
+  in balance; it was erosion barely happening. Tuning to reproduce it would have restored *nothing
+  happening* and quietly defeated the whole step.
+- **Solution**: measure what the old numbers actually meant before adopting them as a target. The
+  distribution, not the aggregate, was the tell.
+
 ## Patterns That Worked
+
+### Verify a new test is RED against the old code, even mid-step
+- **What**: Step 4's implementation was already written when the erosion-level test was added, so
+  `git stash push src/sim/WaterSim.ts` → run → `git stash pop` was used to confirm it genuinely
+  failed against the old code (0.0396 vs 0.0396 — identical erosion at either depth).
+- **Why it works**: a test written after the implementation is a test that has never been seen to
+  fail, and a test that has never failed is not yet known to test anything. Stashing the one file
+  restores the RED step cheaply.
 
 ### Prefer the qualitative assertion when the quantitative one is quantisation-bound
 - **What**: Step 3's test asserts "a disturbance travels further in deeper water" rather than

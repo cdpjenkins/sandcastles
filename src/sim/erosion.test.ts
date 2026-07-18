@@ -14,7 +14,10 @@ const makeScene = (w = 4, d = 1) => {
 }
 
 describe('Erosion', () => {
-  it('fast-flowing cell loses sand over time', () => {
+  it('fast-flowing cell loses a non-negligible amount of sand within a second', () => {
+    // A loose floor, deliberately: the exact rate is set by EROSION_K, which is a
+    // game knob and due another pass once real waves arrive.  This catches
+    // erosion being off or broken without pinning the knob to today's value.
     const { grid, waterSim, erosion } = makeScene()
     grid.setSandHeight(0, 0, 5)
     grid.setWaterHeight(0, 0, 3)
@@ -24,7 +27,7 @@ describe('Erosion', () => {
       erosion.step(grid, waterSim, DT)
     }
 
-    expect(grid.getSandHeight(0, 0)!).toBeLessThan(5)
+    expect(grid.getSandHeight(0, 0)!).toBeLessThan(4.95)
   })
 
   it('cell with sediment above capacity deposits sand', () => {
@@ -52,17 +55,30 @@ describe('Erosion', () => {
     expect(grid.getRockHeight(0, 0)!).toBeCloseTo(1)
   })
 
-  it('fast-flowing cell loses more than a quarter of its sand within a second', () => {
-    const { grid, waterSim, erosion } = makeScene()
-    grid.setSandHeight(0, 0, 5)
-    grid.setWaterHeight(0, 0, 3)
+  it('a thin sheet scours more than a deep pool carrying the same flux', () => {
+    // Flat water over flat ground, given a uniform flux: no surface gradient, so
+    // the only difference between the two runs is how deep the water is.  The
+    // same flux through a thin sheet is fast-moving water and should scour hard;
+    // through a deep column it is barely moving and should not.
+    const erodedAtDepth = (depth: number): number => {
+      const w = 4
+      const grid = new Grid(w, 1)
+      for (let x = 0; x < w; x++) {
+        grid.setRockHeight(x, 0, 1)
+        grid.setSandHeight(x, 0, 5)
+        grid.setWaterHeight(x, 0, depth)
+      }
+      const waterSim = new WaterSim(w, 1)
+      const erosion = new Erosion(w, 1)
+      for (let x = 0; x < w - 1; x++) waterSim.setFlowX(x, 0, 1.0)
 
-    for (let i = 0; i < 30; i++) {
       waterSim.step(grid, DT)
       erosion.step(grid, waterSim, DT)
+
+      return 5 - grid.getSandHeight(1, 0)!
     }
 
-    expect(grid.getSandHeight(0, 0)!).toBeLessThan(3.85)
+    expect(erodedAtDepth(1)).toBeGreaterThan(erodedAtDepth(4))
   })
 
   it('cell with large sediment surplus deposits a substantial amount in one step', () => {
