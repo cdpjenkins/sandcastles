@@ -97,6 +97,32 @@ describe('WaterSim', () => {
   })
 })
 
+describe('WaterSim wave celerity', () => {
+  // Distance a 1-unit bump spreads along a flat channel of the given depth.
+  // Shallow water equations put the wave speed at sqrt(g*h), so deeper water
+  // should carry the disturbance further in the same time.
+  const spreadIn = (depth: number, seconds: number): number => {
+    const W = 200
+    const start = 20
+    const grid = flatGrid(W, 1, 0)
+    for (let x = 0; x < W; x++) grid.setWaterHeight(x, 0, depth)
+    grid.setWaterHeight(start, 0, depth + 1)
+    const sim = new WaterSim(W, 1)
+
+    for (let i = 0; i < seconds * 30; i++) sim.step(grid, DT)
+
+    for (let x = W - 1; x > start; x--) {
+      if (Math.abs((grid.getWaterHeight(x, 0) ?? 0) - depth) > 1e-3) return x - start
+    }
+    return 0
+  }
+
+  it('a disturbance travels further in deeper water', () => {
+    expect(spreadIn(20, 2)).toBeGreaterThan(spreadIn(5, 2))
+    expect(spreadIn(5, 2)).toBeGreaterThan(spreadIn(1, 2))
+  })
+})
+
 describe('WaterSim flux limiting', () => {
   it('the flux ceiling scales with depth rather than being a fixed cap', () => {
     // Both channels drop the same 20 units of head across the edge, so gravity

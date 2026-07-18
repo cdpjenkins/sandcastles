@@ -29,7 +29,31 @@
   oscillation, not an instability. Only then was it safe to re-derive the test to assert what
   matters (the basin settles) rather than bump −1.4 to −4, which would have been tuning to green.
 
+### Threshold-detecting a wave front measures the numerical precursor, not the wave
+- **Context**: verifying Step 3's claim that celerity is now `sqrt(g*h)`. Measured the front by
+  finding the first cell whose depth deviated by more than `1e-4`.
+- **Issue**: reported celerity came out ~40% high at *every* depth (ratios 1.37–1.43 vs `sqrt(g*h)`).
+  An explicit scheme's numerical domain of dependence is one cell per step — here `1/(1/30)` = 30
+  cells/s — so a vanishingly small precursor runs out ahead of the physical front and trips any
+  tight threshold early.
+- **Solution**: track the *crest* (argmax deviation) instead, which advances at the phase speed.
+  That gave 3/4/6/10/14 cells/s against `sqrt(g*h)` of 3.13/4.43/7.00/9.90/14.00. Confirmed by
+  sweeping the threshold at depth 20: `1e-4` → 15.13, `1e-3` → 14.52, converging on 14.0 from above
+  as the precursor stops dominating.
+- **Tell**: a bias that is near-constant across a swept parameter is a measurement artifact; a
+  physics error would vary with the parameter. The `sqrt(h)` *scaling* was already near-exact
+  (2.06/3.09/4.20 vs 2/3/4) while the absolute value was uniformly off — that pattern was the clue.
+
 ## Patterns That Worked
+
+### Prefer the qualitative assertion when the quantitative one is quantisation-bound
+- **What**: Step 3's test asserts "a disturbance travels further in deeper water" rather than
+  "celerity equals `sqrt(g*h)`", even though the latter is what the step actually achieves and was
+  verified by hand.
+- **Why it works**: crest position is cell-quantised, so measuring speed over a 1 s window has ±1
+  cell/s resolution. At depth 20 that is 14 ± 1 against a target of 14.0 — a `toBeCloseTo(14, 0)`
+  would fail on a ±1 wobble. The law is real but the *measurement* is too coarse to assert tightly,
+  and Step 5 changes the damping underneath it. The qualitative ordering is robust to both.
 
 ### Measuring the real classes before proposing a design
 - **What**: before writing `WATER_SIM_OPTIONS.md`, drove `Grid`/`WaterSim`/`Waves`/`Tide` from a

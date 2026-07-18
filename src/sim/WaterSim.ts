@@ -75,7 +75,7 @@ export class WaterSim {
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
           this.flowX[i] = Math.max(-maxFlux, Math.min(maxFlux,
-            (this.flowX[i] + GRAVITY * (hi - hj) * dt - vAvg * duDz * dt) * DAMPING
+            (this.flowX[i] + GRAVITY * edgeDepth * (hi - hj) * dt - vAvg * duDz * dt) * DAMPING
           ))
         }
 
@@ -96,7 +96,7 @@ export class WaterSim {
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
           this.flowZ[i] = Math.max(-maxFlux, Math.min(maxFlux,
-            (this.flowZ[i] + GRAVITY * (hi - hj) * dt - uAvg * dvDx * dt) * DAMPING
+            (this.flowZ[i] + GRAVITY * edgeDepth * (hi - hj) * dt - uAvg * dvDx * dt) * DAMPING
           ))
         }
       }
