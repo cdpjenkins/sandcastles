@@ -140,8 +140,10 @@ under sustained forcing.
 
 > **Raises the erosion ceiling**, contrary to my expectation that grid-scale noise would never reach
 > the boundary: `EROSION_K = 0.25` goes from blowing up at 147s to stable past 360s. So a good part
-> of the instability is larger-scale sloshing the sponge can absorb, not grid noise. Step 9 has more
-> room than feared.
+> of the instability is larger-scale sloshing the sponge can absorb, not grid noise.
+>
+> The swell then takes that headroom straight back — with Step 8 driving, `0.25` blows up again at
+> 296s. `0.1` stands. Step 9 needs its mechanism after all.
 
 ### Step 8: The boundary row is driven by a swell oscillator
 
@@ -177,8 +179,9 @@ accumulates, driving velocity up, which drives erosion up.
 `EROSION_K = 0.1` is therefore forced for now (1.9% suspended at 120s, plateauing), overriding the
 0.5 chosen at Step 4 — 0.5 is not a preference that is available.
 
-**Expect the swell to lower the threshold further**, since it adds energy. So this step likely needs
-a *mechanism*, not a number: rate-limit how far the bed may move per step, or add a small interior
+**Confirmed at Step 8: the swell does lower the threshold.** `0.25` is stable to 360s with the sponge
+alone but blows up at 296s once swell is driving; `0.1` holds in both. So this step needs a
+*mechanism*, not a number: rate-limit how far the bed may move per step, or add a small interior
 dissipation that kills grid-scale noise while leaving physical waves alone (a residual linear damping
 of ~0.999/step costs a wave ~11% over a 4s crossing and would kill accumulating noise over ~1000
 steps). Decide once the swell is in and the real forcing is visible.

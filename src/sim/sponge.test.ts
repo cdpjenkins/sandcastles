@@ -38,7 +38,7 @@ describe('Sponge', () => {
 
     for (let i = 0; i < 30 * 10; i++) {
       sim.step(grid, DT)
-      sponge.step(grid, sim, DT, SEA_SURFACE)
+      sponge.step(grid, sim, DT, () => SEA_SURFACE)
     }
 
     let returned = 0
@@ -57,7 +57,7 @@ describe('Sponge', () => {
     const sponge = new Sponge(1, DEPTH)
     const before = grid.getWaterHeight(0, 20)!
 
-    sponge.step(grid, sim, DT, SEA_SURFACE)
+    sponge.step(grid, sim, DT, () => SEA_SURFACE)
 
     expect(grid.getWaterHeight(0, 20)!).toBe(before)
   })

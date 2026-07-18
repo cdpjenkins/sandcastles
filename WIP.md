@@ -2,39 +2,42 @@
 
 ## Current Step
 
-Step 7 of 9: A sponge layer absorbs outgoing waves
+Step 8 of 9: The boundary row is driven by a swell oscillator
 
 ## Status
 
 ⏸️ WAITING - Awaiting commit approval
 
-New `Sponge`: graded absorbing layer over the outermost 12 rows, ramping in quadratically so its own
-leading edge is not a discontinuity to reflect off. Damps flux and relaxes the surface toward the
-target, both scaled by the same ramp. Wired into `Game` between `WaterSim` and `Erosion`, dirty mask
-folded into the combine.
+New `swell.test.ts`: the boundary row oscillates, and the swell reaches z=210 — 34 rows clear of the
+sponge, so it arrived under its own steam. Both RED (static).
 
-**Reflection 0.516 → 0.035, ~7% coefficient.** Flux damping alone — what PLAN.md specified — only got
-to 0.098: it takes the wave's momentum but leaves the surface anomaly to re-radiate. Relaxing both is
-the standard formulation and is what reaches the bar.
+`Waves` now owns a swell profile: `surfaceAt(z, seaSurface)` = `seaSurface + A·sin(ωt + k(z − zB))`,
+running shoreward so seaward rows lead in phase. It drives the boundary row from that, and `fired`
+now marks one crest per swell period — the real answer to open question 2, so `WaveAudio` and the HUD
+countdown mean something again.
 
-**The test was measuring its own noise floor at first.** A one-cell bump is a delta function; it
-disperses into a ~0.05 background filling the channel, so the 0.05 threshold could never have passed
-however good the sponge was. Profiling showed cells far from the sponge reading *identically* with
-and without it — the tell. A smooth cos² hump drops the background to ~0.0003 and makes the
-reflection unambiguous.
+The sponge/driver tension resolved as designed: `Sponge.step` takes a per-row target callback rather
+than a scalar, and `Game` passes the swell profile. The outer rows now both generate and absorb —
+only departures from the wave we asked for get damped, so the swell passes through instead of being
+eaten.
 
-**I was wrong about the erosion ceiling.** I predicted the sponge would not raise it, since
-grid-scale noise has near-zero group velocity and never reaches the boundary. It raises it
-substantially: `EROSION_K = 0.25` goes from blowing up at 147s to stable past 360s, and 0.5 now only
-spikes transiently and recovers. So much of the instability is larger-scale sloshing the sponge
-absorbs. Step 9 has more room than feared — likely 0.25, closer to the 0.5 originally chosen.
-`EROSION_K` stays at 0.1 here: this step is the sponge, and erosion is Step 9's.
+**Shoaling verified in the real scene**: wave range nearly doubles as it shallows — 0.701 at depth
+13.4 → 0.921 at 6.99 → 1.106 at 4.92 → 1.207 at 2.62. Green's invariant (range · h^0.25) holds at
+1.34–1.77 across the whole run.
 
-196 tests pass, `tsc --noEmit` clean. Full sim stable over 360s and calmer with the sponge than
-without (maxFlux 11.6 → 7.5 → 4.1, vs 20.5 → 8.4 → 7.3).
+**Run-up verified**: swash edge swings between z=135 and z=168, a 33-row excursion, tracing
+142/150/135/153/149/141/146/137/145/138/157/161 per second. Measured at x=64 — my first attempt
+probed x=128 and read the spring, which sits at width/2, not the swash.
 
-Refactor assessed: `Sponge` matches the shape of the other sims — dimensions in the constructor,
-dirty mask out of `step`. Nothing to restructure.
+199 tests pass, `tsc --noEmit` clean. Stable over 360s with swell at `EROSION_K = 0.1` (maxFlux 12.6
+→ 7.0 → 8.3).
+
+**Correction to what I said at Step 7**: the swell takes back the erosion headroom the sponge won.
+`0.25` is stable to 360s with the sponge alone, but blows up at 296s once swell drives. `0.1` stands,
+and Step 9 needs its mechanism after all.
+
+Refactor assessed: `Waves` is a swell profile + boundary driver + crest timer; `Sponge` is unchanged
+but for the target callback. Nothing to restructure.
 
 ## Completed
 
@@ -44,8 +47,8 @@ dirty mask out of `step`. Nothing to restructure.
 - [x] Step 4: `getVelocity` returns true velocity (`cc1e597`)
 - [x] Step 5: Depth-dependent drag replaces flat `DAMPING` (`edbe95f`)
 - [x] Step 6: Sea interior simulated + surge removed (`ff5760e`)
-- [ ] Step 7: Sponge layer absorbs outgoing waves ← current, awaiting approval
-- [ ] Step 8: Boundary row driven by a swell oscillator (was Step 7)
+- [x] Step 7: Sponge layer absorbs outgoing waves (`e1efa43`)
+- [ ] Step 8: Boundary row driven by a swell oscillator ← current, awaiting approval
 - [ ] Step 9: Make erosion stable enough to tune, then tune it
 
 ## Blockers
@@ -54,10 +57,7 @@ None.
 
 ## Next Action
 
-Awaiting commit approval for Step 7. Then Step 8: the swell oscillator — the step that finally puts
-waves back.
+Awaiting commit approval for Step 8. Then Step 9: give erosion a stability mechanism, then tune it.
 
-Resolve first (noted in PLAN.md Step 8): the sponge and the driver want the same rows, and a sponge
-relaxing toward flat would eat the swell as fast as it is driven. Likely fix is to relax toward the
-desired incident wave rather than toward flat, which needs a per-row target instead of the scalar
-`Sponge.step` takes today.
+Also outstanding before the feature closes: README's "Waves (M6)" section still describes the
+20-second 10-unit surge, which no longer exists.

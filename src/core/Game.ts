@@ -224,7 +224,8 @@ export class Game {
     const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
-    const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, seaSurface)
+    const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (z) =>
+      this.waves.surfaceAt(z, seaSurface))
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)
     const slopeDirty = this.slope.step(this.grid)
