@@ -134,6 +134,15 @@ edge.
 **Done when**: a wave sent at the boundary is absorbed rather than returning; the sea stays calm
 under sustained forcing.
 
+> Flux damping alone is not enough — it takes the wave's momentum but leaves its surface anomaly to
+> re-radiate (reflection 0.157 → 0.098). Relaxing the surface toward the target as well takes it to
+> 0.035 against a 0.516 incident wave, ~7% reflection.
+
+> **Raises the erosion ceiling**, contrary to my expectation that grid-scale noise would never reach
+> the boundary: `EROSION_K = 0.25` goes from blowing up at 147s to stable past 360s. So a good part
+> of the instability is larger-scale sloshing the sponge can absorb, not grid noise. Step 9 has more
+> room than feared.
+
 ### Step 8: The boundary row is driven by a swell oscillator
 
 **Test**: assert the boundary elevation oscillates at the configured period/amplitude, and that an
@@ -142,6 +151,13 @@ interior cell several rows inshore oscillates too, phase-lagged. RED: currently 
 Gerstner sum (`WATER_SIM_OPTIONS.md` §5 option D) is a later refinement if one sinusoid reads too
 regular. Retie `fired` to the swell period so `WaveAudio` and the HUD countdown mean something
 again — the real answer to open question 2.
+
+> **The sponge and the driver want the same rows.** Swell must enter where backwash leaves, and a
+> sponge relaxing toward *flat* would eat the swell as fast as it is driven. The clean resolution is
+> to relax toward the *desired incident wave* rather than toward flat — i.e. the sponge's target
+> becomes the swell profile, making one boundary that both generates and absorbs. `Sponge.step`
+> already takes the target as a parameter, but it takes a scalar; this needs a per-row target, since
+> the swell is a travelling wave across the sponge's 12 rows. Resolve at the start of Step 8.
 **Done when**: waves visibly travel in from deep water, shoal, and run up the beach.
 
 ### Step 9: Make erosion stable enough to tune, then tune it against real swell

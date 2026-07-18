@@ -10,6 +10,7 @@ import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
 import { Slope } from '../sim/Slope.ts'
 import { Waves } from '../sim/Waves.ts'
+import { Sponge } from '../sim/Sponge.ts'
 import { Tide } from '../sim/Tide.ts'
 import { orInto } from '../sim/combineDirty.ts'
 import { WaveAudio } from '../audio/WaveAudio.ts'
@@ -29,6 +30,7 @@ export class Game {
   private readonly moisture: Moisture
   private readonly slope: Slope
   private readonly waves: Waves
+  private readonly sponge: Sponge
   private readonly tide: Tide
   private readonly waveAudio: WaveAudio
   private readonly combinedDirty: Uint8Array
@@ -92,6 +94,7 @@ export class Game {
     this.moisture = new Moisture(this.grid.width, this.grid.depth)
     this.slope = new Slope(this.grid.width, this.grid.depth)
     this.waves = new Waves(this.grid.width, this.grid.depth)
+    this.sponge = new Sponge(this.grid.width, this.grid.depth)
     this.tide = new Tide()
     this.waveAudio = new WaveAudio()
     this.combinedDirty = new Uint8Array(this.grid.width * this.grid.depth)
@@ -221,11 +224,15 @@ export class Game {
     const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
     if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
+    const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, seaSurface)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)
     const slopeDirty = this.slope.step(this.grid)
 
-    orInto(this.combinedDirty, wavesDirty, waterDirty, erosionDirty, moistureDirty, slopeDirty)
+    orInto(
+      this.combinedDirty,
+      wavesDirty, waterDirty, spongeDirty, erosionDirty, moistureDirty, slopeDirty,
+    )
     this.terrain.updateDirtyCells(this.combinedDirty)
   }
 }

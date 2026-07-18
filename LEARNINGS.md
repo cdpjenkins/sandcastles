@@ -105,6 +105,25 @@
   at 25s and 1 at 240s. A genuine threshold looks different: 0.25 fails at 147s while 0.1 survives
   600s+, i.e. a discontinuity, not a scaling.
 
+### A sponge must absorb the surface anomaly, not just the momentum
+- **Context**: PLAN.md specified "graded flux damping over the outermost N rows".
+- **Issue**: flux damping alone only took the wave's *kinetic* energy. Its potential energy — the
+  surface anomaly — remained and re-radiated. Measured: reflection fell 0.157 → 0.098, nowhere near
+  enough.
+- **Solution**: relax the surface toward the target as well as damping the flux, with the same
+  graded strength (standard Rayleigh damping). Reflection then fell to 0.035 against a 0.516
+  incident wave — ~7% reflection coefficient, the usual bar for an absorbing layer. Relaxing the
+  surface breaks mass conservation inside the sponge, which is correct: it is an open boundary.
+
+### A delta-function test signal disperses into a tail that drowns the measurement
+- **Context**: the sponge test launched a wave by raising a single cell by 1.
+- **Issue**: a one-cell bump is a delta function — every wavelength at once — so numerical dispersion
+  smeared it into a ~0.05 background filling the whole channel. The test threshold of 0.05 was
+  *below its own noise floor* and could never have passed however good the sponge was. The tell:
+  profiling showed cells far from the sponge reading identically with and without it.
+- **Solution**: launch a smooth `cos²` hump ~24 cells wide. Narrow spectrum, travels as a coherent
+  packet, background drops to ~0.0003 and the reflection becomes unambiguous.
+
 ## Patterns That Worked
 
 ### Verify a physics change against an independent analytical law
