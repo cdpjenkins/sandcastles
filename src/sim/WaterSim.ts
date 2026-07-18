@@ -2,7 +2,7 @@ import type { Grid } from '../core/Grid.ts'
 
 const GRAVITY = 9.8
 const DAMPING = 0.95
-const MAX_FLOW = 4.0
+const MAX_VELOCITY = 8.0
 const DIRTY_EPSILON = 1e-4
 
 export class WaterSim {
@@ -55,10 +55,12 @@ export class WaterSim {
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const i = z * W + x
-        const hi = (grid.getSurfaceHeight(x, z) ?? 0) + (grid.getWaterHeight(x, z) ?? 0)
+        const wi = grid.getWaterHeight(x, z) ?? 0
+        const hi = (grid.getSurfaceHeight(x, z) ?? 0) + wi
 
         if (x + 1 < W) {
-          const hj = (grid.getSurfaceHeight(x + 1, z) ?? 0) + (grid.getWaterHeight(x + 1, z) ?? 0)
+          const wj = grid.getWaterHeight(x + 1, z) ?? 0
+          const hj = (grid.getSurfaceHeight(x + 1, z) ?? 0) + wj
           // Average z-velocity at the four corners surrounding this x-edge
           const vNW = z > 0     ? this.flowZ[(z - 1) * W + x]     : 0
           const vNE = z > 0     ? this.flowZ[(z - 1) * W + x + 1] : 0
@@ -70,13 +72,16 @@ export class WaterSim {
           const uUp   = z > 0     ? this.flowX[(z - 1) * W + x] : uHere
           const uDown = z + 1 < D ? this.flowX[(z + 1) * W + x] : uHere
           const duDz  = vAvg >= 0 ? uHere - uUp : uDown - uHere
-          this.flowX[i] = Math.max(-MAX_FLOW, Math.min(MAX_FLOW,
+          const edgeDepth = (wi + wj) / 2
+          const maxFlux = MAX_VELOCITY * edgeDepth
+          this.flowX[i] = Math.max(-maxFlux, Math.min(maxFlux,
             (this.flowX[i] + GRAVITY * (hi - hj) * dt - vAvg * duDz * dt) * DAMPING
           ))
         }
 
         if (z + 1 < D) {
-          const hj = (grid.getSurfaceHeight(x, z + 1) ?? 0) + (grid.getWaterHeight(x, z + 1) ?? 0)
+          const wj = grid.getWaterHeight(x, z + 1) ?? 0
+          const hj = (grid.getSurfaceHeight(x, z + 1) ?? 0) + wj
           // Average x-velocity at the four corners surrounding this z-edge
           const uNW = x > 0     ? this.flowX[z * W + x - 1]       : 0
           const uNE = x + 1 < W ? this.flowX[i]                   : 0
@@ -88,7 +93,9 @@ export class WaterSim {
           const vLeft  = x > 0     ? this.flowZ[z * W + x - 1] : vHere
           const vRight = x + 1 < W ? this.flowZ[z * W + x + 1] : vHere
           const dvDx   = uAvg >= 0 ? vHere - vLeft : vRight - vHere
-          this.flowZ[i] = Math.max(-MAX_FLOW, Math.min(MAX_FLOW,
+          const edgeDepth = (wi + wj) / 2
+          const maxFlux = MAX_VELOCITY * edgeDepth
+          this.flowZ[i] = Math.max(-maxFlux, Math.min(maxFlux,
             (this.flowZ[i] + GRAVITY * (hi - hj) * dt - uAvg * dvDx * dt) * DAMPING
           ))
         }

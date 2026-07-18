@@ -15,6 +15,20 @@
   `max(0, seaSurface - bed)`. When a value can be read as either a depth or an elevation, name it
   for which one it is.
 
+### A threshold test can be measuring a stability crutch rather than the thing it names
+- **Context**: `flow does not overshoot into a strong reversal while settling` asserted
+  `getFlowX > -1.4` after 30 steps. Written during the cross-advection work, so ostensibly about
+  upwinding.
+- **Issue**: it was really measuring `MAX_FLOW = 4`. A 4-unit head in a two-cell basin is an
+  oscillator with a natural peak flux of ~8.9, so the cap was truncating the swing and the test was
+  reading the truncation. Replacing the cap with a depth-scaled one let the real slosh through and
+  the assertion failed at −3.79.
+- **Solution**: before touching a test that breaks under a deliberate change, **measure whether the
+  underlying behaviour is right**. Here: 300 steps showed the oscillation decaying monotonically
+  (3.79 → 1.01 → 0.12 → 0.005) to 2.000/2.000 with volume drift of 1.19e-6 — a clean damped
+  oscillation, not an instability. Only then was it safe to re-derive the test to assert what
+  matters (the basin settles) rather than bump −1.4 to −4, which would have been tuning to green.
+
 ## Patterns That Worked
 
 ### Measuring the real classes before proposing a design
