@@ -21,6 +21,7 @@ Then open the local URL Vite prints. No build step needed for development.
 | `D` | Toggle between Spade and Dump |
 | `W` | Water stream (click a cell to place a source) |
 | `R` | Reset all water and stream sources |
+| `L` | Toggle the Look tool (per-cell readout) |
 | `?` | Toggle controls overlay |
 | Pinch | Zoom |
 | Two-finger drag | Pan |
@@ -39,21 +40,23 @@ A `Bucket` carries up to 10 units of sand. The Spade tool digs one unit per clic
 
 ### Water flow (M3)
 
-A pipe-model shallow-water simulation runs at 30 Hz. Each cell exchanges water with its four neighbours via virtual pipes; flow is proportional to height difference and conserves volume exactly. Streams are continuous sources placed with the `W` tool. The terrain mesh raises its vertices by the local water height so the water surface is part of the geometry.
+A shallow-water simulation runs at 30 Hz. Water moves across staggered edges between cells, accelerating down the free-surface gradient and scaled by the depth it is moving through — so waves travel at `√(g·h)`, quick in deep water and slow in the shallows. Volume is conserved exactly. Bed friction is Manning's, which leaves deep water almost undamped while a thin swash sheet slows quickly. Streams are continuous sources placed with the `W` tool. The terrain mesh raises its vertices by the local water height so the water surface is part of the geometry.
 
 ### Dams and lakes (M4)
 
-Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. Each sim (water, erosion, moisture, slope, waves) returns a per-cell dirty mask; these are combined and used to limit mesh updates to only the cells that actually changed that tick, instead of rebuilding all 65,536 vertices every tick. The `R` key resets all water and stream sources.
+Water obeys the same terrain it flows over, so a ridge of sand naturally dams a stream and a lake fills behind it. Each sim (water, erosion, moisture, slope, waves, sponge) returns a per-cell dirty mask; these are combined and used to limit mesh updates to only the cells that actually changed that tick, instead of rebuilding all 65,536 vertices every tick. The `R` key resets all water and stream sources.
 
 ### Erosion and wet/dry sand (M5)
 
-- **Erosion** — each cell has a sediment capacity proportional to flow velocity. Fast water picks up sand; slow water deposits it.
+- **Erosion** — each cell has a sediment capacity proportional to flow velocity. Fast water picks up sand; slow water deposits it. The bed is limited in how fast it may move: unbounded, scour deepens a channel, the channel speeds the water, and the faster water scours harder until the sim tears itself apart.
 - **Moisture** — cells adjacent to water become wet (darker colour); moisture diffuses and evaporates over time.
 - **Slope stability** — sand above 20° angle of repose slumps toward lower neighbours, conserving volume. Towers collapse; dams hold their shape.
 
-### Waves (M6)
+### Waves and tide (M6)
 
-Every 20 seconds a wave surge injects 10 units of water across the shore rows. The existing erosion and flow systems handle the rest — wave water moves fast, so it carries significantly more sediment than a stream. Sea cells drain back to their resting level between waves so the water recedes naturally. The HUD shows a countdown to the next wave.
+Swell is driven in at the seaward edge, arriving every 2 seconds at 30° off square-on. Nothing pushes it up the beach — it travels there itself, and because wave speed follows `√(g·h)` it does what real swell does on the way: slows and grows as the floor shallows, and bends to face the shore. A sponge layer over the outermost rows soaks up the backwash so nothing bounces off the edge of the world.
+
+The sea is simulated across its full width rather than held flat, so the tide arrives by genuinely filling and draining it through that edge, over a 3-minute cycle. The HUD shows the current sea level and a countdown to the next crest.
 
 ### Polish (M7)
 
@@ -74,6 +77,7 @@ src/
 │   ├── Grid.ts             256×256 Float32Array terrain data
 │   └── materials.ts        Material constants and properties
 ├── input/
+│   ├── LookInfo.ts         Per-cell readout for the Look tool
 │   ├── Picker.ts           Raycast → grid cell
 │   └── Tools.ts            Dig / dump pure functions
 ├── render/
@@ -81,24 +85,30 @@ src/
 │   ├── Renderer.ts         Three.js scene, lighting, shadows
 │   ├── TerrainMesh.ts      Deformable mesh with partial vertex updates
 │   ├── cellNoise.ts        Position-hash colour jitter
-│   └── sandColour.ts       Moisture-blended sand colour
+│   ├── groundColour.ts     Sand-over-rock blend by sand depth
+│   ├── isoProjection.ts    Iso angles and world → screen direction
+│   ├── rockColour.ts       Moisture-blended rock colour
+│   ├── sandColour.ts       Moisture-blended sand colour
+│   └── waterColour.ts      Depth-blended water over the ground beneath
 └── sim/
     ├── combineDirty.ts     OR-combines per-sim dirty masks
     ├── Erosion.ts          Sediment capacity erosion model
     ├── Moisture.ts         Wet/dry diffusion and evaporation
     ├── Slope.ts            Talus / angle-of-repose slumping
-    ├── WaterSim.ts         Pipe-model shallow water
-    └── Waves.ts            Periodic wave surge and sea drain
+    ├── Sponge.ts           Absorbing layer at the seaward boundary
+    ├── Tide.ts             Slow sea-level oscillation
+    ├── WaterSim.ts         Staggered-grid shallow water
+    └── Waves.ts            Swell driver at the seaward boundary
 ```
 
-All simulation state lives in typed `Float32Array` buffers. The sim runs on the main thread at 30 Hz; rendering runs at 60 fps. The architecture keeps a clear path to move the sim into a Web Worker if profiling demands it.
+All simulation state lives in typed `Float32Array` buffers. The sim runs on the main thread at 30 Hz and takes about a third of that budget; rendering runs at 60 fps. The architecture keeps a clear path to move the sim into a Web Worker if profiling demands it.
 
 ## Tests
 
-110 tests across 14 files, all passing:
+201 tests across 22 files, all passing:
 
 ```bash
 npm test
 ```
 
-Tests cover every simulation system (water, erosion, moisture, slope, waves) and rendering utilities (sand colour, cell noise) as pure-function unit tests with no DOM or WebGL dependency.
+Tests cover every simulation system (water, erosion, moisture, slope, waves, sponge, tide) and rendering utilities (sand colour, cell noise, iso projection) as pure-function unit tests with no DOM or WebGL dependency.
