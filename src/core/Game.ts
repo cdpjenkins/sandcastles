@@ -13,7 +13,6 @@ import { Waves } from '../sim/Waves.ts'
 import { Sponge } from '../sim/Sponge.ts'
 import { Tide } from '../sim/Tide.ts'
 import { orInto } from '../sim/combineDirty.ts'
-import { WaveAudio } from '../audio/WaveAudio.ts'
 import { getLookInfo, formatLookInfo } from '../input/LookInfo.ts'
 import type { GridCoord } from '../types.ts'
 
@@ -32,7 +31,6 @@ export class Game {
   private readonly waves: Waves
   private readonly sponge: Sponge
   private readonly tide: Tide
-  private readonly waveAudio: WaveAudio
   private readonly combinedDirty: Uint8Array
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
@@ -96,7 +94,6 @@ export class Game {
     this.waves = new Waves(this.grid.width, this.grid.depth)
     this.sponge = new Sponge(this.grid.width, this.grid.depth)
     this.tide = new Tide()
-    this.waveAudio = new WaveAudio()
     this.combinedDirty = new Uint8Array(this.grid.width * this.grid.depth)
 
     this.renderer = new Renderer(canvas)
@@ -222,7 +219,6 @@ export class Game {
     this.tide.step(dt)
     const seaSurface = this.grid.seaLevel + this.tide.offset
     const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
-    if (this.waves.fired) this.waveAudio.play()
     const waterDirty = this.waterSim.step(this.grid, dt)
     const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (x, z) =>
       this.waves.surfaceAt(x, z, seaSurface))
