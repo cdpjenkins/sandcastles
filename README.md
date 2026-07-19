@@ -62,15 +62,16 @@ The sea is simulated across its full width rather than held flat, so the tide ar
 
 - Per-cell colour noise (a stable position hash) breaks up the flat sand surface.
 - Wet sand blends toward a darker colour based on moisture level.
-- A short filtered-noise audio burst plays through the Web Audio API when each wave hits.
 - Press `?` for a full in-game controls reference.
+
+The game is silent for now. `WaveAudio` is written and works — a filtered-noise burst through the Web Audio API — but nothing is wired to it. It used to fire on every crest, which was fine at one wave every 20 seconds and relentless once the swell period came down to 2. What it wants is a trigger tied to something that actually happens, a wave breaking rather than a crest passing, and that does not exist yet.
 
 ## Architecture
 
 ```
 src/
 ├── audio/
-│   └── WaveAudio.ts        Web Audio API wave splash
+│   └── WaveAudio.ts        Web Audio API wave splash (not currently wired up)
 ├── core/
 │   ├── Bucket.ts           Bucket data model
 │   ├── Game.ts             Fixed-timestep loop, input routing, HUD
