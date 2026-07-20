@@ -119,6 +119,48 @@ describe('Erosion', () => {
     expect(erodedAtDepth(1)).toBeGreaterThan(erodedAtDepth(4))
   })
 
+  it('a stream cuts a channel and leaves the hillside beside it standing', () => {
+    // The behaviour that separates a river from a sheet wash.  Capacity follows
+    // stream power -- speed times the tilt the water is running down -- so water
+    // gathering into a channel finds a steeper surface there than over the ground
+    // either side, cuts harder for it, and gathers more.  Erosion concentrates and
+    // the channel deepens.  Take the slope term away and every wet cell scours at
+    // much the same rate, so the stream planes the whole hillside down instead.
+    //
+    // Stated as banks rather than a width, because a width in cells is a number
+    // that moves with every knob in the model, whereas "the ground ten cells away
+    // is untouched" is what a channel means at any setting worth shipping.
+    const bedAt = (z: number): number => 10 + (40 - z) * 0.4
+    const grid = new Grid(40, 40)
+    for (let z = 0; z < 40; z++)
+      for (let x = 0; x < 40; x++) {
+        grid.setRockHeight(x, z, 1)
+        grid.setSandHeight(x, z, bedAt(z))
+      }
+    grid.setSourceRate(20, 1, 3)
+
+    const waterSim = new WaterSim(40, 40)
+    const erosion = new Erosion(40, 40)
+    for (let i = 0; i < 40 / DT; i++) {
+      waterSim.step(grid, DT)
+      erosion.step(grid, waterSim, DT)
+    }
+
+    for (const z of [24, 28]) {
+      const cutAt = (x: number): number => bedAt(z) - grid.getSandHeight(x, z)!
+      let floor = 0
+      let centre = 0
+      for (let x = 0; x < 40; x++) if (cutAt(x) > floor) { floor = cutAt(x); centre = x }
+
+      let awayFromChannel = 0
+      for (let x = 0; x < 40; x++)
+        if (Math.abs(x - centre) >= 10) awayFromChannel = Math.max(awayFromChannel, cutAt(x))
+
+      expect(floor).toBeGreaterThan(1)
+      expect(awayFromChannel).toBeLessThan(floor / 4)
+    }
+  })
+
   it('saturates the rate the bed rises, just as it does the rate it drops', () => {
     // Deposition shoves the water surface exactly as scour does, so the same
     // bound applies to the bed coming up as to it going down.

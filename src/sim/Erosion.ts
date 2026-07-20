@@ -1,7 +1,12 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from './WaterSim.ts'
 
-const EROSION_K = 0.5
+// Capacity is stream power: how fast the water moves times how steeply it is
+// running downhill. Speed alone cannot tell a channel from a sheet wash, since a
+// thin film racing across flat ground moves as fast as the thalweg -- it is the
+// slope term that lets water gathering into a channel cut harder there than over
+// the ground either side, so incision concentrates instead of spreading.
+const EROSION_K = 40
 const DEPOSITION_K = 0.5
 // The most the bed may move in a second. Moving it is a step change in the water
 // surface above it, so an unbounded rate feeds back on itself: scour deepens the
@@ -10,6 +15,18 @@ const DEPOSITION_K = 0.5
 const MAX_BED_RATE = 0.3
 const MIN_WATER_TO_ERODE = 1e-5
 const DIRTY_EPSILON = 1e-4
+
+// Central difference on the water surface, clamped at the edges so the boundary
+// reads a one-sided gradient rather than falling off the grid.
+const surfaceSlope = (grid: Grid, x: number, z: number): number => {
+  const surfaceAt = (sx: number, sz: number): number =>
+    (grid.getSurfaceHeight(sx, sz) ?? 0) + (grid.getWaterHeight(sx, sz) ?? 0)
+
+  return Math.hypot(
+    (surfaceAt(Math.min(x + 1, grid.width - 1), z) - surfaceAt(Math.max(x - 1, 0), z)) / 2,
+    (surfaceAt(x, Math.min(z + 1, grid.depth - 1)) - surfaceAt(x, Math.max(z - 1, 0))) / 2,
+  )
+}
 
 export class Erosion {
   private readonly dirty: Uint8Array
@@ -32,7 +49,7 @@ export class Erosion {
         if (water < MIN_WATER_TO_ERODE) continue
 
         const velocity = waterSim.getVelocity(x, z)
-        const capacity = velocity * EROSION_K
+        const capacity = velocity * EROSION_K * surfaceSlope(grid, x, z)
         const sediment = grid.getSediment(x, z) ?? 0
         const sand = grid.getSandHeight(x, z) ?? 0
 
