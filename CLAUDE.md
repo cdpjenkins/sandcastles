@@ -46,7 +46,30 @@ water, the faster water scours harder. `MAX_BED_RATE` caps how far the bed may m
 the only reason `EROSION_K` is free to tune — without it, `EROSION_K = 0.25` destroys the sea inside
 150s.
 
-It also caps *how narrow a gorge the stream can cut*, which is a known and deliberate trade.
+It was once believed to cap *how narrow a gorge the stream can cut*. It does not, or not much:
+raising it 0.3 → 3.0 moved the channel's depth/width ratio only 0.605 → 0.655. The capacity law sets
+the channel's shape; this sets the rate the bed may move. Don't reach for it to fix morphology.
+
+### Erosion capacity needs slope, not just speed
+
+`capacity = velocity * EROSION_K * surfaceSlope`. Speed alone cannot tell a channel from a sheet
+wash — a thin film racing over flat ground moves as fast as the thalweg — so without the slope term
+every wet cell scours alike and the stream planes a wide flat valley instead of cutting a gorge
+(depth/width 0.087 against 0.390 with it).
+
+Two other laws were measured and rejected, both plausible enough to try again if this is forgotten:
+
+- **`v * h`**, the pre-`d2da198` law, cuts the best gorge of anything tried (0.605). But it makes
+  capacity a function of discharge alone, so it claims a deep still pool and a racing sheet carrying
+  the same water scour identically. That is the bug `d2da198` existed to fix.
+- **`h * S`**, shear stress, has no velocity term at all. Sweeping the forcing flux over 100× left
+  its erosion identical at every value: still water on a hillside would scour as hard as a torrent.
+  `τ = ρghS` only encodes velocity through the *friction* slope; a slope read from instantaneous
+  geometry is not that.
+
+Capacity is compared against `sediment`, an absolute column, while `transportSediment` works in
+concentration. That mismatch is still present and is why deep cells reach the deposit branch before
+shallow ones at equal concentration.
 
 ### The sponge relaxes the surface as well as damping the flux
 
@@ -63,10 +86,12 @@ bends at all. 2s (~28 cells) works. Lengthening the period silently costs refrac
 
 `EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`.
 
-Magnitude assertions against them have needed re-deriving five times over. Prefer a comparison — "a
-thin sheet scours more than a deep pool carrying the same flux" — or a floor far below any sensible
-setting. If a test breaks every time the model improves, it is describing the model's flaws rather
-than its behaviour.
+Magnitude assertions against them have needed re-deriving five times over. Prefer a comparison — "the
+ground ten cells from the channel is untouched" — or a floor far below any sensible setting. If a test
+breaks every time the model improves, it is describing the model's flaws rather than its behaviour.
+
+A comparison is not automatically safe, though. See the saturation trap below: "a thin sheet scours
+more than a deep pool carrying the same flux" is a comparison, and it still cannot referee anything.
 
 ### Screen-space directions go through `isoProjection`
 
@@ -90,5 +115,13 @@ It is easy to measure wrongly, and each of these produced a confident wrong answ
   negative.
 - **Keep scratch probes' signatures current.** Identical results across configurations that should
   differ means you are measuring the harness, not the sim.
+- **Check whether `MAX_BED_RATE` has swallowed what you are comparing.** Both readings landing on
+  exactly `MAX_BED_RATE * dt` (0.01 at 30 Hz) means you measured the cap, not the thing you varied.
+  This makes `a thin sheet scours more than a deep pool carrying the same flux` unable to referee a
+  capacity law at all: at any `EROSION_K` large enough to cut a gorge, both its readings pin at the
+  ceiling. It passes today only because `EROSION_K = 40` sits right at that boundary. The trap is
+  worse than a plain wrong answer, because a law can appear to *pass* on one scene by saturating on
+  one side and not the other — that is how `u * S` was first, wrongly, said to preserve it. Sweep the
+  forcing until both sides come off the ceiling before believing any comparison of erosion amounts.
 - **`Float32Array` round-trips break `toEqual`** on struct-returning functions: `1.2` comes back as
   `1.2000000476837158`. Assert fields individually with `toBeCloseTo`.
