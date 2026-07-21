@@ -48,9 +48,9 @@ Water obeys the same terrain it flows over, so a ridge of sand naturally dams a 
 
 ### Erosion and wet/dry sand (M5)
 
-- **Erosion** — each cell has a sediment capacity proportional to flow velocity. Fast water picks up sand; slow water deposits it. The bed is limited in how fast it may move: unbounded, scour deepens a channel, the channel speeds the water, and the faster water scours harder until the sim tears itself apart.
+- **Erosion** — each cell has a sediment capacity set by stream power: how fast the water moves *and* how steeply it is running downhill. Water carrying more sand than its capacity deposits the surplus; water carrying less picks sand up. The slope term is what makes it a river rather than a sheet wash — speed alone cannot tell the two apart, since a thin film racing over flat ground moves as fast as the deepest thread, so without it every wet cell scours alike and the stream planes a wide flat valley. With it, water gathering into a channel finds a steeper surface there than over the ground either side, cuts harder for it, and the channel deepens instead of widening. The bed is also limited in how fast it may move: unbounded, scour deepens a channel, the channel speeds the water, and the faster water scours harder until the sim tears itself apart.
 - **Moisture** — cells adjacent to water become wet (darker colour); moisture diffuses and evaporates over time.
-- **Slope stability** — sand above 20° angle of repose slumps toward lower neighbours, conserving volume. Towers collapse; dams hold their shape.
+- **Slope stability** — sand above its 32° angle of repose (the real value for dry sand) slumps toward lower neighbours, conserving volume. Towers collapse; dams hold their shape. This is also the dominant control on how wide an eroded channel ends up: too shallow an angle and the banks slump back as fast as the stream cuts them, spreading the river into a flat sheet.
 
 ### Waves and tide (M6)
 
@@ -93,7 +93,7 @@ src/
 │   └── waterColour.ts      Depth-blended water over the ground beneath
 └── sim/
     ├── combineDirty.ts     OR-combines per-sim dirty masks
-    ├── Erosion.ts          Sediment capacity erosion model
+    ├── Erosion.ts          Stream-power sediment capacity model
     ├── Moisture.ts         Wet/dry diffusion and evaporation
     ├── Slope.ts            Talus / angle-of-repose slumping
     ├── Sponge.ts           Absorbing layer at the seaward boundary
@@ -106,7 +106,7 @@ All simulation state lives in typed `Float32Array` buffers. The sim runs on the 
 
 ## Tests
 
-201 tests across 22 files, all passing:
+202 tests across 22 files, all passing:
 
 ```bash
 npm test
