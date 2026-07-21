@@ -40,7 +40,7 @@ A `Bucket` carries up to 10 units of sand. The Spade tool digs one unit per clic
 
 ### Water flow (M3)
 
-A shallow-water simulation runs at 30 Hz. Water moves across staggered edges between cells, accelerating down the free-surface gradient and scaled by the depth it is moving through — so waves travel at `√(g·h)`, quick in deep water and slow in the shallows. Volume is conserved exactly. Bed friction is Manning's, which leaves deep water almost undamped while a thin swash sheet slows quickly. Streams are continuous sources placed with the `W` tool. The terrain mesh raises its vertices by the local water height so the water surface is part of the geometry.
+A shallow-water simulation runs at 30 Hz. Water moves across staggered edges between cells, accelerating down the free-surface gradient and scaled by the depth it is moving through — so waves travel at `√(g·h)`, quick in deep water and slow in the shallows. Volume is conserved exactly. Bed friction is Manning's, which leaves deep water almost undamped while a thin swash sheet slows quickly. Streams are continuous sources placed with the `W` tool, each pouring water in at a fixed rate (1.0 units/s) — enough to cut a channel through the sand without flooding the beach. The terrain mesh raises its vertices by the local water height so the water surface is part of the geometry.
 
 ### Dams and lakes (M4)
 
