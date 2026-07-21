@@ -324,12 +324,65 @@ name it for which it is.*
 
 ## Evidence
 
-The wave-behaviour measurements below are of the **pre-rework** model — they are what motivated option
-A, and are kept as the record of the problem it solved. The current model behaves differently by
-design (wave speed now follows `√(g·h)`, disturbances survive the crossing). Measured by driving the
-real classes via `tsx`.
+Measured by driving the real classes (`Grid`, `WaterSim`, `Waves`, `Sponge`, `Tide`). The current-model
+measurements are what the pre-rework ones predicted the fixes would buy; both are kept, the second set
+as the record of the problem option A solved.
 
-**Pre-rework: wave speed was independent of depth.** A 1-unit bump in a flat 200-cell channel, 2
+### Current model
+
+**Wave speed follows `√(g·h)`.** A smooth Gaussian hump launched as a one-way simple wave (edge flux
+set to `c·η`) in a flat channel, the crest tracked (argmax, not a threshold) and its celerity fitted:
+
+```
+  depth    c measured    c = √(g·h)    ratio
+     1        3.15          3.13        1.01
+     5        7.03          7.00        1.00
+    10        9.93          9.90        1.00
+    20       14.07         14.00        1.01
+```
+
+Within 1% across a 4.5× depth range — the depth-20 wave outruns the depth-1 wave by exactly the factor
+physics demands, against *identical at every depth* before the rework (below). This is the mechanism
+behind both shoaling and refraction.
+
+**Shoaling: the swell rises as it shallows.** Amplitude (`√2 · RMS` along a row, averaging over phase)
+of the steady wave train on the real beach, versus local still-water depth:
+
+```
+  row z    depth    amplitude
+    250    20.9       0.219
+    240    17.3       0.223
+    230    13.8       0.228
+    220    10.2       0.200
+    210     6.6       0.253
+    205     4.9       0.282
+```
+
+The wave grows ~29% taller overall as the floor rises from 21 to 5 cells deep, with a few hundredths
+of row-to-row scatter from reading a single snapshot. That is the direction Green's law (`A ∝ h^−¼`)
+predicts, running somewhat below it as bed drag bleeds a little energy on the way in.
+
+**Refraction: the crests bend to face the beach.** Crest angle from shore-normal, recovered from the
+x-shift of the wave pattern between rows a fixed distance apart, meaned over 12 snapshots. Swell is
+driven at 30° at the deep edge:
+
+```
+  row z    depth    crest angle
+    245    ~19        30.8°
+    235    ~15        26.9°
+    225    ~12        21.9°
+    208     ~6        17.7°
+```
+
+The 30° swell turns toward square-on as it slows over the shallows, reaching ~18° — emergent from
+`c = √(g·h)`, authored nowhere. (Consistent with the refraction commit `a380673`, which measured
+32.5° → 19.1° by a different method.)
+
+### Pre-rework (historical)
+
+These are of the model *before* option A, kept as the record of what it fixed.
+
+**Wave speed was independent of depth.** A 1-unit bump in a flat 200-cell channel, 2
 seconds:
 
 ```
@@ -353,5 +406,7 @@ This is what foreclosed shoaling and refraction, and what the depth-weighted pre
 many times over, which is why the old `Waves` had to inject its surge four rows from the beach.
 Semi-implicit Manning drag replaced this, leaving deep water nearly undamped.
 
-For the current erosion behaviour, the measurements that drove the stream-power capacity law and the
-32° angle of repose are in the commit messages for `b4d2900` and `688175d`.
+---
+
+For the erosion behaviour, the measurements that drove the stream-power capacity law and the 32° angle
+of repose are in the commit messages for `b4d2900` and `688175d`.
