@@ -1,6 +1,6 @@
 import type { Grid } from '../core/Grid.ts'
 
-const ANGLE_OF_REPOSE_DEGREES = 20
+const ANGLE_OF_REPOSE_DEGREES = 32
 const TAN_AOR = Math.tan((ANGLE_OF_REPOSE_DEGREES * Math.PI) / 180)
 const TRANSFER_FRACTION = 0.5
 const DIRTY_EPSILON = 1e-4
