@@ -33,6 +33,9 @@ const lookPressed = (toolbar: Toolbar): boolean =>
 const resetButton = (toolbar: Toolbar): HTMLButtonElement =>
   toolbar.element.querySelector<HTMLButtonElement>('button[data-action="reset"]')!
 
+const readouts = (toolbar: Toolbar): HTMLElement =>
+  toolbar.element.querySelector<HTMLElement>('[data-role="readouts"]')!
+
 describe('Toolbar', () => {
   it('renders one radio per tool mode', () => {
     const toolbar = new Toolbar()
@@ -141,5 +144,13 @@ describe('Toolbar', () => {
     resetButton(toolbar).click()
 
     expect(resets).toBe(1)
+  })
+
+  it('setReadouts writes the text into the readouts span', () => {
+    const toolbar = new Toolbar()
+
+    toolbar.setReadouts('bucket: 12.0 / 100')
+
+    expect(readouts(toolbar).textContent).toBe('bucket: 12.0 / 100')
   })
 })

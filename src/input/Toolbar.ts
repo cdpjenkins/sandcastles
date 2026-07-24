@@ -12,6 +12,7 @@ export class Toolbar {
   private readonly radios = new Map<ToolMode, HTMLInputElement>()
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private readonly lookButton: HTMLButtonElement
+  private readonly readouts: HTMLSpanElement
   private lookEnabled = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
   private lookToggleHandler: (enabled: boolean) => void = () => {}
@@ -52,6 +53,10 @@ export class Toolbar {
     resetButton.textContent = '↺ Reset water'
     resetButton.addEventListener('click', () => this.resetHandler())
     this.element.appendChild(resetButton)
+
+    this.readouts = document.createElement('span')
+    this.readouts.dataset.role = 'readouts'
+    this.element.appendChild(this.readouts)
   }
 
   onToolChange(handler: (mode: ToolMode) => void): void {
@@ -64,6 +69,10 @@ export class Toolbar {
 
   onReset(handler: () => void): void {
     this.resetHandler = handler
+  }
+
+  setReadouts(text: string): void {
+    this.readouts.textContent = text
   }
 
   setLook(enabled: boolean): void {
