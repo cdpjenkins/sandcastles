@@ -15,6 +15,7 @@ export class Toolbar {
   private lookEnabled = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
   private lookToggleHandler: (enabled: boolean) => void = () => {}
+  private resetHandler: () => void = () => {}
 
   constructor() {
     this.element = document.createElement('div')
@@ -45,6 +46,12 @@ export class Toolbar {
     })
     this.reflectLook()
     this.element.appendChild(this.lookButton)
+
+    const resetButton = document.createElement('button')
+    resetButton.dataset.action = 'reset'
+    resetButton.textContent = '↺ Reset water'
+    resetButton.addEventListener('click', () => this.resetHandler())
+    this.element.appendChild(resetButton)
   }
 
   onToolChange(handler: (mode: ToolMode) => void): void {
@@ -53,6 +60,10 @@ export class Toolbar {
 
   onLookToggle(handler: (enabled: boolean) => void): void {
     this.lookToggleHandler = handler
+  }
+
+  onReset(handler: () => void): void {
+    this.resetHandler = handler
   }
 
   setLook(enabled: boolean): void {

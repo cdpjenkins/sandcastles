@@ -30,6 +30,9 @@ const lookButton = (toolbar: Toolbar): HTMLButtonElement =>
 const lookPressed = (toolbar: Toolbar): boolean =>
   lookButton(toolbar).getAttribute('aria-pressed') === 'true'
 
+const resetButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="reset"]')!
+
 describe('Toolbar', () => {
   it('renders one radio per tool mode', () => {
     const toolbar = new Toolbar()
@@ -128,5 +131,15 @@ describe('Toolbar', () => {
     lookButton(toolbar).click()
 
     expect(toggles).toEqual([false])
+  })
+
+  it('fires onReset when the Reset button is clicked', () => {
+    const toolbar = new Toolbar()
+    let resets = 0
+    toolbar.onReset(() => resets++)
+
+    resetButton(toolbar).click()
+
+    expect(resets).toBe(1)
   })
 })

@@ -4,11 +4,10 @@ See PLAN.md for the full plan.
 
 ## Current step
 
-**Step 4** — Look toggle button fires `onLookToggle` with the new boolean;
-`setLook` reflects pressed state without firing.
+**Step 5** — Reset button fires `onReset`.
 
 Status: ⏸️ WAITING (complete — awaiting commit approval)
 
 ## Next action
 
-Commit step 4, then start **Step 5**: Reset button fires `onReset`.
+Commit step 5, then start **Step 6**: `setReadouts` updates the text span.
