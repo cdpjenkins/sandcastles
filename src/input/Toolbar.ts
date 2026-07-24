@@ -11,7 +11,10 @@ export class Toolbar {
 
   private readonly radios = new Map<ToolMode, HTMLInputElement>()
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
+  private readonly lookButton: HTMLButtonElement
+  private lookEnabled = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
+  private lookToggleHandler: (enabled: boolean) => void = () => {}
 
   constructor() {
     this.element = document.createElement('div')
@@ -32,10 +35,34 @@ export class Toolbar {
       this.radios.set(mode, radio)
       this.labels.set(mode, label)
     }
+
+    this.lookButton = document.createElement('button')
+    this.lookButton.dataset.action = 'look'
+    this.lookButton.textContent = '🔎 Look'
+    this.lookButton.addEventListener('click', () => {
+      this.setLook(!this.lookEnabled)
+      this.lookToggleHandler(this.lookEnabled)
+    })
+    this.reflectLook()
+    this.element.appendChild(this.lookButton)
   }
 
   onToolChange(handler: (mode: ToolMode) => void): void {
     this.toolChangeHandler = handler
+  }
+
+  onLookToggle(handler: (enabled: boolean) => void): void {
+    this.lookToggleHandler = handler
+  }
+
+  setLook(enabled: boolean): void {
+    this.lookEnabled = enabled
+    this.reflectLook()
+  }
+
+  private reflectLook(): void {
+    this.lookButton.setAttribute('aria-pressed', String(this.lookEnabled))
+    this.lookButton.dataset.selected = String(this.lookEnabled)
   }
 
   setTool(mode: ToolMode): void {

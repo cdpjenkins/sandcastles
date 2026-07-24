@@ -24,6 +24,12 @@ const selectedModes = (toolbar: Toolbar): ToolMode[] =>
     (mode) => labelFor(toolbar, mode).dataset.selected === 'true',
   )
 
+const lookButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="look"]')!
+
+const lookPressed = (toolbar: Toolbar): boolean =>
+  lookButton(toolbar).getAttribute('aria-pressed') === 'true'
+
 describe('Toolbar', () => {
   it('renders one radio per tool mode', () => {
     const toolbar = new Toolbar()
@@ -81,5 +87,46 @@ describe('Toolbar', () => {
     toolbar.setTool(ToolMode.Dump)
 
     expect(picked).toEqual([])
+  })
+
+  it('toggles Look on and off, firing onLookToggle with the new state', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onLookToggle((enabled) => toggles.push(enabled))
+
+    lookButton(toolbar).click()
+    lookButton(toolbar).click()
+
+    expect(toggles).toEqual([true, false])
+  })
+
+  it('reflects the Look button pressed state on click', () => {
+    const toolbar = new Toolbar()
+
+    lookButton(toolbar).click()
+
+    expect(lookPressed(toolbar)).toBe(true)
+  })
+
+  it('setLook reflects the pressed state without firing onLookToggle', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onLookToggle((enabled) => toggles.push(enabled))
+
+    toolbar.setLook(true)
+
+    expect(lookPressed(toolbar)).toBe(true)
+    expect(toggles).toEqual([])
+  })
+
+  it('setLook keeps the toggle in sync so the next click flips from it', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+
+    toolbar.setLook(true)
+    toolbar.onLookToggle((enabled) => toggles.push(enabled))
+    lookButton(toolbar).click()
+
+    expect(toggles).toEqual([false])
   })
 })
