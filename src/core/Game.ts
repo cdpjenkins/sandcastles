@@ -5,6 +5,7 @@ import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump } from '../input/Tools.ts'
+import { Toolbar } from '../input/Toolbar.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
@@ -36,7 +37,7 @@ export class Game {
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
-  private readonly hud: HTMLDivElement
+  private readonly toolbar: Toolbar
   private readonly helpOverlay: HTMLDivElement
   private readonly lookPanel: HTMLDivElement
 
@@ -52,11 +53,11 @@ export class Game {
     document.body.style.cssText = 'margin:0;overflow:hidden;background:#000'
     document.body.appendChild(canvas)
 
-    this.hud = document.createElement('div')
-    this.hud.style.cssText =
-      'position:fixed;top:12px;left:12px;color:#fff;font:14px/1.4 monospace;' +
-      'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;pointer-events:none'
-    document.body.appendChild(this.hud)
+    this.toolbar = new Toolbar()
+    this.toolbar.onToolChange((mode) => this.selectTool(mode))
+    this.toolbar.onLookToggle((enabled) => this.setLook(enabled))
+    this.toolbar.onReset(() => this.resetWater())
+    document.body.appendChild(this.toolbar.element)
 
     this.helpOverlay = document.createElement('div')
     this.helpOverlay.style.cssText =
@@ -66,13 +67,15 @@ export class Game {
     this.helpOverlay.textContent = [
       'Controls',
       '────────',
+      'Pick a tool from the bar, top-left, or use the keys below.',
+      '',
       'S        Spade (dig)',
       'D        Toggle Spade / Dump',
       'W        Water stream',
-      'R        Reset water',
+      'L        Toggle Look (independent of the tool)',
+      'R        Reset water (or the Reset button)',
       'Pinch    Zoom',
       '2-finger Pan',
-      'L        Toggle Look tool',
       '?        Toggle this help',
     ].join('\n')
     document.body.appendChild(this.helpOverlay)
@@ -115,6 +118,7 @@ export class Game {
 
     window.addEventListener('keydown', this.onKeyDown)
 
+    this.toolbar.setTool(this.toolMode)
     this.updateHud()
     requestAnimationFrame(this.loop)
   }
@@ -138,19 +142,29 @@ export class Game {
     }
   }
 
+  private selectTool(mode: ToolMode): void {
+    this.toolMode = mode
+    this.toolbar.setTool(mode)
+    this.updateHud()
+  }
+
+  private setLook(enabled: boolean): void {
+    this.lookEnabled = enabled
+    this.toolbar.setLook(enabled)
+    this.lookPanel.style.display = enabled ? 'block' : 'none'
+  }
+
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'd' || e.key === 'D') {
-      this.toolMode =
-        this.toolMode === ToolMode.Spade ? ToolMode.Dump : ToolMode.Spade
-      this.updateHud()
+      this.selectTool(
+        this.toolMode === ToolMode.Spade ? ToolMode.Dump : ToolMode.Spade,
+      )
     }
     if (e.key === 'w' || e.key === 'W') {
-      this.toolMode = ToolMode.Stream
-      this.updateHud()
+      this.selectTool(ToolMode.Stream)
     }
     if (e.key === 's' || e.key === 'S') {
-      this.toolMode = ToolMode.Spade
-      this.updateHud()
+      this.selectTool(ToolMode.Spade)
     }
     if (e.key === 'r' || e.key === 'R') {
       this.resetWater()
@@ -160,8 +174,7 @@ export class Game {
       this.helpOverlay.style.display = visible ? 'none' : 'block'
     }
     if (e.key === 'l' || e.key === 'L') {
-      this.lookEnabled = !this.lookEnabled
-      this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
+      this.setLook(!this.lookEnabled)
     }
   }
 
@@ -177,15 +190,10 @@ export class Game {
   }
 
   private updateHud(): void {
-    const icons: Record<ToolMode, string> = {
-      [ToolMode.Spade]: '⛏ Spade',
-      [ToolMode.Dump]: '🪣 Dump',
-      [ToolMode.Stream]: '💧 Stream',
-    }
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
     const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset).toFixed(2)}`
-    this.hud.textContent = `${icons[this.toolMode]}   bucket: ${fill}   ${wave}   ${seaLevel}`
+    this.toolbar.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}`)
   }
 
   private updateLookPanel(): void {

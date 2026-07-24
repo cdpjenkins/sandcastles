@@ -6,6 +6,14 @@ const TOOL_LABELS: Record<ToolMode, string> = {
   [ToolMode.Stream]: '💧 Stream',
 }
 
+const CONTROL_STYLE =
+  'font:inherit;color:#fff;background:rgba(255,255,255,0.08);' +
+  'border:1px solid transparent;border-radius:4px;padding:3px 9px;' +
+  'cursor:pointer;display:inline-flex;align-items:center'
+
+const SELECTED_BG = 'rgba(90,170,220,0.55)'
+const UNSELECTED_BG = 'rgba(255,255,255,0.08)'
+
 export class Toolbar {
   readonly element: HTMLDivElement
 
@@ -20,13 +28,19 @@ export class Toolbar {
 
   constructor() {
     this.element = document.createElement('div')
+    this.element.style.cssText =
+      'position:fixed;top:12px;left:12px;display:flex;gap:6px;align-items:center;' +
+      'color:#fff;font:14px/1.4 monospace;background:rgba(0,0,0,0.45);' +
+      'padding:6px 10px;border-radius:6px;pointer-events:auto;user-select:none;z-index:10'
 
     for (const mode of Object.values(ToolMode)) {
       const label = document.createElement('label')
+      label.style.cssText = CONTROL_STYLE
       const radio = document.createElement('input')
       radio.type = 'radio'
       radio.name = 'tool'
       radio.value = mode
+      radio.style.cssText = 'position:absolute;opacity:0;width:0;height:0'
       radio.addEventListener('change', () => {
         this.markSelected(mode)
         this.toolChangeHandler(mode)
@@ -41,6 +55,7 @@ export class Toolbar {
     this.lookButton = document.createElement('button')
     this.lookButton.dataset.action = 'look'
     this.lookButton.textContent = '🔎 Look'
+    this.lookButton.style.cssText = CONTROL_STYLE
     this.lookButton.addEventListener('click', () => {
       this.setLook(!this.lookEnabled)
       this.lookToggleHandler(this.lookEnabled)
@@ -51,11 +66,13 @@ export class Toolbar {
     const resetButton = document.createElement('button')
     resetButton.dataset.action = 'reset'
     resetButton.textContent = '↺ Reset water'
+    resetButton.style.cssText = CONTROL_STYLE
     resetButton.addEventListener('click', () => this.resetHandler())
     this.element.appendChild(resetButton)
 
     this.readouts = document.createElement('span')
     this.readouts.dataset.role = 'readouts'
+    this.readouts.style.cssText = 'margin-left:4px;opacity:0.85'
     this.element.appendChild(this.readouts)
   }
 
@@ -80,19 +97,25 @@ export class Toolbar {
     this.reflectLook()
   }
 
-  private reflectLook(): void {
-    this.lookButton.setAttribute('aria-pressed', String(this.lookEnabled))
-    this.lookButton.dataset.selected = String(this.lookEnabled)
-  }
-
   setTool(mode: ToolMode): void {
     this.radios.get(mode)!.checked = true
     this.markSelected(mode)
   }
 
+  private reflectLook(): void {
+    this.lookButton.setAttribute('aria-pressed', String(this.lookEnabled))
+    highlight(this.lookButton, this.lookEnabled)
+  }
+
   private markSelected(mode: ToolMode): void {
     for (const [m, label] of this.labels) {
-      label.dataset.selected = String(m === mode)
+      highlight(label, m === mode)
     }
   }
+}
+
+function highlight(el: HTMLElement, selected: boolean): void {
+  el.dataset.selected = String(selected)
+  el.style.background = selected ? SELECTED_BG : UNSELECTED_BG
+  el.style.borderColor = selected ? '#fff' : 'transparent'
 }
