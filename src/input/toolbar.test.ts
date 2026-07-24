@@ -16,6 +16,14 @@ const clickTool = (toolbar: Toolbar, mode: ToolMode): void => {
   radio.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
+const labelFor = (toolbar: Toolbar, mode: ToolMode): HTMLLabelElement =>
+  radioFor(toolbar, mode).closest('label')!
+
+const selectedModes = (toolbar: Toolbar): ToolMode[] =>
+  Object.values(ToolMode).filter(
+    (mode) => labelFor(toolbar, mode).dataset.selected === 'true',
+  )
+
 describe('Toolbar', () => {
   it('renders one radio per tool mode', () => {
     const toolbar = new Toolbar()
@@ -47,5 +55,31 @@ describe('Toolbar', () => {
 
     const checked = radios(toolbar).filter((r) => r.checked).map((r) => r.value)
     expect(checked).toEqual([ToolMode.Stream])
+  })
+
+  it('setTool checks the matching radio', () => {
+    const toolbar = new Toolbar()
+
+    toolbar.setTool(ToolMode.Stream)
+
+    expect(radioFor(toolbar, ToolMode.Stream).checked).toBe(true)
+  })
+
+  it('setTool marks only the chosen tool as selected', () => {
+    const toolbar = new Toolbar()
+
+    toolbar.setTool(ToolMode.Dump)
+
+    expect(selectedModes(toolbar)).toEqual([ToolMode.Dump])
+  })
+
+  it('setTool does not fire onToolChange', () => {
+    const toolbar = new Toolbar()
+    const picked: ToolMode[] = []
+    toolbar.onToolChange((mode) => picked.push(mode))
+
+    toolbar.setTool(ToolMode.Dump)
+
+    expect(picked).toEqual([])
   })
 })

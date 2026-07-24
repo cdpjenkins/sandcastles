@@ -9,6 +9,8 @@ const TOOL_LABELS: Record<ToolMode, string> = {
 export class Toolbar {
   readonly element: HTMLDivElement
 
+  private readonly radios = new Map<ToolMode, HTMLInputElement>()
+  private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
 
   constructor() {
@@ -20,14 +22,30 @@ export class Toolbar {
       radio.type = 'radio'
       radio.name = 'tool'
       radio.value = mode
-      radio.addEventListener('change', () => this.toolChangeHandler(mode))
+      radio.addEventListener('change', () => {
+        this.markSelected(mode)
+        this.toolChangeHandler(mode)
+      })
       label.appendChild(radio)
       label.appendChild(document.createTextNode(TOOL_LABELS[mode]))
       this.element.appendChild(label)
+      this.radios.set(mode, radio)
+      this.labels.set(mode, label)
     }
   }
 
   onToolChange(handler: (mode: ToolMode) => void): void {
     this.toolChangeHandler = handler
+  }
+
+  setTool(mode: ToolMode): void {
+    this.radios.get(mode)!.checked = true
+    this.markSelected(mode)
+  }
+
+  private markSelected(mode: ToolMode): void {
+    for (const [m, label] of this.labels) {
+      label.dataset.selected = String(m === mode)
+    }
   }
 }
