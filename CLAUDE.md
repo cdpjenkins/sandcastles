@@ -82,9 +82,48 @@ Refraction is emergent from `c = √(g·h)`, but Snell's law only applies where 
 a wavelength. The sea is 56 rows deep; at a 5s period the wavelength is `c·T` = 70 cells and nothing
 bends at all. 2s (~28 cells) works. Lengthening the period silently costs refraction.
 
+### The rivers are wide because of the wetted width, not the deposition rate
+
+Measured on the game scene, not a synthetic hillside — the two disagree, so measure on the beach.
+
+Deposition looks like the culprit and isn't. Two thirds of all the sand the stream picks up goes
+straight back down (47,647 eroded against 32,052 deposited over 120s), and 44% of those deposits are
+pinned at `MAX_BED_RATE`. But `DEPOSITION_K = 0` leaves the channel the same width and the same
+depth (at z=80, 2.633 over 38 cells becomes 2.633 over 36), and ×10 changes nothing either. Sand and
+sediment balance to 0.1 in 144,504, so nothing is inventing sand.
+
+What actually sets the shape, in order of weight:
+
+- **The bed is at bedrock across most of the river's width** — 31 of 38 cut cells at z=80, 87 of 109
+  at z=100. `initBeach` leaves only ~3 units of sand on those rows and the stream strips it in well
+  under 120s. The `sand > 0` guard then blocks the erode branch, so the channel can only widen.
+- **`MAX_BED_RATE` saturates, so incision is uniform across the wetted width.** Capacity in the
+  channel is 6–12 against a load of 0.2–1.6, so `capacity - sediment` is 5–50× the cap and the
+  `Math.min` takes `MAX_BED_RATE * dt` on 76–96% of steps right across the section. Every wet cell
+  drops at the same rate, which is why the floor is a smooth pan rather than a V. The capacity law is
+  inert here. This does *not* mean raising the cap helps — that only strips to bedrock faster.
+- **`Slope` widens it by about a factor of two** (at z=80, 38 cells cut becomes 84).
+
+So the lever for a narrower river is sand depth to cut into and lateral confinement, not any erosion
+knob. On a synthetic hillside with 10+ units of sand the same model reaches depth/width 0.9.
+
+### `SLUMP_RATE` is a weak lever, and slower is not better
+
+It was `TRANSFER_FRACTION`, applied per *step* with no `dt`, which put the slumping rate on `SIM_HZ`:
+0.5 per step at 30 Hz is 15/s, fast enough to project a bank onto the repose slope within one step.
+
+Fixing that is worth it — the rate is now a property of the sand — but it buys less than it looks
+like. 15/s → 1/s narrows the river a tenth and deepens it a fifth; 1/s → 0.5/s buys nothing further
+and only makes a dug wall stand around sluggishly. Slumping widens the channel by happening at all,
+and no rate switches that off. `Slope` off entirely is still narrower than the slowest rate swept.
+
+Repose also puts a hard floor under the width: `2 * depth / tan(32°)` ≈ 3.2 × depth, so a 3-unit sand
+layer cannot hold a channel narrower than about 10 cells whatever else changes.
+
 ### These are knobs. Don't let a test pin one.
 
-`EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`.
+`EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`,
+`SLUMP_RATE`.
 
 Magnitude assertions against them have needed re-deriving five times over. Prefer a comparison — "the
 ground ten cells from the channel is untouched" — or a floor far below any sensible setting. If a test

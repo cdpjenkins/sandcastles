@@ -3,10 +3,17 @@ import type { Grid } from '../core/Grid.ts'
 const ANGLE_OF_REPOSE_DEGREES = 32
 const TAN_AOR = Math.tan((ANGLE_OF_REPOSE_DEGREES * Math.PI) / 180)
 // How much of the excess over the repose angle slumps away per second. A rate,
-// not a fraction per step: as a per-step fraction the slumping runs at whatever
-// SIM_HZ happens to be, and at 30 Hz a fraction of 0.5 relaxed every bank in a
-// single step, which planed the rivers flat as fast as the water could cut them.
-const SLUMP_RATE = 0.5
+// not a fraction per step: as a per-step fraction the slumping ran at whatever
+// SIM_HZ happened to be, and at 30 Hz a fraction of 0.5 comes to 15/s, which
+// projects any bank straight onto the repose slope inside a single step.
+//
+// 1/s against that 15/s deepens the stream's channel by a fifth and narrows it
+// by a tenth (at z=80 of the beach scene, 2.97 deep over 84 cells becomes 3.59
+// over 77), and settles a spade-high wall in about a second rather than
+// instantly. Slower buys no more shape -- 0.5/s measures the same channel and
+// only feels sluggish -- because what widens the river is that the banks slump
+// into it at all, not how fast. See CLAUDE.md.
+const SLUMP_RATE = 1.0
 // Moving sand between a pair of cells closes their height difference by twice
 // what moves, so a fraction past a half steps over the repose slope and lands
 // steeper the other way -- and the next step throws it back harder. Whatever dt
