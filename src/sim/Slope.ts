@@ -7,6 +7,11 @@ const TAN_AOR = Math.tan((ANGLE_OF_REPOSE_DEGREES * Math.PI) / 180)
 // SIM_HZ happens to be, and at 30 Hz a fraction of 0.5 relaxed every bank in a
 // single step, which planed the rivers flat as fast as the water could cut them.
 const SLUMP_RATE = 0.5
+// Moving sand between a pair of cells closes their height difference by twice
+// what moves, so a fraction past a half steps over the repose slope and lands
+// steeper the other way -- and the next step throws it back harder. Whatever dt
+// arrives, never take more than the fraction that lands on the slope itself.
+const MAX_SLUMP_FRACTION = 0.5
 const DIRTY_EPSILON = 1e-4
 
 export class Slope {
@@ -21,7 +26,7 @@ export class Slope {
   step(grid: Grid, dt: number): Uint8Array {
     const W = grid.width
     const D = grid.depth
-    const fraction = SLUMP_RATE * dt
+    const fraction = Math.min(SLUMP_RATE * dt, MAX_SLUMP_FRACTION)
 
     this.dirty.fill(0)
 

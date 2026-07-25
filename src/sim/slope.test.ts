@@ -38,6 +38,24 @@ describe('Slope', () => {
     expect(fine / coarse).toBeGreaterThan(0.85)
   })
 
+  it('a long step settles toward the repose angle instead of overshooting past it', () => {
+    // Scaling the transfer by dt is unstable for a large enough dt: the pair's
+    // height difference falls by twice what moves, so past a fraction of a half
+    // the step jumps over the repose slope and lands steeper the other way, and
+    // the next step throws it back harder.  A sim that stalls and catches up with
+    // one long step must settle, not detonate.
+    const grid = makeGrid(8, 1)
+    grid.setSandHeight(0, 0, 20)
+    const slope = new Slope(8, 1)
+
+    for (let i = 0; i < 5; i++) slope.step(grid, 30)
+
+    // Sand ran downhill, and never so far downhill that the foot of the slope
+    // ended up above its source.
+    expect(grid.getSandHeight(1, 0)!).toBeGreaterThan(0)
+    expect(grid.getSandHeight(1, 0)!).toBeLessThanOrEqual(grid.getSandHeight(0, 0)!)
+  })
+
   it('tall sand column collapses toward flat neighbour', () => {
     const grid = makeGrid()
     grid.setSandHeight(0, 0, 20)
