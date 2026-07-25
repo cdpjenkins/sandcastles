@@ -9,14 +9,42 @@ const makeGrid = (w = 4, d = 1) => {
   return g
 }
 
+const DT = 1 / 30
+
 describe('Slope', () => {
+  it('slumps at a rate per second, not a fraction per step', () => {
+    // The bank relaxes over time, so how much sand moves in a given second is a
+    // property of the sand, not of how finely the second was divided.  Refining
+    // the timestep may only sharpen the answer -- it must not slump more, which
+    // is what a per-step fraction does: halve dt and it relaxes twice as fast,
+    // putting the slump rate at the mercy of SIM_HZ.
+    //
+    // Stated as a ratio between two refinements rather than an amount, because
+    // the amount is set by the rate knob.  Any rate worth shipping lands in this
+    // window; a per-step fraction lands at 1.25.
+    const slumpedOver = (seconds: number, steps: number): number => {
+      const grid = makeGrid(8, 1)
+      grid.setSandHeight(0, 0, 20)
+      const slope = new Slope(8, 1)
+      for (let i = 0; i < steps; i++) slope.step(grid, seconds / steps)
+      return 20 - grid.getSandHeight(0, 0)!
+    }
+
+    const coarse = slumpedOver(0.05, 4)
+    const fine = slumpedOver(0.05, 8)
+
+    expect(coarse).toBeGreaterThan(0)
+    expect(fine / coarse).toBeLessThanOrEqual(1)
+    expect(fine / coarse).toBeGreaterThan(0.85)
+  })
+
   it('tall sand column collapses toward flat neighbour', () => {
     const grid = makeGrid()
     grid.setSandHeight(0, 0, 20)
     grid.setSandHeight(1, 0, 0)
     const slope = new Slope(4, 1)
 
-    for (let i = 0; i < 50; i++) slope.step(grid)
+    for (let i = 0; i < 50; i++) slope.step(grid, DT)
 
     expect(grid.getSandHeight(0, 0)!).toBeLessThan(20)
     expect(grid.getSandHeight(1, 0)!).toBeGreaterThan(0)
@@ -30,7 +58,7 @@ describe('Slope', () => {
       (grid.getSandHeight(0, 0) ?? 0) + (grid.getSandHeight(1, 0) ?? 0)
     const slope = new Slope(4, 1)
 
-    for (let i = 0; i < 50; i++) slope.step(grid)
+    for (let i = 0; i < 50; i++) slope.step(grid, DT)
 
     const totalAfter = [0, 1, 2, 3].reduce(
       (sum, x) => sum + (grid.getSandHeight(x, 0) ?? 0),
@@ -50,7 +78,7 @@ describe('Slope', () => {
     const before = [0, 1, 2, 3].map(x => grid.getSandHeight(x, 0)!)
     const slope = new Slope(4, 1)
 
-    for (let i = 0; i < 10; i++) slope.step(grid)
+    for (let i = 0; i < 10; i++) slope.step(grid, DT)
 
     for (let x = 0; x < 4; x++) {
       expect(grid.getSandHeight(x, 0)!).toBeCloseTo(before[x]!, 2)
@@ -63,7 +91,7 @@ describe('Slope', () => {
       for (let x = 0; x < 4; x++) grid.setSandHeight(x, z, 5)
     const slope = new Slope(4, 4)
 
-    for (let i = 0; i < 20; i++) slope.step(grid)
+    for (let i = 0; i < 20; i++) slope.step(grid, DT)
 
     for (let z = 0; z < 4; z++)
       for (let x = 0; x < 4; x++)
@@ -75,7 +103,7 @@ describe('Slope dirty mask', () => {
   it('step returns a Uint8Array with length width*depth', () => {
     const grid = makeGrid(4, 1)
     const slope = new Slope(4, 1)
-    const dirty = slope.step(grid)
+    const dirty = slope.step(grid, DT)
     expect(dirty).toBeInstanceOf(Uint8Array)
     expect(dirty.length).toBe(4)
   })
@@ -86,7 +114,7 @@ describe('Slope dirty mask', () => {
     grid.setSandHeight(1, 0, 0)
     const slope = new Slope(4, 1)
 
-    const dirty = slope.step(grid)
+    const dirty = slope.step(grid, DT)
 
     expect(dirty[0]).toBe(1)
     expect(dirty[1]).toBe(1)
@@ -100,7 +128,7 @@ describe('Slope dirty mask', () => {
     grid.setSandHeight(3, 0, 4.1)
     const slope = new Slope(4, 1)
 
-    const dirty = slope.step(grid)
+    const dirty = slope.step(grid, DT)
 
     expect(Array.from(dirty).every(v => v === 0)).toBe(true)
   })
@@ -111,7 +139,7 @@ describe('Slope dirty mask', () => {
       for (let x = 0; x < 4; x++) grid.setSandHeight(x, z, 5)
     const slope = new Slope(4, 4)
 
-    const dirty = slope.step(grid)
+    const dirty = slope.step(grid, DT)
 
     expect(Array.from(dirty).every(v => v === 0)).toBe(true)
   })

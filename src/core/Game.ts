@@ -232,7 +232,7 @@ export class Game {
       this.waves.surfaceAt(x, z, seaSurface))
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)
-    const slopeDirty = this.slope.step(this.grid)
+    const slopeDirty = this.slope.step(this.grid, dt)
 
     orInto(
       this.combinedDirty,

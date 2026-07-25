@@ -2,7 +2,11 @@ import type { Grid } from '../core/Grid.ts'
 
 const ANGLE_OF_REPOSE_DEGREES = 32
 const TAN_AOR = Math.tan((ANGLE_OF_REPOSE_DEGREES * Math.PI) / 180)
-const TRANSFER_FRACTION = 0.5
+// How much of the excess over the repose angle slumps away per second. A rate,
+// not a fraction per step: as a per-step fraction the slumping runs at whatever
+// SIM_HZ happens to be, and at 30 Hz a fraction of 0.5 relaxed every bank in a
+// single step, which planed the rivers flat as fast as the water could cut them.
+const SLUMP_RATE = 0.5
 const DIRTY_EPSILON = 1e-4
 
 export class Slope {
@@ -14,9 +18,10 @@ export class Slope {
     this.dirty = new Uint8Array(width * depth)
   }
 
-  step(grid: Grid): Uint8Array {
+  step(grid: Grid, dt: number): Uint8Array {
     const W = grid.width
     const D = grid.depth
+    const fraction = SLUMP_RATE * dt
 
     this.dirty.fill(0)
 
@@ -40,7 +45,7 @@ export class Slope {
           if (excess <= 0) continue
 
           const sand = grid.getSandHeight(x, z) ?? 0
-          const transfer = Math.min(excess * TRANSFER_FRACTION, sand)
+          const transfer = Math.min(excess * fraction, sand)
           if (transfer <= 0) continue
 
           grid.setSandHeight(x, z, sand - transfer)
