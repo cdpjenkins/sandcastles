@@ -38,6 +38,24 @@ flat, and only diverge when it slopes — which put the sea surface at −18.91.
 `initBeach` and `Waves` were only ever exercised apart. When a value could be read as either, name it
 for which it is.
 
+### Advection weights by velocity, not flux — and deep lakes are where it shows
+
+`flowX`/`flowZ` hold *flux* (`depth × velocity`), which the flux ceiling
+`MAX_VELOCITY * edgeDepth` makes plain. The self-advection term must weight the momentum gradient by
+the transport *velocity* (`flux / depth`), so `WaterSim.step` divides the flux average by the depth
+before using it. It was once the flux itself — over-scaled by the whole depth. In shallow water
+`flux ≈ velocity` and nothing showed; in a deep, enclosed lake the term ran ~20–40× too strong, fed on
+itself once any flow existed, and tore the surface into grid-scale chop. Onset was at depth ≈ 22
+(CFL `√(g·h)·dt ≈ 0.5`), which is why it surfaced only when a big `DIG_AMOUNT` let a single dig cut a
+pit that deep. Same bug class as sea level above: a value read as the wrong physical quantity.
+
+The divisor is `max(edgeDepth, 1)`, not `edgeDepth`. Weighting by the true velocity everywhere breaks
+the *shallow* stream instead: a thin sheet's velocity is high, so the corrected term spreads the flow
+and the stream planes a wide flat valley rather than cutting a channel (the erosion channel test
+catches this). Capping the divisor at one unit of depth leaves water shallower than that at its stock
+flux — channel-cutting is byte-identical — and only attenuates the deep water that was unstable. The
+`1` is the crossover depth where flux and velocity read alike; it is coupled to the world's unit scale.
+
 ### `MAX_BED_RATE` is load-bearing, not a tuning detail
 
 Erosion can destabilise the water sim. Moving the bed is a step change in `H = b + w`, so an

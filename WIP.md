@@ -43,7 +43,11 @@ depth, which is why the symptom shows up now.
 Note: `tools.test.ts` dig tests fail from the uncommitted `DIG_AMOUNT=100` WIP,
 unrelated to this change and left untouched.
 
+**Step 5** — CLAUDE.md water-sim note added. ✅ DONE.
+
+Status: ✅ DONE — deep-lake instability fixed, documented, all target tests green.
+
 ## Next action
 
-**Step 5** — document the bug, the depth≈22/CFL≈0.5 threshold, and the
-`DIG_AMOUNT` link in CLAUDE.md's water-sim section.
+None — this work is complete. (The `DIG_AMOUNT=100` dig-test failures are the
+user's separate uncommitted WIP.)
