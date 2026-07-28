@@ -71,7 +71,7 @@ export class WaterSim {
         if (x + 1 < W) {
           const wj = grid.getWaterHeight(x + 1, z) ?? 0
           const hj = (grid.getSurfaceHeight(x + 1, z) ?? 0) + wj
-          // Average z-velocity at the four corners surrounding this x-edge
+          // Average z-flux at the four corners surrounding this x-edge
           const vNW = z > 0     ? this.flowZ[(z - 1) * W + x]     : 0
           const vNE = z > 0     ? this.flowZ[(z - 1) * W + x + 1] : 0
           const vSW = z + 1 < D ? this.flowZ[i]                   : 0
@@ -84,8 +84,14 @@ export class WaterSim {
           const duDz  = vAvg >= 0 ? uHere - uUp : uDown - uHere
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
+          // Advection transports momentum at the flow's velocity, which is flux over
+          // depth -- not the flux. Weighting by flux over-scales it by the depth, so a
+          // deep lake's self-advection feeds on itself and the surface tears into chop.
+          // max(edgeDepth, 1) leaves thin streams at their flux (channels depend on it)
+          // and only attenuates water more than a unit deep.
+          const vVel = vAvg / Math.max(edgeDepth, 1)
           this.flowX[i] = Math.max(-maxFlux, Math.min(maxFlux, withDrag(
-            this.flowX[i] + GRAVITY * edgeDepth * (hi - hj) * dt - vAvg * duDz * dt,
+            this.flowX[i] + GRAVITY * edgeDepth * (hi - hj) * dt - vVel * duDz * dt,
             edgeDepth, dt,
           )))
         }
@@ -93,7 +99,7 @@ export class WaterSim {
         if (z + 1 < D) {
           const wj = grid.getWaterHeight(x, z + 1) ?? 0
           const hj = (grid.getSurfaceHeight(x, z + 1) ?? 0) + wj
-          // Average x-velocity at the four corners surrounding this z-edge
+          // Average x-flux at the four corners surrounding this z-edge
           const uNW = x > 0     ? this.flowX[z * W + x - 1]       : 0
           const uNE = x + 1 < W ? this.flowX[i]                   : 0
           const uSW = x > 0     ? this.flowX[(z + 1) * W + x - 1] : 0
@@ -106,8 +112,10 @@ export class WaterSim {
           const dvDx   = uAvg >= 0 ? vHere - vLeft : vRight - vHere
           const edgeDepth = (wi + wj) / 2
           const maxFlux = MAX_VELOCITY * edgeDepth
+          // Transport velocity is flux over depth; see the x-edge above.
+          const uVel = uAvg / Math.max(edgeDepth, 1)
           this.flowZ[i] = Math.max(-maxFlux, Math.min(maxFlux, withDrag(
-            this.flowZ[i] + GRAVITY * edgeDepth * (hi - hj) * dt - uAvg * dvDx * dt,
+            this.flowZ[i] + GRAVITY * edgeDepth * (hi - hj) * dt - uVel * dvDx * dt,
             edgeDepth, dt,
           )))
         }

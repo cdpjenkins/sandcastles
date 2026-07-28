@@ -320,6 +320,45 @@ describe('WaterSim cross-advection', () => {
   })
 })
 
+describe('WaterSim deep-water stability', () => {
+  it('a disturbance in a deep lake dies away rather than amplifying', () => {
+    // Self-advection has to weight the momentum gradient by the flow's velocity,
+    // which is flux over depth -- not the flux itself.  Weighted by flux it runs
+    // over-strong by the whole depth, so in a deep, enclosed lake a poke feeds on
+    // itself instead of dispersing and the surface tears into grid-scale chop.
+    // The invariant a lake must hold is the one the shallow basin already holds:
+    // a disturbance loses energy over time rather than gaining it.
+    const depth = 30
+    const N = 24
+    const grid = new Grid(N, N)
+    for (let z = 0; z < N; z++)
+      for (let x = 0; x < N; x++) {
+        const rim = x < 4 || x >= N - 4 || z < 4 || z >= N - 4
+        grid.setRockHeight(x, z, rim ? depth + 30 : 0)
+        grid.setWaterHeight(x, z, rim ? 0 : depth)
+      }
+    grid.setWaterHeight(N / 2, N / 2, depth + 0.3)
+    const sim = new WaterSim(N, N)
+
+    const peakFluxOver = (steps: number): number => {
+      let peak = 0
+      for (let i = 0; i < steps; i++) {
+        sim.step(grid, DT)
+        for (let z = 4; z < N - 4; z++)
+          for (let x = 4; x < N - 4; x++)
+            peak = Math.max(peak, Math.abs(sim.getFlowX(x, z)), Math.abs(sim.getFlowZ(x, z)))
+      }
+      return peak
+    }
+
+    const early = peakFluxOver(30 * 2)
+    peakFluxOver(30 * 30)
+    const late = peakFluxOver(30 * 2)
+
+    expect(late).toBeLessThan(early)
+  })
+})
+
 describe('WaterSim flow accessors', () => {
   it('getFlowX returns 0 before any step', () => {
     const sim = new WaterSim(4, 4)
