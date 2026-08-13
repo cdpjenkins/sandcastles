@@ -206,6 +206,41 @@ describe('WaterSim flux limiting', () => {
   })
 })
 
+describe('WaterSim sill conductance', () => {
+  // The edge between two cells conducts only the water standing above the higher
+  // of the two beds. A lake spilling over a rim is metered by the head on the rim,
+  // not by however deep the lake behind it happens to be.
+  const spillFluxFromLakeOfDepth = (lakeDepth: number): number => {
+    const grid = flatGrid(3, 1, 0)
+    grid.setRockHeight(1, 0, lakeDepth - 1)
+    grid.setWaterHeight(0, 0, lakeDepth)
+    const sim = new WaterSim(3, 1)
+
+    sim.step(grid, DT)
+
+    return sim.getFlowX(0, 0)
+  }
+
+  it('the flow over a sill is set by the head above it, not the lake behind it', () => {
+    expect(spillFluxFromLakeOfDepth(30)).toBeCloseTo(spillFluxFromLakeOfDepth(10), 3)
+  })
+
+  it('water perched above a lake drains at its own depth, not the lake\'s', () => {
+    // A shallow puddle sitting on a ledge two units clear of a deep lake. The two
+    // are joined by a hand's breadth of water, so the puddle trickles off the ledge
+    // -- the lake below cannot reach up and pull it over in a single step.
+    const grid = flatGrid(2, 1, 0)
+    grid.setRockHeight(1, 0, 12)
+    grid.setWaterHeight(0, 0, 10)
+    grid.setWaterHeight(1, 0, 0.1)
+    const sim = new WaterSim(2, 1)
+
+    sim.step(grid, DT)
+
+    expect(grid.getWaterHeight(1, 0)!).toBeGreaterThan(0.09)
+  })
+})
+
 describe('WaterSim dirty mask', () => {
   it('step returns a Uint8Array with length width*depth', () => {
     const grid = flatGrid(4, 4)

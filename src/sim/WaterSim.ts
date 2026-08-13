@@ -6,6 +6,20 @@ const MAX_VELOCITY = 8.0
 const DRY_DEPTH = 1e-6
 const DIRTY_EPSILON = 1e-4
 
+// An edge conducts only the water standing above the higher of the two beds it
+// separates -- the sill between them. The mean of the two water columns comes to
+// the same number whenever the bed is flat, and badly overstates it wherever the
+// bed steps: a lake rim, a sill, a breach. Overstating it drives the flow too
+// hard, lifts the MAX_VELOCITY ceiling that would have caught it, and softens the
+// drag, all at once.
+const conductingDepth = (
+  surfaceI: number, bedI: number,
+  surfaceJ: number, bedJ: number,
+): number => {
+  const sill = Math.max(bedI, bedJ)
+  return (Math.max(0, surfaceI - sill) + Math.max(0, surfaceJ - sill)) / 2
+}
+
 // Manning bed friction, solved semi-implicitly for the new flux rather than
 // subtracting a term built from the old one. That form is stable at any depth and
 // can never flip the flux's sign, which an explicit term does once h gets small.
@@ -66,11 +80,13 @@ export class WaterSim {
       for (let x = 0; x < W; x++) {
         const i = z * W + x
         const wi = grid.getWaterHeight(x, z) ?? 0
-        const hi = (grid.getSurfaceHeight(x, z) ?? 0) + wi
+        const bi = grid.getSurfaceHeight(x, z) ?? 0
+        const hi = bi + wi
 
         if (x + 1 < W) {
           const wj = grid.getWaterHeight(x + 1, z) ?? 0
-          const hj = (grid.getSurfaceHeight(x + 1, z) ?? 0) + wj
+          const bj = grid.getSurfaceHeight(x + 1, z) ?? 0
+          const hj = bj + wj
           // Average z-flux at the four corners surrounding this x-edge
           const vNW = z > 0     ? this.flowZ[(z - 1) * W + x]     : 0
           const vNE = z > 0     ? this.flowZ[(z - 1) * W + x + 1] : 0
@@ -82,7 +98,7 @@ export class WaterSim {
           const uUp   = z > 0     ? this.flowX[(z - 1) * W + x] : uHere
           const uDown = z + 1 < D ? this.flowX[(z + 1) * W + x] : uHere
           const duDz  = vAvg >= 0 ? uHere - uUp : uDown - uHere
-          const edgeDepth = (wi + wj) / 2
+          const edgeDepth = conductingDepth(hi, bi, hj, bj)
           const maxFlux = MAX_VELOCITY * edgeDepth
           // Advection transports momentum at the flow's velocity, which is flux over
           // depth -- not the flux. Weighting by flux over-scales it by the depth, so a
@@ -98,7 +114,8 @@ export class WaterSim {
 
         if (z + 1 < D) {
           const wj = grid.getWaterHeight(x, z + 1) ?? 0
-          const hj = (grid.getSurfaceHeight(x, z + 1) ?? 0) + wj
+          const bj = grid.getSurfaceHeight(x, z + 1) ?? 0
+          const hj = bj + wj
           // Average x-flux at the four corners surrounding this z-edge
           const uNW = x > 0     ? this.flowX[z * W + x - 1]       : 0
           const uNE = x + 1 < W ? this.flowX[i]                   : 0
@@ -110,7 +127,7 @@ export class WaterSim {
           const vLeft  = x > 0     ? this.flowZ[z * W + x - 1] : vHere
           const vRight = x + 1 < W ? this.flowZ[z * W + x + 1] : vHere
           const dvDx   = uAvg >= 0 ? vHere - vLeft : vRight - vHere
-          const edgeDepth = (wi + wj) / 2
+          const edgeDepth = conductingDepth(hi, bi, hj, bj)
           const maxFlux = MAX_VELOCITY * edgeDepth
           // Transport velocity is flux over depth; see the x-edge above.
           const uVel = uAvg / Math.max(edgeDepth, 1)
