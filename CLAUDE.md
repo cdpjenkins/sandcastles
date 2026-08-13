@@ -56,6 +56,23 @@ catches this). Capping the divisor at one unit of depth leaves water shallower t
 flux — channel-cutting is byte-identical — and only attenuates the deep water that was unstable. The
 `1` is the crossover depth where flux and velocity read alike; it is coupled to the world's unit scale.
 
+### An edge conducts the water above the sill, not the mean of the two columns
+
+`conductingDepth` takes the mean of the two cells' columns *measured above the higher of the two
+beds*. The obvious `(wi + wj) / 2` gives the same answer whenever the bed is flat, which is why it
+survived so long — it only diverges where the bed steps, and it is exactly there that it matters. A
+sill carrying one unit of head beside a ten-deep lake read as 5.0.
+
+Three things break together, all in the same direction, which is what made the symptom so violent:
+the drive `g * edgeDepth * dh` runs over-strong, the `MAX_VELOCITY * edgeDepth` ceiling that would
+have caught it lifts by the same factor, and `withDrag` softens by `h^(7/3)` exactly where the water
+is thin and friction ought to dominate. Water crossed a breached rim at 30 cells/s, ~4× `MAX_VELOCITY`,
+CFL ≈ 1.
+
+Third instance of the same bug class as sea level and the advection flux: a value read as the wrong
+physical quantity. Note the pattern — all three hid because the wrong reading agrees with the right
+one in the common case (flat bed, flat sea, shallow water) and only parts company at the edges.
+
 ### `MAX_BED_RATE` is load-bearing, not a tuning detail
 
 Erosion can destabilise the water sim. Moving the bed is a step change in `H = b + w`, so an

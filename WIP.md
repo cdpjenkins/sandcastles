@@ -56,7 +56,7 @@ is the erosion feedback, tracked separately.
   1.95 -> 0.94); peak flux in a spilling lake no longer scales with the lake's
   depth (was 12.5/18.0/26.3 at depths 5/10/20, now ~11.5 flat).
 
-**Step 5** — CLAUDE.md water-sim note. 🔴 TODO.
+**Step 5** — CLAUDE.md water-sim note added. ✅ DONE.
 
 Note: `tools.test.ts` dig tests fail from the uncommitted `DIG_AMOUNT=100` WIP,
 unrelated to this change and left untouched (2 failures before and after).
@@ -85,4 +85,5 @@ bounds the rate but not the feedback.
 
 ## Next action
 
-Step 5: add the CLAUDE.md note for the conducting-depth fix.
+The conducting-depth fix is complete. Next is the erosion seiche pump
+above, which is what actually makes inland lakes amplify.
