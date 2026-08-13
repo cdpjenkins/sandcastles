@@ -106,6 +106,43 @@ Capacity is compared against `sediment`, an absolute column, while `transportSed
 concentration. That mismatch is still present and is why deep cells reach the deposit branch before
 shallow ones at equal concentration.
 
+### Without a threshold of motion, erosion pumps a lake's own waves
+
+A lake's waves are a *standing* wave — the rim reflects — and in a standing wave velocity and surface
+slope are in phase with each other: both peak at the nodes, both vanish at the antinodes. So a
+capacity of `velocity × slope` scours the nodes and drops the load at the antinodes. Because the
+surface is `bed + water`, every bit of that bed movement goes straight into surface elevation:
+depositing at an antinode raises the crest, which drives the next cycle harder.
+
+Measured in a closed basin — no outflow, no wet/dry front — 10 deep, kicked with a 0.1 tilt: the
+slosh grew to 7.1 in 90s while the lake stripped its own bed from 8000 to 24. Water volume was
+*exactly* conserved (15998.0 → 15998.0), so the amplitude came from the bed, not from the water sim.
+`sum(Δbed × surfaceAnomaly)` was +31.6; with `CRITICAL_POWER` it is 0.000.
+
+**Stream power cannot tell a lake seiche from wave swash — only an obstacle separates them.** Quiet
+lake max power 0.226; flat-beach swash max 0.230 over 45k samples, with *zero* above 0.3. So a
+threshold silences flat-beach swash, and that is fine and wanted: a featureless beach in equilibrium
+with the swell should not dissolve. What must still erode is a castle, and it does, because an
+obstacle steepens the surface: p75 0.42, p90 0.89, p99 3.5, a third of its samples above the
+threshold. A castle loses ~56% of its sand to 120s of waves. Check that scene, not flat beach, before
+touching `CRITICAL_POWER`.
+
+`CRITICAL_POWER` is a knob coupled to the world's unit scale, and its window is narrow — 0.3–0.4.
+Below it the lake still pumps; above it the stream stops cutting its channel.
+
+Four other cures were measured and rejected. All of them reduce the amplification, which is exactly
+why they are tempting:
+
+- **Compare concentration rather than absolute sediment** (the mismatch noted above). Real bug, worth
+  fixing on its own merits, but only takes the slosh 8.5 → 3.1. Not the pump.
+- **Volume-conserving bed exchange** — add the eroded depth to the water column so `H` cannot move.
+  Cures the lake perfectly and destroys the channel: it *creates water*, which floods the hillside and
+  planes it flat (banks cut 4.01 against a channel floor of 4.12).
+- **Sediment volume in the surface**, `H = bed + water + sediment`, the version of the above that does
+  not invent water. Worse than doing nothing (5.0) and the channel still goes.
+- **Unit stream power `q·S`** — weight by discharge instead of velocity. Reasoning that flux is
+  phase-symmetric across crest and trough is wrong: still 3.1, and worse as `EROSION_K` drops.
+
 ### The sponge relaxes the surface as well as damping the flux
 
 Both halves are doing work. Damping flux alone takes the wave's momentum and leaves its surface
