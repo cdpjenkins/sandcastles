@@ -98,6 +98,13 @@ describe('Erosion', () => {
     // the only difference between the two runs is how deep the water is.  The
     // same flux through a thin sheet is fast-moving water and should scour hard;
     // through a deep column it is barely moving and should not.
+    //
+    // The forcing has to be this large for the scene to say anything at all.  Below
+    // it both readings sit at zero, held there by the threshold of motion; far above
+    // it both pin at MAX_BED_RATE.  There is no forcing at which both come off the
+    // stops together, so this reads "one moves, the other does not" rather than
+    // comparing two amounts -- see the saturation note in CLAUDE.md.
+    const FLUX = 8.0
     const erodedAtDepth = (depth: number): number => {
       const w = 4
       const grid = new Grid(w, 1)
@@ -108,7 +115,7 @@ describe('Erosion', () => {
       }
       const waterSim = new WaterSim(w, 1)
       const erosion = new Erosion(w, 1)
-      for (let x = 0; x < w - 1; x++) waterSim.setFlowX(x, 0, 1.0)
+      for (let x = 0; x < w - 1; x++) waterSim.setFlowX(x, 0, FLUX)
 
       waterSim.step(grid, DT)
       erosion.step(grid, waterSim, DT)
@@ -159,6 +166,46 @@ describe('Erosion', () => {
       expect(floor).toBeGreaterThan(1)
       expect(awayFromChannel).toBeLessThan(floor / 4)
     }
+  })
+
+  it('a lake rocking gently leaves its own bed alone', () => {
+    // Real sediment has a threshold of motion: below some stream power the grains
+    // simply stay put. Without one, every wet cell scours whatever the water is
+    // doing, so an enclosed lake quietly strips its own bed bare -- and because
+    // the surface is bed + water, a bed moving under a standing wave feeds that
+    // wave, which scours harder still.
+    const size = 32
+    const rim = 4
+    const depth = 10
+    const grid = new Grid(size, size)
+    for (let z = 0; z < size; z++)
+      for (let x = 0; x < size; x++) {
+        const onRim = x < rim || x >= size - rim || z < rim || z >= size - rim
+        grid.setRockHeight(x, z, -5)
+        grid.setSandHeight(x, z, onRim ? depth + 25 : 5)
+        grid.setWaterHeight(x, z, onRim ? 0 : depth)
+      }
+    // tip the surface a little, so the lake is rocking rather than dead flat
+    for (let z = rim; z < size - rim; z++)
+      for (let x = rim; x < size - rim; x++)
+        grid.setWaterHeight(x, z, depth + ((x - rim) / (size - 2 * rim) - 0.5) * 0.1)
+
+    const waterSim = new WaterSim(size, size)
+    const erosion = new Erosion(size, size)
+    const bedUnderLake = (): number => {
+      let sum = 0
+      for (let z = rim; z < size - rim; z++)
+        for (let x = rim; x < size - rim; x++) sum += grid.getSandHeight(x, z)!
+      return sum
+    }
+    const before = bedUnderLake()
+
+    for (let i = 0; i < 30 * 60; i++) {
+      waterSim.step(grid, DT)
+      erosion.step(grid, waterSim, DT)
+    }
+
+    expect(bedUnderLake()).toBeGreaterThan(before * 0.9)
   })
 
   it('saturates the rate the bed rises, just as it does the rate it drops', () => {
@@ -213,8 +260,18 @@ describe('Erosion sediment transport', () => {
       if (i % 60 === 59) samples.push(grid.getSandHeight(2, 0)!)
     }
 
-    for (let i = 1; i < samples.length; i++) {
+    // While it still has a bed, it only ever loses it.
+    const stripped = samples.findIndex((s) => s <= 0)
+    const losing = stripped < 0 ? samples.length : stripped + 1
+    for (let i = 1; i < losing; i++) {
       expect(samples[i]!).toBeLessThanOrEqual(samples[i - 1]! + 1e-3)
+    }
+
+    // Once it is down to rock it stays there. A trace of what the water carries
+    // does settle back -- thousandths against the 2 units it started with -- but
+    // that is the stream dropping its load, not the cell rebuilding.
+    for (const sample of samples.slice(losing)) {
+      expect(sample).toBeLessThan(0.05)
     }
     expect(samples.at(-1)!).toBeLessThan(2)
 

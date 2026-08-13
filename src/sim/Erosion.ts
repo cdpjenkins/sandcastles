@@ -1,11 +1,13 @@
 import type { Grid } from '../core/Grid.ts'
 import type { WaterSim } from './WaterSim.ts'
 
-// Capacity is stream power: how fast the water moves times how steeply it is
-// running downhill. Speed alone cannot tell a channel from a sheet wash, since a
-// thin film racing across flat ground moves as fast as the thalweg -- it is the
-// slope term that lets water gathering into a channel cut harder there than over
-// the ground either side, so incision concentrates instead of spreading.
+// Capacity is the stream power a cell has to spare: how fast the water moves
+// times how steeply it is running downhill, less the CRITICAL_POWER below which
+// the bed does not move at all. Speed alone cannot tell a channel from a sheet
+// wash, since a thin film racing across flat ground moves as fast as the thalweg
+// -- it is the slope term that lets water gathering into a channel cut harder
+// there than over the ground either side, so incision concentrates instead of
+// spreading.
 const EROSION_K = 40
 const DEPOSITION_K = 0.5
 // The most the bed may move in a second. Moving it is a step change in the water
@@ -13,6 +15,11 @@ const DEPOSITION_K = 0.5
 // channel, the channel speeds the water, the faster water scours harder. This
 // decouples stability from EROSION_K, leaving that free as a tuning knob.
 const MAX_BED_RATE = 0.3
+// Grains do not creep at the first hint of a current: below a critical stream
+// power the bed simply holds. Without that floor every wet cell scours whatever
+// the water is doing, so an enclosed lake strips its own bed, and since the
+// surface is bed + water, a bed shifting under a standing wave feeds the wave.
+const CRITICAL_POWER = 0.3
 const MIN_WATER_TO_ERODE = 1e-5
 const DIRTY_EPSILON = 1e-4
 
@@ -49,7 +56,8 @@ export class Erosion {
         if (water < MIN_WATER_TO_ERODE) continue
 
         const velocity = waterSim.getVelocity(x, z)
-        const capacity = velocity * EROSION_K * surfaceSlope(grid, x, z)
+        const streamPower = velocity * surfaceSlope(grid, x, z)
+        const capacity = Math.max(0, streamPower - CRITICAL_POWER) * EROSION_K
         const sediment = grid.getSediment(x, z) ?? 0
         const sand = grid.getSandHeight(x, z) ?? 0
 
