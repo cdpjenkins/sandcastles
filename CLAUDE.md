@@ -102,9 +102,29 @@ Two other laws were measured and rejected, both plausible enough to try again if
   `τ = ρghS` only encodes velocity through the *friction* slope; a slope read from instantaneous
   geometry is not that.
 
-Capacity is compared against `sediment`, an absolute column, while `transportSediment` works in
-concentration. That mismatch is still present and is why deep cells reach the deposit branch before
-shallow ones at equal concentration.
+### Capacity's depth dependence is deliberate, not a units slip
+
+Capacity is compared against `sediment`, an absolute column, while `transportSediment` reads a
+concentration to pick its upwind value. That looks like a units slip, and it is why deep cells reach
+the deposit branch before shallow ones at equal concentration — but it cannot be "corrected", because
+comparing in concentration is *algebraically the same thing* as a discharge-based capacity:
+
+```
+concentration vs v·S·K  ⟺  sediment/water vs v·S·K  ⟺  sediment vs (v·water)·S·K  ⟺  sediment vs q·S·K
+```
+
+So concentration-consistency and velocity-based capacity cannot both hold while `sediment` is a
+conserved column. Pick one. The code picks velocity, deliberately, in `d2da198`, and the absolute
+comparison is that choice's consistent partner.
+
+Measured before believing it: under `q·S` no `EROSION_K` forms a channel at all. At 40 the stream
+planes the hillside (cut 0.436 beside the channel against an allowed 0.338); at 20 and below it never
+incises (floor 0.81, then 0.34, then 3.8e-7, needing > 1). It goes straight from planed to nothing
+with no window between. Any comparison that scales with water in the shallow regime makes the channel
+discharge-driven, and the channel *is* the shallow regime.
+
+`transportSediment` itself is right: `flow × concentration` is `(h·v)(s/h) = v·s`, the correct
+advective flux of a column. There is no arithmetic error here to find.
 
 ### Without a threshold of motion, erosion pumps a lake's own waves
 

@@ -49,9 +49,12 @@ Probe kept at `scratchpad/lakeProbe.test.ts`.
 
 None — the reported bug is fixed on both fronts.
 
-Two things noticed but deliberately not done, neither load-bearing for this bug:
+The capacity/concentration "mismatch" was investigated and closed: it is a
+deliberate fork, not a bug. Comparing in concentration is algebraically the
+same as a discharge-based capacity, and no `EROSION_K` forms a channel under
+that law. CLAUDE.md now records the algebra and the sweep so it is not
+re-attempted.
 
-- The capacity/concentration mismatch is still present (CLAUDE.md documents it).
-  A real inconsistency, worth its own cycle.
-- `WaterSim.step`'s x-edge and z-edge blocks are ~20 near-identical lines.
-  Pre-existing, and it is a hot loop, so extraction needs a benchmark first.
+One thing noticed and deliberately not done: `WaterSim.step`'s x-edge and
+z-edge blocks are ~20 near-identical lines. Pre-existing, and it is a hot loop,
+so extraction needs a benchmark first.
