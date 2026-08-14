@@ -19,7 +19,7 @@ import type { GridCoord } from '../types.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
-const BUCKET_CAPACITY = 100
+const BUCKET_CAPACITY = 1000
 const STREAM_RATE = 1.0
 
 export class Game {

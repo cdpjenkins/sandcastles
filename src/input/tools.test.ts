@@ -3,17 +3,23 @@ import { dig, dump, DIG_AMOUNT, DUMP_AMOUNT } from './Tools.ts'
 import { Grid } from '../core/Grid.ts'
 import { Bucket } from '../core/Bucket.ts'
 
+// Deeper than a spadeful, and a bucket roomier than one, both stated in terms of
+// DIG_AMOUNT rather than as bare numbers. A scene holding less than the tool
+// takes cannot say anything about a full dig, and pinning it to a literal is how
+// these went stale when a spadeful grew.
 const makeGrid = () => {
   const g = new Grid(16, 16)
   g.setRockHeight(8, 0, 1)
-  g.setSandHeight(8, 0, 50)
+  g.setSandHeight(8, 0, DIG_AMOUNT * 2)
   return g
 }
+
+const roomyBucket = () => new Bucket(DIG_AMOUNT * 2)
 
 describe('dig', () => {
   it('removes sand from the cell', () => {
     const grid = makeGrid()
-    const bucket = new Bucket(100)
+    const bucket = roomyBucket()
     const before = grid.getSandHeight(8, 0)!
     dig(grid, 8, 0, bucket)
     expect(grid.getSandHeight(8, 0)).toBeCloseTo(before - DIG_AMOUNT)
@@ -21,14 +27,14 @@ describe('dig', () => {
 
   it('fills the bucket by DIG_AMOUNT', () => {
     const grid = makeGrid()
-    const bucket = new Bucket(100)
+    const bucket = roomyBucket()
     dig(grid, 8, 0, bucket)
     expect(bucket.amount).toBeCloseTo(DIG_AMOUNT)
   })
 
   it('returns true when sand was removed', () => {
     const grid = makeGrid()
-    const bucket = new Bucket(100)
+    const bucket = roomyBucket()
     expect(dig(grid, 8, 0, bucket)).toBe(true)
   })
 
@@ -43,8 +49,8 @@ describe('dig', () => {
 
   it('does nothing when bucket is full and returns false', () => {
     const grid = makeGrid()
-    const bucket = new Bucket(100)
-    bucket.fill(100)
+    const bucket = new Bucket(DIG_AMOUNT)
+    bucket.fill(DIG_AMOUNT)
     const before = grid.getSandHeight(8, 0)!
     const result = dig(grid, 8, 0, bucket)
     expect(result).toBe(false)

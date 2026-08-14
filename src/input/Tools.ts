@@ -9,7 +9,7 @@ export const ToolMode = {
 
 export type ToolMode = (typeof ToolMode)[keyof typeof ToolMode]
 
-export const DIG_AMOUNT = 10
+export const DIG_AMOUNT = 100
 export const DUMP_AMOUNT = 10
 
 export function dig(grid: Grid, x: number, z: number, bucket: Bucket): boolean {
