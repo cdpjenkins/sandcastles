@@ -30,6 +30,12 @@ const lookButton = (toolbar: Toolbar): HTMLButtonElement =>
 const lookPressed = (toolbar: Toolbar): boolean =>
   lookButton(toolbar).getAttribute('aria-pressed') === 'true'
 
+const pauseButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="pause"]')!
+
+const pausePressed = (toolbar: Toolbar): boolean =>
+  pauseButton(toolbar).getAttribute('aria-pressed') === 'true'
+
 const resetButton = (toolbar: Toolbar): HTMLButtonElement =>
   toolbar.element.querySelector<HTMLButtonElement>('button[data-action="reset"]')!
 
@@ -132,6 +138,58 @@ describe('Toolbar', () => {
     toolbar.setLook(true)
     toolbar.onLookToggle((enabled) => toggles.push(enabled))
     lookButton(toolbar).click()
+
+    expect(toggles).toEqual([false])
+  })
+
+  it('toggles Pause on and off, firing onPauseToggle with the new state', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onPauseToggle((paused) => toggles.push(paused))
+
+    pauseButton(toolbar).click()
+    pauseButton(toolbar).click()
+
+    expect(toggles).toEqual([true, false])
+  })
+
+  it('reflects the Pause button pressed state on click', () => {
+    const toolbar = new Toolbar()
+
+    pauseButton(toolbar).click()
+
+    expect(pausePressed(toolbar)).toBe(true)
+  })
+
+  it('offers a way out of a paused game, not a second way in', () => {
+    // Pause is a modal state: a frozen game with a button still reading "Pause"
+    // gives the player nothing to aim at.
+    const toolbar = new Toolbar()
+    const running = pauseButton(toolbar).textContent
+
+    pauseButton(toolbar).click()
+
+    expect(pauseButton(toolbar).textContent).not.toBe(running)
+  })
+
+  it('setPaused reflects the pressed state without firing onPauseToggle', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onPauseToggle((paused) => toggles.push(paused))
+
+    toolbar.setPaused(true)
+
+    expect(pausePressed(toolbar)).toBe(true)
+    expect(toggles).toEqual([])
+  })
+
+  it('setPaused keeps the toggle in sync so the next click flips from it', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+
+    toolbar.setPaused(true)
+    toolbar.onPauseToggle((paused) => toggles.push(paused))
+    pauseButton(toolbar).click()
 
     expect(toggles).toEqual([false])
   })

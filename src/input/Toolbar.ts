@@ -11,6 +11,8 @@ const CONTROL_STYLE =
   'border:1px solid transparent;border-radius:4px;padding:3px 9px;' +
   'cursor:pointer;display:inline-flex;align-items:center'
 
+const PAUSE_LABELS = { running: '⏸ Pause', paused: '▶ Resume' }
+
 const SELECTED_BG = 'rgba(90,170,220,0.55)'
 const UNSELECTED_BG = 'rgba(255,255,255,0.08)'
 
@@ -20,11 +22,14 @@ export class Toolbar {
   private readonly radios = new Map<ToolMode, HTMLInputElement>()
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private readonly lookButton: HTMLButtonElement
+  private readonly pauseButton: HTMLButtonElement
   private readonly readouts: HTMLSpanElement
   private lookEnabled = false
+  private paused = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
   private lookToggleHandler: (enabled: boolean) => void = () => {}
   private resetHandler: () => void = () => {}
+  private pauseToggleHandler: (paused: boolean) => void = () => {}
 
   constructor() {
     this.element = document.createElement('div')
@@ -63,6 +68,16 @@ export class Toolbar {
     this.reflectLook()
     this.element.appendChild(this.lookButton)
 
+    this.pauseButton = document.createElement('button')
+    this.pauseButton.dataset.action = 'pause'
+    this.pauseButton.style.cssText = CONTROL_STYLE
+    this.pauseButton.addEventListener('click', () => {
+      this.setPaused(!this.paused)
+      this.pauseToggleHandler(this.paused)
+    })
+    this.reflectPaused()
+    this.element.appendChild(this.pauseButton)
+
     const resetButton = document.createElement('button')
     resetButton.dataset.action = 'reset'
     resetButton.textContent = '↺ Reset water'
@@ -84,6 +99,10 @@ export class Toolbar {
     this.lookToggleHandler = handler
   }
 
+  onPauseToggle(handler: (paused: boolean) => void): void {
+    this.pauseToggleHandler = handler
+  }
+
   onReset(handler: () => void): void {
     this.resetHandler = handler
   }
@@ -97,6 +116,11 @@ export class Toolbar {
     this.reflectLook()
   }
 
+  setPaused(paused: boolean): void {
+    this.paused = paused
+    this.reflectPaused()
+  }
+
   setTool(mode: ToolMode): void {
     this.radios.get(mode)!.checked = true
     this.markSelected(mode)
@@ -105,6 +129,12 @@ export class Toolbar {
   private reflectLook(): void {
     this.lookButton.setAttribute('aria-pressed', String(this.lookEnabled))
     highlight(this.lookButton, this.lookEnabled)
+  }
+
+  private reflectPaused(): void {
+    this.pauseButton.textContent = this.paused ? PAUSE_LABELS.paused : PAUSE_LABELS.running
+    this.pauseButton.setAttribute('aria-pressed', String(this.paused))
+    highlight(this.pauseButton, this.paused)
   }
 
   private markSelected(mode: ToolMode): void {
