@@ -1,4 +1,5 @@
 import { Grid } from './Grid.ts'
+import { SimClock } from './SimClock.ts'
 import { Bucket } from './Bucket.ts'
 import { Renderer } from '../render/Renderer.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
@@ -19,6 +20,9 @@ import type { GridCoord } from '../types.ts'
 
 const SIM_HZ = 30
 const SIM_STEP = 1 / SIM_HZ
+// A backgrounded tab hands back one enormous frame; take this much of it and
+// let the rest go, so the sim slows down rather than locking the page.
+const MAX_FRAME = 0.1
 const BUCKET_CAPACITY = 1000
 const STREAM_RATE = 1.0
 
@@ -32,6 +36,7 @@ export class Game {
   private readonly waves: Waves
   private readonly sponge: Sponge
   private readonly tide: Tide
+  private readonly simClock = new SimClock(SIM_STEP, MAX_FRAME)
   private readonly combinedDirty: Uint8Array
   private readonly renderer: Renderer
   private readonly isoCamera: IsoCamera
@@ -42,7 +47,6 @@ export class Game {
   private readonly lookPanel: HTMLDivElement
 
   private toolMode: ToolMode = ToolMode.Spade
-  private simAccumulator = 0
   private lastTime = 0
   private lookEnabled = false
   private hoverCell: GridCoord | null = null
@@ -207,14 +211,11 @@ export class Game {
   }
 
   private loop = (timestamp: number): void => {
-    const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1)
+    const frameSeconds = (timestamp - this.lastTime) / 1000
     this.lastTime = timestamp
 
-    this.simAccumulator += dt
-    while (this.simAccumulator >= SIM_STEP) {
-      this.simStep(SIM_STEP)
-      this.simAccumulator -= SIM_STEP
-    }
+    const steps = this.simClock.advance(frameSeconds)
+    for (let i = 0; i < steps; i++) this.simStep(SIM_STEP)
 
     this.updateHud()
     this.updateLookPanel()
