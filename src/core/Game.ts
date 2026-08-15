@@ -49,6 +49,7 @@ export class Game {
   private toolMode: ToolMode = ToolMode.Spade
   private lastTime = 0
   private lookEnabled = false
+  private paused = false
   private hoverCell: GridCoord | null = null
 
   constructor() {
@@ -61,6 +62,7 @@ export class Game {
     this.toolbar.onToolChange((mode) => this.selectTool(mode))
     this.toolbar.onLookToggle((enabled) => this.setLook(enabled))
     this.toolbar.onReset(() => this.resetWater())
+    this.toolbar.onPauseToggle((paused) => this.setPaused(paused))
     document.body.appendChild(this.toolbar.element)
 
     this.helpOverlay = document.createElement('div')
@@ -78,6 +80,7 @@ export class Game {
       'W        Water stream',
       'L        Toggle Look (independent of the tool)',
       'R        Reset water (or the Reset button)',
+      'P        Pause / resume the simulation',
       'Pinch    Zoom',
       '2-finger Pan',
       '?        Toggle this help',
@@ -152,6 +155,15 @@ export class Game {
     this.updateHud()
   }
 
+  // Pause gates the simulation only. Rendering, the camera and the tools stay
+  // live: this is a sandbox, so pausing to build carefully is the point, and a
+  // frozen camera would just read as a hung game.
+  private setPaused(paused: boolean): void {
+    this.paused = paused
+    this.toolbar.setPaused(paused)
+    this.updateHud()
+  }
+
   private setLook(enabled: boolean): void {
     this.lookEnabled = enabled
     this.toolbar.setLook(enabled)
@@ -177,6 +189,9 @@ export class Game {
       const visible = this.helpOverlay.style.display === 'block'
       this.helpOverlay.style.display = visible ? 'none' : 'block'
     }
+    if (e.key === 'p' || e.key === 'P') {
+      this.setPaused(!this.paused)
+    }
     if (e.key === 'l' || e.key === 'L') {
       this.setLook(!this.lookEnabled)
     }
@@ -197,7 +212,8 @@ export class Game {
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
     const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset).toFixed(2)}`
-    this.toolbar.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}`)
+    const state = this.paused ? '   ⏸ PAUSED' : ''
+    this.toolbar.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}${state}`)
   }
 
   private updateLookPanel(): void {
@@ -214,7 +230,7 @@ export class Game {
     const frameSeconds = (timestamp - this.lastTime) / 1000
     this.lastTime = timestamp
 
-    const steps = this.simClock.advance(frameSeconds)
+    const steps = this.simClock.advance(frameSeconds, this.paused)
     for (let i = 0; i < steps; i++) this.simStep(SIM_STEP)
 
     this.updateHud()

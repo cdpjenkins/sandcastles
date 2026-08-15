@@ -2,11 +2,11 @@
 
 ## Current Step
 
-Step 5 of 5: `P` and the button pause the game
+All five steps complete. Awaiting browser verification.
 
 ## Status
 
-⏸️ WAITING - Step 4 committed, starting Step 5
+✅ DONE - suite green, tsc clean, production build clean
 
 ## Completed
 
@@ -14,7 +14,7 @@ Step 5 of 5: `P` and the button pause the game
 - [x] Step 2: a paused clock yields no steps and banks no time
 - [x] Step 3: `Game` drives its loop from `SimClock`
 - [x] Step 4: the Toolbar carries a Pause toggle
-- [ ] Step 5: `P` and the button pause the game ← current
+- [x] Step 5: `P` and the button pause the game
 
 ## Blockers
 
@@ -22,4 +22,8 @@ None.
 
 ## Next Action
 
-Wire pause into Game: paused field, P key, button handler, help line.
+Verify in the browser: P and the button both freeze the sim and stay in sync,
+the camera still pans and zooms while paused, and resuming does not lurch.
+
+Then delete PLAN.md and WIP.md per the planning skill (no LEARNINGS.md was
+needed -- nothing surprising came up).
