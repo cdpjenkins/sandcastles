@@ -39,4 +39,21 @@ describe('SimClock', () => {
 
     expect(clock.advance(60)).toBe(Math.floor(MAX_FRAME / STEP))
   })
+
+  it('runs nothing while paused', () => {
+    const clock = new SimClock(STEP, MAX_FRAME)
+
+    expect(clock.advance(STEP * 3, true)).toBe(0)
+  })
+
+  it('does not bank paused time and lurch when the game resumes', () => {
+    // The trap: leave the accumulator growing while paused and a minute's pause
+    // banks a minute of frames, then floods thousands of catch-up steps into the
+    // frame after resuming and locks the page. A pause has to cost nothing.
+    const clock = new SimClock(STEP, MAX_FRAME)
+
+    for (let frame = 0; frame < 60 * 60; frame++) clock.advance(1 / 60, true)
+
+    expect(clock.advance(STEP)).toBe(1)
+  })
 })

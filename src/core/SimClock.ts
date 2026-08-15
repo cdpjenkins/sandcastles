@@ -8,7 +8,8 @@ export class SimClock {
     this.maxFrameSeconds = maxFrameSeconds
   }
 
-  advance(frameSeconds: number): number {
+  advance(frameSeconds: number, paused = false): number {
+    if (paused) return 0
     this.accumulator += Math.min(frameSeconds, this.maxFrameSeconds)
     let steps = 0
     while (this.accumulator >= this.stepSeconds) {

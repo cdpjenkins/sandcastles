@@ -2,17 +2,17 @@
 
 ## Current Step
 
-Step 2 of 5: a paused clock yields no steps and banks no time
+Step 3 of 5: `Game` drives its loop from `SimClock`
 
 ## Status
 
-⏸️ WAITING - Step 1 committed, starting Step 2
+⏸️ WAITING - Step 2 committed, starting Step 3
 
 ## Completed
 
 - [x] Step 1: `SimClock` yields the right number of fixed steps
-- [ ] Step 2: a paused clock yields no steps and banks no time ← current
-- [ ] Step 3: `Game` drives its loop from `SimClock`
+- [x] Step 2: a paused clock yields no steps and banks no time
+- [ ] Step 3: `Game` drives its loop from `SimClock` ← current
 - [ ] Step 4: the Toolbar carries a Pause toggle
 - [ ] Step 5: `P` and the button pause the game
 
@@ -22,5 +22,4 @@ None.
 
 ## Next Action
 
-Write the paused-clock test: many paused frames yield zero steps and no
-catch-up burst on resume.
+Swap Game's inline accumulator for SimClock, still always unpaused.
