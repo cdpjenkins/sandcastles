@@ -57,6 +57,31 @@ describe('dig', () => {
     expect(grid.getSandHeight(8, 0)).toBeCloseTo(before)
   })
 
+  it('digging into a nearly-full bucket does not destroy sand', () => {
+    // The spade cannot take more than the bucket will hold. Whatever leaves the
+    // ground has to arrive in the bucket -- sand is only ever moved, never lost.
+    const grid = makeGrid()
+    const bucket = roomyBucket()
+    bucket.fill(bucket.capacity - DIG_AMOUNT / 2)
+    const before = grid.getSandHeight(8, 0)! + bucket.amount
+
+    dig(grid, 8, 0, bucket)
+
+    expect(grid.getSandHeight(8, 0)! + bucket.amount).toBeCloseTo(before)
+  })
+
+  it('a bucket with room for less than a spadeful digs only what it can hold', () => {
+    const grid = makeGrid()
+    const bucket = roomyBucket()
+    bucket.fill(bucket.capacity - DIG_AMOUNT / 2)
+    const before = grid.getSandHeight(8, 0)!
+
+    dig(grid, 8, 0, bucket)
+
+    expect(grid.getSandHeight(8, 0)).toBeCloseTo(before - DIG_AMOUNT / 2)
+    expect(bucket.amount).toBeCloseTo(bucket.capacity)
+  })
+
   it('does not dig below zero sand height', () => {
     const grid = new Grid(16, 16)
     grid.setSandHeight(5, 5, 0.1)

@@ -18,9 +18,8 @@ export function dig(grid: Grid, x: number, z: number, bucket: Bucket): boolean {
   const sand = grid.getSandHeight(x, z) ?? 0
   if (sand <= 0) return false
 
-  const actual = Math.min(DIG_AMOUNT, sand)
-  grid.setSandHeight(x, z, sand - actual)
-  bucket.fill(actual)
+  const added = bucket.fill(Math.min(DIG_AMOUNT, sand))
+  grid.setSandHeight(x, z, sand - added)
   return true
 }
 
