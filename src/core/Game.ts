@@ -6,6 +6,7 @@ import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump } from '../input/Tools.ts'
+import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Erosion } from '../sim/Erosion.ts'
@@ -171,16 +172,9 @@ export class Game {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === 'd' || e.key === 'D') {
-      this.selectTool(
-        this.toolMode === ToolMode.Spade ? ToolMode.Dump : ToolMode.Spade,
-      )
-    }
-    if (e.key === 'w' || e.key === 'W') {
-      this.selectTool(ToolMode.Stream)
-    }
-    if (e.key === 's' || e.key === 'S') {
-      this.selectTool(ToolMode.Spade)
+    const tool = toolForKey(e.key)
+    if (tool !== null) {
+      this.selectTool(tool)
     }
     if (e.key === 'r' || e.key === 'R') {
       this.resetWater()

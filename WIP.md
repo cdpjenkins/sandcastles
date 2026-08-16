@@ -9,7 +9,7 @@ builds a WebGL `Renderer` -- so the mapping moves to a pure function first.
 
 ## Current Step
 
-Step 1 complete. Next: Game delegates.
+Step 2 complete. Next: the help overlay.
 
 ## Status
 
@@ -18,7 +18,7 @@ Step 1 complete. Next: Game delegates.
 ## Completed
 
 - [x] Step 1: `toolForKey` maps a key to a tool, with no current-mode input
-- [ ] Step 2: `Game` delegates its tool keys to `toolForKey`
+- [x] Step 2: `Game` delegates its tool keys to `toolForKey`
 - [ ] Step 3: the help overlay describes `D` as Dump
 
 ## Blockers
@@ -27,4 +27,4 @@ None.
 
 ## Next Action
 
-Replace the three tool-key branches in `Game.onKeyDown` with `toolForKey`.
+Update the help overlay so `D` no longer advertises a toggle.
