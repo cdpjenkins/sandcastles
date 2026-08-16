@@ -77,7 +77,7 @@ export class Game {
       'Pick a tool from the bar, top-left, or use the keys below.',
       '',
       'S        Spade (dig)',
-      'D        Toggle Spade / Dump',
+      'D        Dump (pour sand)',
       'W        Water stream',
       'L        Toggle Look (independent of the tool)',
       'R        Reset water (or the Reset button)',

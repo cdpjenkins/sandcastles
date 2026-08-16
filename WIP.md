@@ -9,17 +9,17 @@ builds a WebGL `Renderer` -- so the mapping moves to a pure function first.
 
 ## Current Step
 
-Step 2 complete. Next: the help overlay.
+All three steps complete. Awaiting browser verification.
 
 ## Status
 
-🟢 GREEN - suite green, tsc clean
+✅ DONE - suite green, tsc clean, production build clean
 
 ## Completed
 
 - [x] Step 1: `toolForKey` maps a key to a tool, with no current-mode input
 - [x] Step 2: `Game` delegates its tool keys to `toolForKey`
-- [ ] Step 3: the help overlay describes `D` as Dump
+- [x] Step 3: the help overlay describes `D` as Dump
 
 ## Blockers
 
@@ -27,4 +27,6 @@ None.
 
 ## Next Action
 
-Update the help overlay so `D` no longer advertises a toggle.
+Verify in the browser: D selects Dump and pressing it again keeps Dump,
+from Stream mode too; S and W still select their tools; the help overlay
+reads correctly.
