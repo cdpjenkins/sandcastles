@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 10: `IndexedDbSnapshotStore` - untested wiring.
+Step 11: `Game` restores from a snapshot and drives an `AutoSaver`.
 
 ## Status
 
-⏸️ WAITING - Step 9 complete, suite green (278), tsc clean.
+⏸️ WAITING - Step 10 complete, suite green (278), tsc clean.
 
 ## Completed
 
@@ -25,6 +25,7 @@ Step 10: `IndexedDbSnapshotStore` - untested wiring.
 - [x] Step 7: a snapshot survives a structured-clone round trip intact
 - [x] Step 8: `AutoSaver` writes on schedule, one write at a time
 - [x] Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`
+- [x] Step 10: `IndexedDbSnapshotStore` (untested wiring, by necessity)
 
 ## Blockers
 
@@ -32,5 +33,6 @@ None.
 
 ## Next Action
 
-Step 10: the IndexedDB adapter. Untested by necessity - jsdom has no
-indexedDB - so keep it to plumbing and lean on browser verification.
+Step 11: wire `Game`. Apply the snapshot before `new TerrainMesh(grid)` so
+the mesh builds correct first time, and make `main.ts` async so the load
+finishes before the first frame.
