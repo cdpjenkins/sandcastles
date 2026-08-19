@@ -12,7 +12,7 @@ Browser verification (steps 11-12).
 
 ## Status
 
-🟢 GREEN - all 12 steps written, suite green (278), tsc clean, build clean.
+🟢 GREEN - all 12 steps done, suite green (289), tsc clean, build clean.
 Awaiting browser verification.
 
 ## Completed
@@ -29,6 +29,10 @@ Awaiting browser verification.
 - [x] Step 10: `IndexedDbSnapshotStore` (untested wiring, by necessity)
 - [x] Step 11: `Game` restores from a snapshot and drives an `AutoSaver`
 - [x] Step 12: lifecycle events trigger a save
+- [x] Extra: IndexedDB adapter brought under test; found and fixed a
+      versionchange defect that blocked a second tab
+- [x] Extra: `createSnapshot` seam so a game-produced snapshot is proven
+      loadable
 
 ## Blockers
 

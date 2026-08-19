@@ -68,8 +68,12 @@ Measured under this project's actual vitest/jsdom config:
 | `localStorage` | available |
 | `document.visibilityState` | `'visible'` (read-only getter) |
 
-So **no IndexedDB code can be tested** without adding `fake-indexeddb`. Rather
-than take the dependency, split at an interface:
+So no IndexedDB code can be tested without adding `fake-indexeddb`. The plan
+was to avoid the dependency; **that decision was reversed during
+implementation** and `fake-indexeddb` is now a devDependency. The adapter was
+the only production code touching user data with no coverage, and the tests
+immediately found a real defect (see "connections and versionchange" below).
+The interface split is still worth having:
 
 ```ts
 // src/core/SnapshotStore.ts
@@ -291,11 +295,10 @@ store whose `load()` **rejects** yields `null` rather than propagating.
 **Done when**: green. This is the "a corrupt save must not brick the app"
 guarantee, under test.
 
-### Step 10: `IndexedDbSnapshotStore` — untested wiring
+### Step 10: `IndexedDbSnapshotStore` — tested against `fake-indexeddb`
 
-**Test**: none possible — `indexedDB` is `undefined` under jsdom (measured), and
-the alternative is a `fake-indexeddb` devDependency that would only prove the
-fake works. Covered by browser verification instead.
+**Test**: `src/core/indexedDbSnapshotStore.test.ts`, 8 cases. Reversed from the
+plan's "untested wiring" — see the note above.
 **Implementation**: open a `sandcastles` database with one `saves` object store,
 `put`/`get` under a fixed key. Promise-wrap `IDBRequest`. Keep it to plumbing —
 no validation, no scheduling; those are Steps 6–9 and already tested.
@@ -357,3 +360,40 @@ non-obvious and someone will otherwise "simplify" the periodic save away.
   churn (three `Float32Array(65536)` per step). Hoisting those to instance fields
   is a small change that would cut ~23 MB/s of garbage and make a discard less
   likely in the first place.
+
+## What changed during implementation
+
+Three things diverged from the plan above, all recorded in the commits:
+
+### `fake-indexeddb` was added after all
+
+Reversed on evidence. The adapter tests found that the store holds its
+connection for the life of the page, so a second tab running a newer schema
+blocks on `open()` until the first tab closes — and that tab's `onblocked` path
+means it silently loses its beach. Fixed by releasing the connection on
+`versionchange`. Browser verification would not plausibly have caught this.
+
+### `instanceof Float32Array` is not safe across a realm
+
+Deserialising from storage is a realm crossing by nature. Under jsdom the clone
+lands in Node's realm and `instanceof` is `false` for a perfectly good
+`Float32Array`. `isCellArray` brand-checks with `Object.prototype.toString`
+instead, which is realm-independent and still rejects plain and other typed
+arrays.
+
+### `createSnapshot` was extracted, which the plan did not call for
+
+Nothing verified that what `Game` writes is what `isValidSnapshot` accepts. That
+drift is the feature's worst failure mode — every save written, every load
+rejected, autosave silently doing nothing while looking healthy. `Game` cannot
+be built under jsdom, so the assembly moved to a structurally-typed
+`createSnapshot` that the test drives with the real components.
+
+### Still untested, and why
+
+- `Game`'s constructor wiring and `restore` — the constructor builds a WebGL
+  `Renderer`, so there is no harness. Every part it composes is tested.
+- The `visibilitychange` / `pagehide` / `freeze` listeners — jsdom's
+  `visibilityState` is a read-only getter, so a test would assert its own
+  scaffolding rather than Chrome's behaviour. **This is what the browser
+  verification below is for.**
