@@ -92,3 +92,36 @@ describe('isValidSnapshot', () => {
     expect(isValidSnapshot(aSnapshot(), 2, 8)).toBe(false)
   })
 })
+
+describe('a snapshot in storage', () => {
+  // IndexedDB serialises with the structured clone algorithm, and jsdom has
+  // no indexedDB at all, so cloning is the closest thing to a proof that what
+  // we store is what we get back. If this breaks, the save format has grown a
+  // field that cannot cross the storage boundary.
+  it('survives the round trip that IndexedDB will put it through', () => {
+    const original = aSnapshot()
+    original.grid.sand[5] = 12.5
+    original.grid.rock[9] = -3.25
+    original.water.flowX[2] = 0.75
+
+    const stored = structuredClone(original)
+
+    // Compared as plain arrays: under jsdom the clone lands in Node's realm,
+    // so toEqual on the Float32Arrays themselves fails on the constructor
+    // while reporting "no visual difference". The numbers are what matter.
+    expect(isValidSnapshot(stored, WIDTH, DEPTH)).toBe(true)
+    expect(Array.from(stored.grid.sand)).toEqual(Array.from(original.grid.sand))
+    expect(Array.from(stored.grid.rock)).toEqual(Array.from(original.grid.rock))
+    expect(Array.from(stored.water.flowX)).toEqual(Array.from(original.water.flowX))
+    expect(stored.tide.elapsed).toBe(original.tide.elapsed)
+    expect(stored.toolMode).toBe(original.toolMode)
+  })
+
+  it('comes back as real cell data, not a plain object', () => {
+    // A format that degraded Float32Array to {0:..,1:..} would still look
+    // right field by field, and isValidSnapshot is what would catch it.
+    const stored = structuredClone(aSnapshot())
+
+    expect(Object.prototype.toString.call(stored.grid.sand)).toBe('[object Float32Array]')
+  })
+})

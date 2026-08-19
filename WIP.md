@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 7: a snapshot survives a structured-clone round trip intact.
+Step 8: `AutoSaver` writes on schedule, and only one write at a time.
 
 ## Status
 
-⏸️ WAITING - Step 6 complete, suite green (262), tsc clean.
+⏸️ WAITING - Step 7 complete, suite green (264), tsc clean.
 
 ## Completed
 
@@ -22,6 +22,7 @@ Step 7: a snapshot survives a structured-clone round trip intact.
 - [x] Step 4: `Waves` round-trips its phase and countdown
 - [x] Step 5: `IsoCamera` round-trips zoom and pan
 - [x] Step 6: `isValidSnapshot` rejects anything it should not load
+- [x] Step 7: a snapshot survives a structured-clone round trip intact
 
 ## Blockers
 
@@ -29,6 +30,5 @@ None.
 
 ## Next Action
 
-Step 7: round-trip a snapshot through `structuredClone` - the same
-algorithm IndexedDB serialises with, so it is the closest thing to a proof
-of the storage path that jsdom can give us.
+Step 8: `AutoSaver` against a hand-rolled in-memory store. The real content
+is the no-overlap rule - a 2 MiB write can outlast the interval.

@@ -27,8 +27,14 @@ export interface GameSnapshot {
 
 const TOOL_MODES: readonly string[] = Object.values(ToolMode)
 
+// Brand-check rather than `instanceof`: a value that has crossed a realm
+// boundary - which is exactly what deserialising from storage is - fails
+// `instanceof` against this realm's Float32Array while being a perfectly good
+// Float32Array. The tag is realm-independent and still rejects plain arrays
+// and other typed arrays.
 function isCellArray(value: unknown, cells: number): boolean {
-  return value instanceof Float32Array && value.length === cells
+  if (Object.prototype.toString.call(value) !== '[object Float32Array]') return false
+  return (value as Float32Array).length === cells
 }
 
 function isScalar(value: unknown): boolean {
