@@ -29,7 +29,16 @@ export class IndexedDbSnapshotStore implements SnapshotStore {
             request.result.createObjectStore(STORE_NAME)
           }
         }
-        request.onsuccess = () => resolve(request.result)
+        request.onsuccess = () => {
+          // The connection is held for the life of the page, which would
+          // otherwise block a second tab running a newer schema from
+          // upgrading until this one is closed.
+          request.result.onversionchange = () => {
+            request.result.close()
+            this.db = null
+          }
+          resolve(request.result)
+        }
         request.onerror = () => reject(request.error)
         request.onblocked = () => reject(new Error('sandcastles database blocked'))
       })
