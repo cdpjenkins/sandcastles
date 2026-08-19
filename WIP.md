@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 8: `AutoSaver` writes on schedule, and only one write at a time.
+Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`.
 
 ## Status
 
-⏸️ WAITING - Step 7 complete, suite green (264), tsc clean.
+⏸️ WAITING - Step 8 complete, suite green (274), tsc clean.
 
 ## Completed
 
@@ -23,6 +23,7 @@ Step 8: `AutoSaver` writes on schedule, and only one write at a time.
 - [x] Step 5: `IsoCamera` round-trips zoom and pan
 - [x] Step 6: `isValidSnapshot` rejects anything it should not load
 - [x] Step 7: a snapshot survives a structured-clone round trip intact
+- [x] Step 8: `AutoSaver` writes on schedule, one write at a time
 
 ## Blockers
 
@@ -30,5 +31,6 @@ None.
 
 ## Next Action
 
-Step 8: `AutoSaver` against a hand-rolled in-memory store. The real content
-is the no-overlap rule - a 2 MiB write can outlast the interval.
+Step 9: `loadSnapshot` - catch everything `store.load()` can do, run the
+guard, hand back null so a bad save means a fresh beach rather than a
+broken page.
