@@ -432,3 +432,28 @@ function totalWater(grid: Grid): number {
       sum += grid.getWaterHeight(x, z) ?? 0
   return sum
 }
+
+describe('WaterSim snapshot', () => {
+  it('restores the flow field it was snapshotted with', () => {
+    const sim = new WaterSim(4, 4)
+    sim.setFlowX(1, 2, 3.5)
+    sim.setFlowZ(1, 2, -1.25)
+
+    const snapshot = sim.snapshot()
+    sim.reset()
+    sim.restore(snapshot)
+
+    expect(sim.getFlowX(1, 2)).toBe(3.5)
+    expect(sim.getFlowZ(1, 2)).toBe(-1.25)
+  })
+
+  it('takes a copy, so a step after the snapshot cannot alter it', () => {
+    const sim = new WaterSim(4, 4)
+    sim.setFlowX(1, 2, 3.5)
+
+    const snapshot = sim.snapshot()
+    sim.setFlowX(1, 2, 99)
+
+    expect(snapshot.flowX[2 * 4 + 1]).toBe(3.5)
+  })
+})

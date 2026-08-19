@@ -8,15 +8,16 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 2: `WaterSim` round-trips its flow field.
+Step 3: `Tide` round-trips its phase.
 
 ## Status
 
-⏸️ WAITING - Step 1 complete, suite green (243), tsc clean.
+⏸️ WAITING - Step 2 complete, suite green (245), tsc clean.
 
 ## Completed
 
 - [x] Step 1: `Grid` round-trips its six arrays, by copy not by reference
+- [x] Step 2: `WaterSim` round-trips `flowX`/`flowZ`
 
 ## Blockers
 
@@ -24,5 +25,5 @@ None.
 
 ## Next Action
 
-Step 2: snapshot/restore `flowX` and `flowZ` on `WaterSim`, excluding the
-derived `velocityArr` and the scratch `dirty` mask.
+Step 3: snapshot/restore `Tide.elapsed`, so the sea does not teleport on
+resume.

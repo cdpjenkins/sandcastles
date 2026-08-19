@@ -29,6 +29,11 @@ const withDrag = (q: number, depth: number, dt: number): number => {
   return q / (1 + (GRAVITY * MANNING_N * MANNING_N * Math.abs(q) * dt) / h73)
 }
 
+export interface WaterSimSnapshot {
+  flowX: Float32Array
+  flowZ: Float32Array
+}
+
 export class WaterSim {
   private readonly flowX: Float32Array
   private readonly flowZ: Float32Array
@@ -64,6 +69,15 @@ export class WaterSim {
 
   setFlowZ(x: number, z: number, v: number): void {
     this.flowZ[z * this.width + x] = v
+  }
+
+  snapshot(): WaterSimSnapshot {
+    return { flowX: this.flowX.slice(), flowZ: this.flowZ.slice() }
+  }
+
+  restore(snapshot: WaterSimSnapshot): void {
+    this.flowX.set(snapshot.flowX)
+    this.flowZ.set(snapshot.flowZ)
   }
 
   reset(): void {
