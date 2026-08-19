@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 6: `isValidSnapshot` rejects anything it should not load.
+Step 7: a snapshot survives a structured-clone round trip intact.
 
 ## Status
 
-⏸️ WAITING - Step 5 complete, suite green (250), tsc clean.
+⏸️ WAITING - Step 6 complete, suite green (262), tsc clean.
 
 ## Completed
 
@@ -21,6 +21,7 @@ Step 6: `isValidSnapshot` rejects anything it should not load.
 - [x] Step 3: `Tide` round-trips its phase
 - [x] Step 4: `Waves` round-trips its phase and countdown
 - [x] Step 5: `IsoCamera` round-trips zoom and pan
+- [x] Step 6: `isValidSnapshot` rejects anything it should not load
 
 ## Blockers
 
@@ -28,6 +29,6 @@ None.
 
 ## Next Action
 
-Step 6: the pure type guard in a new `src/core/GameSnapshot.ts`. Heaviest
-test of the change - stale version, wrong dimensions, wrong array lengths,
-plain arrays in place of Float32Array, NaN scalars.
+Step 7: round-trip a snapshot through `structuredClone` - the same
+algorithm IndexedDB serialises with, so it is the closest thing to a proof
+of the storage path that jsdom can give us.
