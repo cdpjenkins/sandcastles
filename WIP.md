@@ -8,11 +8,12 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 11: `Game` restores from a snapshot and drives an `AutoSaver`.
+Browser verification (steps 11-12).
 
 ## Status
 
-⏸️ WAITING - Step 10 complete, suite green (278), tsc clean.
+🟢 GREEN - all 12 steps written, suite green (278), tsc clean, build clean.
+Awaiting browser verification.
 
 ## Completed
 
@@ -26,6 +27,8 @@ Step 11: `Game` restores from a snapshot and drives an `AutoSaver`.
 - [x] Step 8: `AutoSaver` writes on schedule, one write at a time
 - [x] Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`
 - [x] Step 10: `IndexedDbSnapshotStore` (untested wiring, by necessity)
+- [x] Step 11: `Game` restores from a snapshot and drives an `AutoSaver`
+- [x] Step 12: lifecycle events trigger a save
 
 ## Blockers
 
@@ -33,6 +36,7 @@ None.
 
 ## Next Action
 
-Step 11: wire `Game`. Apply the snapshot before `new TerrainMesh(grid)` so
-the mesh builds correct first time, and make `main.ts` async so the load
-finishes before the first frame.
+Verify in the browser per PLAN.md: a save appears in IndexedDB within ~5s,
+a reload restores the beach without the sea lurching, chrome://discards
+Discard then revisit restores exactly, and a corrupted record falls back to
+a fresh beach.

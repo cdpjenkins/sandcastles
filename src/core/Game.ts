@@ -1,4 +1,8 @@
 import { Grid } from './Grid.ts'
+import { AutoSaver } from './AutoSaver.ts'
+import { SNAPSHOT_VERSION } from './GameSnapshot.ts'
+import type { GameSnapshot } from './GameSnapshot.ts'
+import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
 import { Bucket } from './Bucket.ts'
 import { Renderer } from '../render/Renderer.ts'
@@ -25,6 +29,9 @@ const SIM_STEP = 1 / SIM_HZ
 // let the rest go, so the sim slows down rather than locking the page.
 const MAX_FRAME = 0.1
 const BUCKET_CAPACITY = 1000
+const AUTOSAVE_SECONDS = 5
+export const GRID_WIDTH = 256
+export const GRID_DEPTH = 256
 const STREAM_RATE = 1.0
 
 export class Game {
@@ -44,6 +51,7 @@ export class Game {
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
   private readonly toolbar: Toolbar
+  private readonly autoSaver: AutoSaver
   private readonly helpOverlay: HTMLDivElement
   private readonly lookPanel: HTMLDivElement
 
@@ -53,7 +61,7 @@ export class Game {
   private paused = false
   private hoverCell: GridCoord | null = null
 
-  constructor() {
+  constructor(store: SnapshotStore, saved: GameSnapshot | null) {
     const canvas = document.createElement('canvas')
     canvas.style.cssText = 'display:block;width:100%;height:100%'
     document.body.style.cssText = 'margin:0;overflow:hidden;background:#000'
@@ -94,7 +102,7 @@ export class Game {
       'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre'
     document.body.appendChild(this.lookPanel)
 
-    this.grid = new Grid(256, 256)
+    this.grid = new Grid(GRID_WIDTH, GRID_DEPTH)
     this.grid.initBeach()
     this.grid.initSpring(STREAM_RATE)
     this.bucket = new Bucket(BUCKET_CAPACITY)
@@ -107,8 +115,11 @@ export class Game {
     this.tide = new Tide()
     this.combinedDirty = new Uint8Array(this.grid.width * this.grid.depth)
 
+    if (saved !== null) this.restore(saved)
+
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
+    if (saved !== null) this.isoCamera.restore(saved.camera)
     this.terrain = new TerrainMesh(this.grid)
     this.renderer.scene.add(this.terrain.mesh)
 
@@ -126,9 +137,54 @@ export class Game {
 
     window.addEventListener('keydown', this.onKeyDown)
 
+    this.autoSaver = new AutoSaver(store, AUTOSAVE_SECONDS, () => this.takeSnapshot())
+    // Chrome only discards a tab that is already backgrounded, and
+    // visibilitychange fires the moment it is - minutes before the freeze that
+    // precedes a discard. That makes this the trigger that actually saves the
+    // beach. pagehide and freeze are async writes against a page that may
+    // already be going away, so they can only ever be best-effort, and the
+    // periodic save in loop() is what covers a crash. Do not drop either in
+    // favour of the other.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.autoSaver.saveNow()
+    })
+    window.addEventListener('pagehide', () => this.autoSaver.saveNow())
+    window.addEventListener('freeze', () => this.autoSaver.saveNow())
+
     this.toolbar.setTool(this.toolMode)
+    this.toolbar.setLook(this.lookEnabled)
+    this.toolbar.setPaused(this.paused)
+    this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
     this.updateHud()
     requestAnimationFrame(this.loop)
+  }
+
+  private restore(saved: GameSnapshot): void {
+    this.grid.restore(saved.grid)
+    this.waterSim.restore(saved.water)
+    this.waves.restore(saved.waves)
+    this.tide.restore(saved.tide)
+    this.bucket.fill(saved.bucket.amount)
+    this.toolMode = saved.toolMode
+    this.paused = saved.paused
+    this.lookEnabled = saved.lookEnabled
+  }
+
+  private takeSnapshot(): GameSnapshot {
+    return {
+      version: SNAPSHOT_VERSION,
+      width: this.grid.width,
+      depth: this.grid.depth,
+      grid: this.grid.snapshot(),
+      water: this.waterSim.snapshot(),
+      waves: this.waves.snapshot(),
+      tide: this.tide.snapshot(),
+      bucket: { amount: this.bucket.amount },
+      camera: this.isoCamera.snapshot(),
+      toolMode: this.toolMode,
+      paused: this.paused,
+      lookEnabled: this.lookEnabled,
+    }
   }
 
   private onCellPick(x: number, z: number): void {
@@ -223,6 +279,8 @@ export class Game {
   private loop = (timestamp: number): void => {
     const frameSeconds = (timestamp - this.lastTime) / 1000
     this.lastTime = timestamp
+
+    this.autoSaver.tick(Math.min(frameSeconds, MAX_FRAME))
 
     const steps = this.simClock.advance(frameSeconds, this.paused)
     for (let i = 0; i < steps; i++) this.simStep(SIM_STEP)
