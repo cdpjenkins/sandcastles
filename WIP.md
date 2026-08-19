@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`.
+Step 10: `IndexedDbSnapshotStore` - untested wiring.
 
 ## Status
 
-⏸️ WAITING - Step 8 complete, suite green (274), tsc clean.
+⏸️ WAITING - Step 9 complete, suite green (278), tsc clean.
 
 ## Completed
 
@@ -24,6 +24,7 @@ Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`.
 - [x] Step 6: `isValidSnapshot` rejects anything it should not load
 - [x] Step 7: a snapshot survives a structured-clone round trip intact
 - [x] Step 8: `AutoSaver` writes on schedule, one write at a time
+- [x] Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`
 
 ## Blockers
 
@@ -31,6 +32,5 @@ None.
 
 ## Next Action
 
-Step 9: `loadSnapshot` - catch everything `store.load()` can do, run the
-guard, hand back null so a bad save means a fresh beach rather than a
-broken page.
+Step 10: the IndexedDB adapter. Untested by necessity - jsdom has no
+indexedDB - so keep it to plumbing and lean on browser verification.

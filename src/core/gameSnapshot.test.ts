@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SNAPSHOT_VERSION, isValidSnapshot } from './GameSnapshot.ts'
+import { SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 
@@ -123,5 +123,43 @@ describe('a snapshot in storage', () => {
     const stored = structuredClone(aSnapshot())
 
     expect(Object.prototype.toString.call(stored.grid.sand)).toBe('[object Float32Array]')
+  })
+})
+
+function aStoreHolding(value: unknown) {
+  return {
+    load: () => Promise.resolve(value),
+    save: () => Promise.resolve(),
+  }
+}
+
+describe('loadSnapshot', () => {
+  it('hands back a save that is good for this grid', async () => {
+    const snapshot = aSnapshot()
+
+    const loaded = await loadSnapshot(aStoreHolding(snapshot), WIDTH, DEPTH)
+
+    expect(loaded).toBe(snapshot)
+  })
+
+  it('starts a fresh beach when there is no save yet', async () => {
+    expect(await loadSnapshot(aStoreHolding(null), WIDTH, DEPTH)).toBeNull()
+  })
+
+  it('starts a fresh beach rather than loading a save it cannot trust', async () => {
+    expect(await loadSnapshot(aStoreHolding({ version: 99 }), WIDTH, DEPTH)).toBeNull()
+    expect(await loadSnapshot(aStoreHolding('garbage'), WIDTH, DEPTH)).toBeNull()
+    expect(await loadSnapshot(aStoreHolding(aSnapshot()), WIDTH + 1, DEPTH)).toBeNull()
+  })
+
+  it('starts a fresh beach when storage itself fails', async () => {
+    // Private browsing, a blocked database, a corrupt object store: opening
+    // IndexedDB can reject outright, and that must not stop the game booting.
+    const failing = {
+      load: () => Promise.reject(new Error('database blocked')),
+      save: () => Promise.resolve(),
+    }
+
+    expect(await loadSnapshot(failing, WIDTH, DEPTH)).toBeNull()
   })
 })

@@ -4,6 +4,7 @@ import type { WavesSnapshot } from '../sim/Waves.ts'
 import type { TideSnapshot } from '../sim/Tide.ts'
 import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
+import type { SnapshotStore } from './SnapshotStore.ts'
 
 export const SNAPSHOT_VERSION = 1
 
@@ -77,4 +78,20 @@ export function isValidSnapshot(
   if (typeof s['paused'] !== 'boolean' || typeof s['lookEnabled'] !== 'boolean') return false
 
   return true
+}
+
+// Storage is treated as hostile and never allowed to stop the game booting:
+// anything unreadable, stale or corrupt comes back as null, which the caller
+// reads as "start a fresh beach".
+export async function loadSnapshot(
+  store: SnapshotStore,
+  width: number,
+  depth: number,
+): Promise<GameSnapshot | null> {
+  try {
+    const stored = await store.load()
+    return isValidSnapshot(stored, width, depth) ? stored : null
+  } catch {
+    return null
+  }
 }
