@@ -8,11 +8,11 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Step 5: `IsoCamera` round-trips zoom and pan.
+Step 6: `isValidSnapshot` rejects anything it should not load.
 
 ## Status
 
-⏸️ WAITING - Steps 3-4 complete, suite green (249), tsc clean.
+⏸️ WAITING - Step 5 complete, suite green (250), tsc clean.
 
 ## Completed
 
@@ -20,6 +20,7 @@ Step 5: `IsoCamera` round-trips zoom and pan.
 - [x] Step 2: `WaterSim` round-trips `flowX`/`flowZ`
 - [x] Step 3: `Tide` round-trips its phase
 - [x] Step 4: `Waves` round-trips its phase and countdown
+- [x] Step 5: `IsoCamera` round-trips zoom and pan
 
 ## Blockers
 
@@ -27,5 +28,6 @@ None.
 
 ## Next Action
 
-Step 5: keep the canvas as a field on `IsoCamera` so `restore` can refresh
-the frustum, then snapshot/restore zoom and pan.
+Step 6: the pure type guard in a new `src/core/GameSnapshot.ts`. Heaviest
+test of the change - stale version, wrong dimensions, wrong array lengths,
+plain arrays in place of Float32Array, NaN scalars.

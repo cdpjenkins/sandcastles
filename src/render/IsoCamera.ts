@@ -6,13 +6,21 @@ const MAX_ZOOM = 300
 const PAN_SPEED = 0.5
 const ZOOM_SPEED = 1.08
 
+export interface CameraSnapshot {
+  zoom: number
+  panX: number
+  panZ: number
+}
+
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera
 
   private zoom = 80
   private panTarget = new THREE.Vector3(128, 0, 128)
+  private readonly canvas: HTMLCanvasElement
 
   constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas
     const aspect = canvas.clientWidth / canvas.clientHeight
     this.camera = new THREE.OrthographicCamera(
       -this.zoom * aspect,
@@ -26,7 +34,19 @@ export class IsoCamera {
     this.updateCameraPosition()
 
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
-    window.addEventListener('resize', () => this.onResize(canvas))
+    window.addEventListener('resize', this.onResize)
+  }
+
+  snapshot(): CameraSnapshot {
+    return { zoom: this.zoom, panX: this.panTarget.x, panZ: this.panTarget.z }
+  }
+
+  restore(snapshot: CameraSnapshot): void {
+    this.zoom = snapshot.zoom
+    this.panTarget.x = snapshot.panX
+    this.panTarget.z = snapshot.panZ
+    this.updateFrustum()
+    this.updateCameraPosition()
   }
 
   private updateCameraPosition(): void {
@@ -40,8 +60,8 @@ export class IsoCamera {
     this.camera.updateProjectionMatrix()
   }
 
-  private updateFrustum(canvas: HTMLCanvasElement): void {
-    const aspect = canvas.clientWidth / canvas.clientHeight
+  private updateFrustum(): void {
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight
     this.camera.left = -this.zoom * aspect
     this.camera.right = this.zoom * aspect
     this.camera.top = this.zoom
@@ -56,7 +76,7 @@ export class IsoCamera {
       // Pinch gesture on trackpad (or Ctrl+scroll)
       const factor = e.deltaY > 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED
       this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.zoom * factor))
-      this.updateFrustum(e.target as HTMLCanvasElement)
+      this.updateFrustum()
     } else {
       // Two-finger drag on trackpad
       const scale = (this.zoom / 100) * PAN_SPEED
@@ -68,7 +88,7 @@ export class IsoCamera {
     }
   }
 
-  private onResize = (canvas: HTMLCanvasElement): void => {
-    this.updateFrustum(canvas)
+  private onResize = (): void => {
+    this.updateFrustum()
   }
 }
