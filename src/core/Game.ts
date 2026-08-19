@@ -1,6 +1,6 @@
 import { Grid } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
-import { SNAPSHOT_VERSION } from './GameSnapshot.ts'
+import { createSnapshot } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
@@ -171,20 +171,17 @@ export class Game {
   }
 
   private takeSnapshot(): GameSnapshot {
-    return {
-      version: SNAPSHOT_VERSION,
-      width: this.grid.width,
-      depth: this.grid.depth,
-      grid: this.grid.snapshot(),
-      water: this.waterSim.snapshot(),
-      waves: this.waves.snapshot(),
-      tide: this.tide.snapshot(),
-      bucket: { amount: this.bucket.amount },
-      camera: this.isoCamera.snapshot(),
+    return createSnapshot({
+      grid: this.grid,
+      waterSim: this.waterSim,
+      waves: this.waves,
+      tide: this.tide,
+      bucket: this.bucket,
+      camera: this.isoCamera,
       toolMode: this.toolMode,
       paused: this.paused,
       lookEnabled: this.lookEnabled,
-    }
+    })
   }
 
   private onCellPick(x: number, z: number): void {

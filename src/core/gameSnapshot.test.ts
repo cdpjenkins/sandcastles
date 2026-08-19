@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot } from './GameSnapshot.ts'
+import { SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot, createSnapshot } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
+import { Grid } from './Grid.ts'
+import { Bucket } from './Bucket.ts'
+import { WaterSim } from '../sim/WaterSim.ts'
+import { Waves } from '../sim/Waves.ts'
+import { Tide } from '../sim/Tide.ts'
+import { IsoCamera } from '../render/IsoCamera.ts'
 
 const WIDTH = 4
 const DEPTH = 4
@@ -161,5 +167,64 @@ describe('loadSnapshot', () => {
     }
 
     expect(await loadSnapshot(failing, WIDTH, DEPTH)).toBeNull()
+  })
+})
+
+describe('createSnapshot', () => {
+  // The one property that makes the whole feature work: what the game writes
+  // has to be something the guard will accept back. If these ever drift, every
+  // save is written and every load rejects it, and autosave silently does
+  // nothing at all.
+  it('builds a snapshot of the live game that loads back', () => {
+    const grid = new Grid(64, 64)
+    grid.initBeach()
+    const waterSim = new WaterSim(64, 64)
+    const waves = new Waves(64, 64)
+    const tide = new Tide()
+    const bucket = new Bucket(1000)
+    const camera = new IsoCamera(document.createElement('canvas'))
+    bucket.fill(120)
+    tide.step(9)
+
+    const snapshot = createSnapshot({
+      grid, waterSim, waves, tide, bucket, camera,
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false,
+    })
+
+    expect(isValidSnapshot(snapshot, 64, 64)).toBe(true)
+  })
+
+  it('carries the live values, not defaults', () => {
+    const grid = new Grid(64, 64)
+    const bucket = new Bucket(1000)
+    bucket.fill(120)
+    const tide = new Tide()
+    tide.step(9)
+
+    const snapshot = createSnapshot({
+      grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64), tide, bucket,
+      camera: new IsoCamera(document.createElement('canvas')),
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false,
+    })
+
+    expect(snapshot.bucket.amount).toBe(120)
+    expect(snapshot.tide.elapsed).toBe(9)
+    expect(snapshot.toolMode).toBe(ToolMode.Stream)
+    expect(snapshot.paused).toBe(true)
+    expect(snapshot.width).toBe(64)
+  })
+
+  it('still loads back after a trip through storage', () => {
+    const grid = new Grid(64, 64)
+    grid.initBeach()
+
+    const stored = structuredClone(createSnapshot({
+      grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64),
+      tide: new Tide(), bucket: new Bucket(1000),
+      camera: new IsoCamera(document.createElement('canvas')),
+      toolMode: ToolMode.Spade, paused: false, lookEnabled: false,
+    }))
+
+    expect(isValidSnapshot(stored, 64, 64)).toBe(true)
   })
 })

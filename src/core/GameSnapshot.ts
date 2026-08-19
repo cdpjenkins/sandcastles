@@ -95,3 +95,35 @@ export async function loadSnapshot(
     return null
   }
 }
+
+// Structurally typed so Grid, WaterSim and friends satisfy it as they are.
+// Game builds its snapshot through here rather than assembling the literal
+// itself, so the shape the tests check is the shape the game writes.
+export interface SnapshotSources {
+  grid: { width: number; depth: number; snapshot(): GridSnapshot }
+  waterSim: { snapshot(): WaterSimSnapshot }
+  waves: { snapshot(): WavesSnapshot }
+  tide: { snapshot(): TideSnapshot }
+  bucket: { amount: number }
+  camera: { snapshot(): CameraSnapshot }
+  toolMode: ToolMode
+  paused: boolean
+  lookEnabled: boolean
+}
+
+export function createSnapshot(sources: SnapshotSources): GameSnapshot {
+  return {
+    version: SNAPSHOT_VERSION,
+    width: sources.grid.width,
+    depth: sources.grid.depth,
+    grid: sources.grid.snapshot(),
+    water: sources.waterSim.snapshot(),
+    waves: sources.waves.snapshot(),
+    tide: sources.tide.snapshot(),
+    bucket: { amount: sources.bucket.amount },
+    camera: sources.camera.snapshot(),
+    toolMode: sources.toolMode,
+    paused: sources.paused,
+    lookEnabled: sources.lookEnabled,
+  }
+}
