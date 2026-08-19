@@ -52,3 +52,15 @@ describe('Tide', () => {
     expect(tide.offset).toBeCloseTo(0.4, 5)
   })
 })
+
+describe('Tide snapshot', () => {
+  it('restores the phase it was snapshotted with, so the sea does not teleport', () => {
+    const tide = new Tide()
+    for (let i = 0; i < 40; i++) tide.step(1)
+
+    const restored = new Tide()
+    restored.restore(tide.snapshot())
+
+    expect(restored.offset).toBeCloseTo(tide.offset)
+  })
+})

@@ -16,6 +16,11 @@ const SWELL_ANGLE = Math.PI / 6
 const BOUNDARY_ROWS = 1
 const DIRTY_EPSILON = 1e-4
 
+export interface WavesSnapshot {
+  elapsed: number
+  timeUntilWave: number
+}
+
 export class Waves {
   readonly period = SWELL_PERIOD
   timeUntilWave = SWELL_PERIOD
@@ -30,6 +35,15 @@ export class Waves {
     this.width = width
     this.depth = depth
     this.dirty = new Uint8Array(width * depth)
+  }
+
+  snapshot(): WavesSnapshot {
+    return { elapsed: this.elapsed, timeUntilWave: this.timeUntilWave }
+  }
+
+  restore(snapshot: WavesSnapshot): void {
+    this.elapsed = snapshot.elapsed
+    this.timeUntilWave = snapshot.timeUntilWave
   }
 
   // Surface elevation of the incident swell. The wave runs shoreward, towards

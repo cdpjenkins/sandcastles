@@ -1,6 +1,10 @@
 const DEFAULT_PERIOD = 180
 const DEFAULT_AMPLITUDE = 0.8
 
+export interface TideSnapshot {
+  elapsed: number
+}
+
 export class Tide {
   readonly period: number
   readonly amplitude: number
@@ -10,6 +14,14 @@ export class Tide {
   constructor(period: number = DEFAULT_PERIOD, amplitude: number = DEFAULT_AMPLITUDE) {
     this.period = period
     this.amplitude = amplitude
+  }
+
+  snapshot(): TideSnapshot {
+    return { elapsed: this.elapsed }
+  }
+
+  restore(snapshot: TideSnapshot): void {
+    this.elapsed = snapshot.elapsed
   }
 
   step(dt: number): void {

@@ -160,3 +160,29 @@ describe('Waves dirty mask', () => {
     expect(dirty[SEA_Z * 4]).toBe(0)
   })
 })
+
+describe('Waves snapshot', () => {
+  it('restores the swell phase it was snapshotted with', () => {
+    const grid = new Grid(16, 16)
+    grid.initBeach()
+    const waves = new Waves(16, 16)
+    for (let i = 0; i < 20; i++) waves.step(grid, 1 / 30, 2)
+
+    const restored = new Waves(16, 16)
+    restored.restore(waves.snapshot())
+
+    expect(restored.surfaceAt(4, 15, 2)).toBeCloseTo(waves.surfaceAt(4, 15, 2))
+  })
+
+  it('restores the countdown to the next wave', () => {
+    const grid = new Grid(16, 16)
+    grid.initBeach()
+    const waves = new Waves(16, 16)
+    for (let i = 0; i < 20; i++) waves.step(grid, 1 / 30, 2)
+
+    const restored = new Waves(16, 16)
+    restored.restore(waves.snapshot())
+
+    expect(restored.timeUntilWave).toBeCloseTo(waves.timeUntilWave)
+  })
+})
