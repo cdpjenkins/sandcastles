@@ -364,4 +364,62 @@ describe('Grid', () => {
     expect(grid.getSourceRate(sourceX, sourceZ)).toBeCloseTo(3.0)
     expect(sourceZ).toBeLessThan(grid.seaStart * 0.25)
   })
+
+  it('restores the sand height it was snapshotted with', () => {
+    const grid = new Grid(4, 4)
+    grid.setSandHeight(1, 2, 7.5)
+
+    const snapshot = grid.snapshot()
+    grid.setSandHeight(1, 2, 0)
+    grid.restore(snapshot)
+
+    expect(grid.getSandHeight(1, 2)).toBe(7.5)
+  })
+
+  it('restores every layer of grid state, not just sand', () => {
+    const grid = new Grid(4, 4)
+    grid.setRockHeight(1, 1, 3)
+    grid.setSandHeight(1, 1, 4)
+    grid.setWaterHeight(1, 1, 5)
+    grid.setMoisture(1, 1, 0.5)
+    grid.setSourceRate(1, 1, 2)
+    grid.setSediment(1, 1, 0.25)
+
+    const snapshot = grid.snapshot()
+    grid.setRockHeight(1, 1, 0)
+    grid.setSandHeight(1, 1, 0)
+    grid.setWaterHeight(1, 1, 0)
+    grid.setMoisture(1, 1, 0)
+    grid.setSourceRate(1, 1, 0)
+    grid.setSediment(1, 1, 0)
+    grid.restore(snapshot)
+
+    expect(grid.getRockHeight(1, 1)).toBe(3)
+    expect(grid.getSandHeight(1, 1)).toBe(4)
+    expect(grid.getWaterHeight(1, 1)).toBe(5)
+    expect(grid.getMoisture(1, 1)).toBe(0.5)
+    expect(grid.getSourceRate(1, 1)).toBe(2)
+    expect(grid.getSediment(1, 1)).toBe(0.25)
+  })
+
+  it('takes a copy, so the running simulation cannot alter a snapshot already taken', () => {
+    const grid = new Grid(4, 4)
+    grid.setSandHeight(2, 2, 1)
+
+    const snapshot = grid.snapshot()
+    grid.setSandHeight(2, 2, 99)
+
+    expect(snapshot.sand[2 * 4 + 2]).toBe(1)
+  })
+
+  it('restores through a copy, so later digging does not corrupt the snapshot', () => {
+    const grid = new Grid(4, 4)
+    grid.setSandHeight(2, 2, 1)
+    const snapshot = grid.snapshot()
+
+    grid.restore(snapshot)
+    grid.setSandHeight(2, 2, 99)
+
+    expect(snapshot.sand[2 * 4 + 2]).toBe(1)
+  })
 })

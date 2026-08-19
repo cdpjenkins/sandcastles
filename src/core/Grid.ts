@@ -10,6 +10,15 @@ const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
 
+export interface GridSnapshot {
+  rock: Float32Array
+  sand: Float32Array
+  water: Float32Array
+  moisture: Float32Array
+  source: Float32Array
+  sediment: Float32Array
+}
+
 export class Grid {
   readonly width: number
   readonly depth: number
@@ -115,6 +124,26 @@ export class Grid {
     let total = 0
     for (let i = 0; i < this.sand.length; i++) total += this.sand[i]!
     return total
+  }
+
+  snapshot(): GridSnapshot {
+    return {
+      rock: this.rock.slice(),
+      sand: this.sand.slice(),
+      water: this.water.slice(),
+      moisture: this.moisture.slice(),
+      source: this.source.slice(),
+      sediment: this.sedimentArr.slice(),
+    }
+  }
+
+  restore(snapshot: GridSnapshot): void {
+    this.rock.set(snapshot.rock)
+    this.sand.set(snapshot.sand)
+    this.water.set(snapshot.water)
+    this.moisture.set(snapshot.moisture)
+    this.source.set(snapshot.source)
+    this.sedimentArr.set(snapshot.sediment)
   }
 
   initBeach(): void {

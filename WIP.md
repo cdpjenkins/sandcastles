@@ -1,25 +1,22 @@
-# WIP: D selects Dump instead of toggling
+# WIP: survive a browser-initiated restart
 
-`D` was the only tool key written as a toggle (`Game.ts:174`), so pressing it
-twice landed you back in Spade. Worse, from Stream mode it selected Spade
-rather than Dump, because the ternary only knew about two of the three tools.
+Chrome discards backgrounded tabs under memory pressure and reloads the page
+from scratch, losing the whole beach. The app has no persistence of any kind.
+Adding silent autosave to IndexedDB plus exact restore on load.
 
-`Game`'s key handling cannot be tested where it stands -- the constructor
-builds a WebGL `Renderer` -- so the mapping moves to a pure function first.
+Full plan: `PLAN.md`.
 
 ## Current Step
 
-All three steps complete. Awaiting browser verification.
+Step 2: `WaterSim` round-trips its flow field.
 
 ## Status
 
-✅ DONE - suite green, tsc clean, production build clean
+⏸️ WAITING - Step 1 complete, suite green (243), tsc clean.
 
 ## Completed
 
-- [x] Step 1: `toolForKey` maps a key to a tool, with no current-mode input
-- [x] Step 2: `Game` delegates its tool keys to `toolForKey`
-- [x] Step 3: the help overlay describes `D` as Dump
+- [x] Step 1: `Grid` round-trips its six arrays, by copy not by reference
 
 ## Blockers
 
@@ -27,6 +24,5 @@ None.
 
 ## Next Action
 
-Verify in the browser: D selects Dump and pressing it again keeps Dump,
-from Stream mode too; S and W still select their tools; the help overlay
-reads correctly.
+Step 2: snapshot/restore `flowX` and `flowZ` on `WaterSim`, excluding the
+derived `velocityArr` and the scratch `dirty` mask.
