@@ -164,8 +164,7 @@ describe('Grid', () => {
     const grid = new Grid(256, 256)
     grid.initBeach()
     for (let z = grid.seaStart; z < grid.depth; z += 16) {
-      const surface = grid.getSurfaceHeight(128, z)! + grid.getWaterHeight(128, z)!
-      expect(surface).toBeCloseTo(grid.seaLevel)
+      expect(grid.getWaterSurfaceHeight(128, z)).toBeCloseTo(grid.seaLevel)
     }
   })
 
@@ -266,6 +265,30 @@ describe('Grid', () => {
     grid.setSandHeight(5, 5, 3.0)
     grid.setRockHeight(5, 5, 1.0)
     expect(grid.getSurfaceHeight(5, 5)).toBeCloseTo(4.0)
+  })
+
+  it('water surface height is the elevation of the water top, not its depth', () => {
+    const grid = new Grid(16, 16)
+    grid.setRockHeight(5, 5, 1.0)
+    grid.setSandHeight(5, 5, 3.0)
+    grid.setWaterHeight(5, 5, 0.75)
+
+    expect(grid.getWaterSurfaceHeight(5, 5)).toBeCloseTo(4.75)
+  })
+
+  it('a dry cell has its bed elevation as its water surface height', () => {
+    const grid = new Grid(16, 16)
+    grid.setRockHeight(5, 5, 1.0)
+    grid.setSandHeight(5, 5, 3.0)
+
+    expect(grid.getWaterSurfaceHeight(5, 5)).toBeCloseTo(4.0)
+  })
+
+  it('getWaterSurfaceHeight returns undefined out of bounds', () => {
+    const grid = new Grid(16, 16)
+
+    expect(grid.getWaterSurfaceHeight(-1, 5)).toBeUndefined()
+    expect(grid.getWaterSurfaceHeight(16, 5)).toBeUndefined()
   })
 
   it('sourceRate defaults to zero', () => {

@@ -120,6 +120,12 @@ export class Grid {
     return this.rock[i] + this.sand[i]
   }
 
+  getWaterSurfaceHeight(x: number, z: number): number | undefined {
+    const bed = this.getSurfaceHeight(x, z)
+    if (bed === undefined) return undefined
+    return bed + this.water[this.idx(x, z)]
+  }
+
   getTotalSandHeight(): number {
     let total = 0
     for (let i = 0; i < this.sand.length; i++) total += this.sand[i]!

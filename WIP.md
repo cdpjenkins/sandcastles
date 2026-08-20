@@ -1,40 +1,37 @@
-# WIP: survive a browser-initiated restart
+# WIP: Look view shows the absolute water surface elevation
 
-Chrome discards backgrounded tabs under memory pressure and reloads the page
-from scratch, losing the whole beach. The app has no persistence of any kind.
-Adding silent autosave to IndexedDB plus exact restore on load.
+The Look panel shows the bed elevation (labelled `Surface`) and the water
+*column* (labelled `Water`), but never the elevation of the water's top —
+the number `TerrainMesh` writes as the mesh y. Adding it, and renaming the
+two labels that currently sound like it.
 
-Full plan: `PLAN.md`.
+Agreed shape:
+
+```
+Cell (5, 9)
+Sand 3.00  Rock 1.00  Bed 4.00
+Depth 0.75  Water top 4.75
+Moisture 60%
+Sediment 0.20  Source 2.50
+Flow 1.40 ↘
+```
+
+Dry cells print `Water top —`. No tide or swell reference, so `getLookInfo`
+keeps its `Grid` + `WaterSim` dependencies. `bed + water` becomes a named
+`Grid` accessor rather than a seventh open-coded site — the sim call sites
+keep their locals and are deliberately not migrated.
 
 ## Current Step
 
-None - work complete.
+Step 2: `getLookInfo` reports the water surface elevation
 
 ## Status
 
-✅ DONE - suite green (289), tsc clean, build clean, and verified in the
-browser on 2026-08-20: chrome://discards Discard-then-revisit restores the
-beach exactly, the sea does not lurch, and every corruption case falls back
-to a fresh beach.
+⏸️ WAITING
 
 ## Completed
 
-- [x] Step 1: `Grid` round-trips its six arrays, by copy not by reference
-- [x] Step 2: `WaterSim` round-trips `flowX`/`flowZ`
-- [x] Step 3: `Tide` round-trips its phase
-- [x] Step 4: `Waves` round-trips its phase and countdown
-- [x] Step 5: `IsoCamera` round-trips zoom and pan
-- [x] Step 6: `isValidSnapshot` rejects anything it should not load
-- [x] Step 7: a snapshot survives a structured-clone round trip intact
-- [x] Step 8: `AutoSaver` writes on schedule, one write at a time
-- [x] Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`
-- [x] Step 10: `IndexedDbSnapshotStore` (untested wiring, by necessity)
-- [x] Step 11: `Game` restores from a snapshot and drives an `AutoSaver`
-- [x] Step 12: lifecycle events trigger a save
-- [x] Extra: IndexedDB adapter brought under test; found and fixed a
-      versionchange defect that blocked a second tab
-- [x] Extra: `createSnapshot` seam so a game-produced snapshot is proven
-      loadable
+- [x] Step 1: `Grid.getWaterSurfaceHeight` returns bed + water as an elevation
 
 ## Blockers
 
@@ -42,9 +39,4 @@ None.
 
 ## Next Action
 
-Nothing outstanding on this work. Learnings are recorded in CLAUDE.md under
-"Persisting the game".
-
-Still owed from the previous piece of work, which this overwrote: the
-browser check that `D` selects Dump and keeps selecting Dump when pressed
-again, including from Stream mode.
+Write the failing test for `LookInfo.waterSurfaceHeight`.
