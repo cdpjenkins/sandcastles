@@ -23,7 +23,8 @@ keep their locals and are deliberately not migrated.
 
 ## Current Step
 
-Step 2: `getLookInfo` reports the water surface elevation
+Step 3: the panel prints `Water top`, and `Bed`/`Depth` for the two labels
+that currently sound like it
 
 ## Status
 
@@ -32,6 +33,7 @@ Step 2: `getLookInfo` reports the water surface elevation
 ## Completed
 
 - [x] Step 1: `Grid.getWaterSurfaceHeight` returns bed + water as an elevation
+- [x] Step 2: `getLookInfo` reports the water surface elevation
 
 ## Blockers
 
@@ -39,4 +41,5 @@ None.
 
 ## Next Action
 
-Write the failing test for `LookInfo.waterSurfaceHeight`.
+Write the failing test for the `Water top` line, then the dry-cell dash,
+then the label rename.

@@ -10,6 +10,7 @@ const makeInfo = (overrides: Partial<LookInfo> = {}): LookInfo => ({
   sandHeight: 3,
   surfaceHeight: 4,
   waterHeight: 0.75,
+  waterSurfaceHeight: 4.75,
   moisture: 0.6,
   sediment: 0.2,
   sourceRate: 0,
@@ -47,6 +48,7 @@ describe('getLookInfo', () => {
     expect(info.flowX).toBeCloseTo(1.2)
     expect(info.flowZ).toBeCloseTo(-0.4)
     expect(info.velocity).toBe(waterSim.getVelocity(2, 1))
+    expect(info.waterSurfaceHeight).toBeCloseTo(5.25)
   })
 })
 

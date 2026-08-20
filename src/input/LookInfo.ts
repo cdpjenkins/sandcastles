@@ -9,6 +9,7 @@ export interface LookInfo {
   readonly sandHeight: number
   readonly surfaceHeight: number
   readonly waterHeight: number
+  readonly waterSurfaceHeight: number
   readonly moisture: number
   readonly sediment: number
   readonly sourceRate: number
@@ -47,6 +48,7 @@ export function getLookInfo(grid: Grid, waterSim: WaterSim, x: number, z: number
     sandHeight: grid.getSandHeight(x, z) ?? 0,
     surfaceHeight: grid.getSurfaceHeight(x, z) ?? 0,
     waterHeight: grid.getWaterHeight(x, z) ?? 0,
+    waterSurfaceHeight: grid.getWaterSurfaceHeight(x, z) ?? 0,
     moisture: grid.getMoisture(x, z) ?? 0,
     sediment: grid.getSediment(x, z) ?? 0,
     sourceRate: grid.getSourceRate(x, z) ?? 0,
