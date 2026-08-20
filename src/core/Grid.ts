@@ -121,9 +121,9 @@ export class Grid {
   }
 
   getWaterSurfaceHeight(x: number, z: number): number | undefined {
-    const bed = this.getSurfaceHeight(x, z)
-    if (bed === undefined) return undefined
-    return bed + this.water[this.idx(x, z)]
+    if (!this.inBounds(x, z)) return undefined
+    const i = this.idx(x, z)
+    return this.rock[i] + this.sand[i] + this.water[i]
   }
 
   getTotalSandHeight(): number {
