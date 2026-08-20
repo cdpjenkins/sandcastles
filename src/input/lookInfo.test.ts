@@ -8,8 +8,8 @@ const makeInfo = (overrides: Partial<LookInfo> = {}): LookInfo => ({
   z: 9,
   rockHeight: 1,
   sandHeight: 3,
-  surfaceHeight: 4,
-  waterHeight: 0.75,
+  bedHeight: 4,
+  waterDepth: 0.75,
   waterSurfaceHeight: 4.75,
   moisture: 0.6,
   sediment: 0.2,
@@ -40,8 +40,8 @@ describe('getLookInfo', () => {
     expect(info.z).toBe(1)
     expect(info.rockHeight).toBeCloseTo(1.5)
     expect(info.sandHeight).toBeCloseTo(3.0)
-    expect(info.surfaceHeight).toBeCloseTo(4.5)
-    expect(info.waterHeight).toBeCloseTo(0.75)
+    expect(info.bedHeight).toBeCloseTo(4.5)
+    expect(info.waterDepth).toBeCloseTo(0.75)
     expect(info.moisture).toBeCloseTo(0.6)
     expect(info.sediment).toBeCloseTo(0.2)
     expect(info.sourceRate).toBeCloseTo(3.0)
@@ -60,8 +60,8 @@ describe('formatLookInfo', () => {
         z: 9,
         rockHeight: 1,
         sandHeight: 3,
-        surfaceHeight: 4,
-        waterHeight: 0.75,
+        bedHeight: 4,
+        waterDepth: 0.75,
         moisture: 0.6,
         sediment: 0.2,
         sourceRate: 2.5,
@@ -71,11 +71,23 @@ describe('formatLookInfo', () => {
     expect(text).toContain('(5, 9)')
     expect(text).toContain('Sand 3.00')
     expect(text).toContain('Rock 1.00')
-    expect(text).toContain('Surface 4.00')
-    expect(text).toContain('Water 0.75')
+    expect(text).toContain('Bed 4.00')
+    expect(text).toContain('Depth 0.75')
     expect(text).toContain('Moisture 60%')
     expect(text).toContain('Sediment 0.20')
     expect(text).toContain('Source 2.50')
+  })
+
+  it('prints the water surface as an elevation, not the depth', () => {
+    const text = formatLookInfo(makeInfo({ bedHeight: 4, waterDepth: 0.75, waterSurfaceHeight: 4.75 }))
+
+    expect(text).toContain('Water top 4.75')
+  })
+
+  it('prints a dash for the water top when the cell is dry', () => {
+    const text = formatLookInfo(makeInfo({ bedHeight: 4, waterDepth: 0, waterSurfaceHeight: 4 }))
+
+    expect(text).toContain('Water top —')
   })
 
   it.each([

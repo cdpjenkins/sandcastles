@@ -7,8 +7,8 @@ export interface LookInfo {
   readonly z: number
   readonly rockHeight: number
   readonly sandHeight: number
-  readonly surfaceHeight: number
-  readonly waterHeight: number
+  readonly bedHeight: number
+  readonly waterDepth: number
   readonly waterSurfaceHeight: number
   readonly moisture: number
   readonly sediment: number
@@ -31,10 +31,12 @@ function flowArrow(flowX: number, flowZ: number): string {
 
 export function formatLookInfo(info: LookInfo): string {
   const moisturePct = Math.round(info.moisture * 100)
+  const waterTop = info.waterDepth === 0 ? '—' : info.waterSurfaceHeight.toFixed(2)
   return [
     `Cell (${info.x}, ${info.z})`,
-    `Sand ${info.sandHeight.toFixed(2)}  Rock ${info.rockHeight.toFixed(2)}  Surface ${info.surfaceHeight.toFixed(2)}`,
-    `Water ${info.waterHeight.toFixed(2)}  Moisture ${moisturePct}%`,
+    `Sand ${info.sandHeight.toFixed(2)}  Rock ${info.rockHeight.toFixed(2)}  Bed ${info.bedHeight.toFixed(2)}`,
+    `Depth ${info.waterDepth.toFixed(2)}  Water top ${waterTop}`,
+    `Moisture ${moisturePct}%`,
     `Sediment ${info.sediment.toFixed(2)}  Source ${info.sourceRate.toFixed(2)}`,
     `Flow ${info.velocity.toFixed(2)} ${flowArrow(info.flowX, info.flowZ)}`,
   ].join('\n')
@@ -46,8 +48,8 @@ export function getLookInfo(grid: Grid, waterSim: WaterSim, x: number, z: number
     z,
     rockHeight: grid.getRockHeight(x, z) ?? 0,
     sandHeight: grid.getSandHeight(x, z) ?? 0,
-    surfaceHeight: grid.getSurfaceHeight(x, z) ?? 0,
-    waterHeight: grid.getWaterHeight(x, z) ?? 0,
+    bedHeight: grid.getSurfaceHeight(x, z) ?? 0,
+    waterDepth: grid.getWaterHeight(x, z) ?? 0,
     waterSurfaceHeight: grid.getWaterSurfaceHeight(x, z) ?? 0,
     moisture: grid.getMoisture(x, z) ?? 0,
     sediment: grid.getSediment(x, z) ?? 0,

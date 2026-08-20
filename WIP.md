@@ -23,17 +23,18 @@ keep their locals and are deliberately not migrated.
 
 ## Current Step
 
-Step 3: the panel prints `Water top`, and `Bed`/`Depth` for the two labels
-that currently sound like it
+None - work complete, pending a look in the browser.
 
 ## Status
 
-⏸️ WAITING
+✅ DONE - suite green (294), tsc clean, build clean.
 
 ## Completed
 
 - [x] Step 1: `Grid.getWaterSurfaceHeight` returns bed + water as an elevation
 - [x] Step 2: `getLookInfo` reports the water surface elevation
+- [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
+      labels that used to sound like it
 
 ## Blockers
 
@@ -41,5 +42,11 @@ None.
 
 ## Next Action
 
-Write the failing test for the `Water top` line, then the dry-cell dash,
-then the label rename.
+Hover the wet sand in the browser and confirm the reading. Note the dash
+fires on exact zero, not an epsilon: cells holding the swash's residual
+film (~1e-6) will read `Depth 0.00  Water top 4.00` rather than a dash.
+That is the agreed behaviour, not a defect - but it is the first thing
+that will look like one.
+
+Still owed from earlier work: the browser check that `D` selects Dump and
+keeps selecting Dump when pressed again, including from Stream mode.
