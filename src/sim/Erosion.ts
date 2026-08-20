@@ -37,9 +37,26 @@ const surfaceSlope = (grid: Grid, x: number, z: number): number => {
 
 export class Erosion {
   private readonly dirty: Uint8Array
+  // Scratch buffers for transportSediment, held rather than allocated per
+  // step: three Float32Array(65536) every step at 30 Hz is ~23 MB/s of
+  // garbage, and the collector pressure was enough to make the tab a target
+  // for Chrome's memory saver.
+  //
+  // Safe to reuse without clearing, but only just. concentration is written
+  // for every cell. The edge fluxes are not: edgeFluxX skips column W-1 and
+  // edgeFluxZ skips row D-1, so those entries hold the previous step's
+  // values. Nothing reads them - every read is either guarded by the same
+  // bound that guards the write, or indexes i-1 / i-W, which can only reach
+  // a cell the write covered. Keep it that way when editing the loops below.
+  private readonly concentration: Float32Array
+  private readonly edgeFluxX: Float32Array
+  private readonly edgeFluxZ: Float32Array
 
   constructor(width: number, depth: number) {
     this.dirty = new Uint8Array(width * depth)
+    this.concentration = new Float32Array(width * depth)
+    this.edgeFluxX = new Float32Array(width * depth)
+    this.edgeFluxZ = new Float32Array(width * depth)
   }
 
   step(grid: Grid, waterSim: WaterSim, dt: number): Uint8Array {
@@ -86,9 +103,7 @@ export class Erosion {
   private transportSediment(grid: Grid, waterSim: WaterSim, dt: number): void {
     const W = grid.width
     const D = grid.depth
-    const N = W * D
-
-    const concentration = new Float32Array(N)
+    const concentration = this.concentration
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const i = z * W + x
@@ -100,8 +115,8 @@ export class Erosion {
 
     // Sediment flux across each edge, carried at the upwind cell's concentration
     // (the same pipes WaterSim used to move water this tick move sediment with it).
-    const edgeFluxX = new Float32Array(N)
-    const edgeFluxZ = new Float32Array(N)
+    const edgeFluxX = this.edgeFluxX
+    const edgeFluxZ = this.edgeFluxZ
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const i = z * W + x

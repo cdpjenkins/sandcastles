@@ -36,6 +36,11 @@ None - work complete, pending a look in the browser.
 - [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
       labels that used to sound like it
 
+Separately (behaviour-preserving, no browser check needed):
+
+- [x] `Erosion` holds its three scratch buffers instead of allocating them
+      every step. Verified bit-exact against a golden master over 400 steps.
+
 ## Blockers
 
 None.
