@@ -280,3 +280,22 @@ base64 needs ~5.6 MB of a ~5 MB quota, synchronously on the main thread.
 IndexedDB structured-clones typed arrays natively, so there is no serialisation
 format to write at all.
 
+## The Look panel's dash means dry, and dry means exactly zero
+
+`formatLookInfo` prints `Water top —` when `waterDepth === 0`, a strict
+comparison and not an epsilon (`LookInfo.ts:34`). `Depth` is printed with
+`toFixed(2)`. So a cell holding the swash's residual film — around 1e-6 — reads
+
+```
+Depth 0.00  Water top 4.00
+```
+
+which looks like a contradiction: no depth, but a water surface anyway. It is
+the agreed behaviour. The dash is reserved for cells the sim considers truly
+dry, and a film that thin is still wet as far as every other part of the model
+is concerned; widening the dash to an epsilon would claim dryness the sim does
+not agree with, and the two readings would then disagree about the same cell.
+
+Recorded because it is the first thing in that panel that will look like a
+defect, and it is not one.
+

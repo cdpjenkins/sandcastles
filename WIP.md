@@ -38,11 +38,9 @@ browser on 2026-08-20.
 - [x] Step 2: `getLookInfo` reports the water surface elevation
 - [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
       labels that used to sound like it
-- [x] Verified by hovering the wet sand. Confirmed as agreed: the dash fires
-      on exact zero rather than an epsilon, so a cell holding the swash's
-      residual film (~1e-6) reads `Depth 0.00  Water top 4.00` and not a
-      dash. Intended behaviour, but the first thing that will look like a
-      defect to anyone reading it fresh.
+- [x] Verified by hovering the wet sand. The dash-on-exact-zero behaviour it
+      confirmed is written up in CLAUDE.md, under "The Look panel's dash
+      means dry".
 
 Separately (behaviour-preserving, no browser check needed) — all three
 verified bit-exact against the same 400-step golden master:
