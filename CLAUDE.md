@@ -217,3 +217,66 @@ It is easy to measure wrongly, and each of these produced a confident wrong answ
   forcing until both sides come off the ceiling before believing any comparison of erosion amounts.
 - **`Float32Array` round-trips break `toEqual`** on struct-returning functions: `1.2` comes back as
   `1.2000000476837158`. Assert fields individually with `toBeCloseTo`.
+
+## Persisting the game
+
+The beach survives a Chrome tab discard by snapshotting into IndexedDB:
+`GameSnapshot.ts` (shape, guard, `createSnapshot`, `loadSnapshot`), `AutoSaver.ts`
+(when to write), `IndexedDbSnapshotStore.ts` (the store). Per-class
+`snapshot()`/`restore()` on `Grid`, `WaterSim`, `Waves`, `Tide` and `IsoCamera`.
+`PLAN.md` has the design. What was expensive to learn:
+
+### `instanceof` is wrong for anything that came out of storage
+
+Deserialising is a realm crossing by nature, and `value instanceof Float32Array`
+is `false` for a perfectly good `Float32Array` from another realm. Under jsdom
+the structured clone lands in Node's realm, so the validator rejected every save
+it was handed. `isCellArray` brand-checks with `Object.prototype.toString`, which
+is realm-independent and still rejects plain arrays and other typed arrays.
+
+A real browser has one realm, so this would never have shown in manual testing —
+only the test caught it.
+
+### The store must let go of its connection on `versionchange`
+
+The connection is held for the life of the page. Without releasing it, a second
+tab running a newer `DB_VERSION` blocks on `open()` until the first tab closes,
+and *that* tab's `onblocked` path silently gives it a fresh beach. Costs two
+lines; found by test, not by browsing.
+
+### Resolve a write on the transaction, not the request
+
+`IDBRequest.onsuccess` fires before the transaction commits. Resolving there
+reports a save durable while it is still in flight, which frees `AutoSaver` to
+start the next one over the top of it.
+
+### `visibilitychange` is the trigger that works — `pagehide`/`freeze` cannot be
+
+IndexedDB writes are async, and a page being frozen or discarded may never commit
+one. But Chrome only discards a tab that is *already backgrounded*, and
+`visibilitychange` fires the instant it is — minutes before the freeze. That is
+what actually saves the beach. The periodic save covers a crash; `pagehide` and
+`freeze` are best-effort only. Don't simplify one away in favour of another.
+
+### A save that the guard rejects is the worst failure available
+
+Every save written, every load rejected, autosave silently doing nothing while
+looking completely healthy. `Game` cannot be built under jsdom, so the assembly
+lives in `createSnapshot` and the test drives it with real components — that
+round trip is the thing keeping the feature honest.
+
+### What is deliberately not stored
+
+The seven dirty masks and `WaterSim.velocityArr` (recomputed each step),
+`TerrainMesh` (~3 MiB, derived from `Grid`), and `SimClock.accumulator` (≤ 1/30 s).
+`rock` *is* stored despite never being mutated by the sim: regenerating it saves
+256 KiB of 2 MiB and couples the save format to the noise constants in `Grid.ts`.
+Not worth it — recorded so it is not rediscovered as an oversight.
+
+### Sizing rules out localStorage, not just disfavours it
+
+Eight `Float32Array(65536)` is exactly 2.00 MiB. localStorage is string-only, so
+base64 needs ~5.6 MB of a ~5 MB quota, synchronously on the main thread.
+IndexedDB structured-clones typed arrays natively, so there is no serialisation
+format to write at all.
+

@@ -8,12 +8,14 @@ Full plan: `PLAN.md`.
 
 ## Current Step
 
-Browser verification (steps 11-12).
+None - work complete.
 
 ## Status
 
-🟢 GREEN - all 12 steps done, suite green (289), tsc clean, build clean.
-Awaiting browser verification.
+✅ DONE - suite green (289), tsc clean, build clean, and verified in the
+browser on 2026-08-20: chrome://discards Discard-then-revisit restores the
+beach exactly, the sea does not lurch, and every corruption case falls back
+to a fresh beach.
 
 ## Completed
 
@@ -40,7 +42,9 @@ None.
 
 ## Next Action
 
-Verify in the browser per PLAN.md: a save appears in IndexedDB within ~5s,
-a reload restores the beach without the sea lurching, chrome://discards
-Discard then revisit restores exactly, and a corrupted record falls back to
-a fresh beach.
+Nothing outstanding on this work. Learnings are recorded in CLAUDE.md under
+"Persisting the game".
+
+Still owed from the previous piece of work, which this overwrote: the
+browser check that `D` selects Dump and keeps selecting Dump when pressed
+again, including from Stream mode.

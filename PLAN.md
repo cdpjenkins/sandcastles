@@ -193,16 +193,20 @@ Store the canvas in the constructor.
 
 ## Acceptance criteria
 
-- [ ] Build a castle, discard the tab via `chrome://discards`, return — the beach,
+All verified in the browser on 2026-08-20.
+
+- [x] Build a castle, discard the tab via `chrome://discards`, return — the beach,
       the castle, the water and the bucket are exactly as left
-- [ ] The sea does not lurch or teleport on resume (tide and swell phase restored)
-- [ ] A first-ever load, with no save present, starts a normal fresh beach
-- [ ] A save written by an older `SNAPSHOT_VERSION`, or for different grid
+- [x] The sea does not lurch or teleport on resume (tide and swell phase restored)
+- [x] A first-ever load, with no save present, starts a normal fresh beach
+- [x] A save written by an older `SNAPSHOT_VERSION`, or for different grid
       dimensions, is discarded and a fresh beach starts — no crash
-- [ ] A deliberately corrupted record in DevTools → Application → IndexedDB
-      produces a fresh beach, not a broken page
-- [ ] Saving costs no visible hitch at 5 s intervals
-- [ ] Full suite green, `npx tsc --noEmit` clean
+- [x] A deliberately corrupted record produces a fresh beach, not a broken page.
+      Note: DevTools' IndexedDB viewer is read-only — corrupting a record needs
+      a Console snippet, and it must reload in the same breath or the running
+      game's 5 s autosave overwrites the corruption first
+- [x] Saving costs no visible hitch at 5 s intervals
+- [x] Full suite green, `npx tsc --noEmit` clean
 
 ## Steps
 
