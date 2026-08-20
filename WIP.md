@@ -19,7 +19,9 @@ Flow 1.40 ↘
 Dry cells print `Water top —`. No tide or swell reference, so `getLookInfo`
 keeps its `Grid` + `WaterSim` dependencies. `bed + water` becomes a named
 `Grid` accessor rather than a seventh open-coded site — the sim call sites
-keep their locals and are deliberately not migrated.
+keep their locals and are deliberately not migrated. One exception followed
+later: `Erosion`'s `surfaceSlope` had no locals to keep, so it was migrated
+in `5d97987`.
 
 ## Current Step
 
@@ -36,10 +38,15 @@ None - work complete, pending a look in the browser.
 - [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
       labels that used to sound like it
 
-Separately (behaviour-preserving, no browser check needed):
+Separately (behaviour-preserving, no browser check needed) — all three
+verified bit-exact against the same 400-step golden master:
 
 - [x] `Erosion` holds its three scratch buffers instead of allocating them
-      every step. Verified bit-exact against a golden master over 400 steps.
+      every step (`b96adbd`). Removes ~23 MB/s of garbage at 30 Hz.
+- [x] `Grid.getWaterSurfaceHeight` computes its index once (`d1d5fc9`)
+- [x] `Erosion.surfaceSlope` reads the named accessor (`5d97987`). The swap
+      alone cost ~3.7%; with `d1d5fc9` it lands at ~2.93 ms/step against a
+      ~2.99 baseline.
 
 ## Blockers
 
@@ -53,5 +60,6 @@ film (~1e-6) will read `Depth 0.00  Water top 4.00` rather than a dash.
 That is the agreed behaviour, not a defect - but it is the first thing
 that will look like one.
 
-Still owed from earlier work: the browser check that `D` selects Dump and
-keeps selecting Dump when pressed again, including from Stream mode.
+Nothing else outstanding. The `D` selects Dump check carried over from
+earlier work was verified in the browser on 2026-08-20, as was the
+persistence work (discard-and-revisit restores the beach exactly).
