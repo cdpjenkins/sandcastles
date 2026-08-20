@@ -25,11 +25,12 @@ in `5d97987`.
 
 ## Current Step
 
-None - work complete, pending a look in the browser.
+None - work complete and verified.
 
 ## Status
 
-✅ DONE - suite green (294), tsc clean, build clean.
+✅ DONE - suite green (294), tsc clean, build clean, and confirmed in the
+browser on 2026-08-20.
 
 ## Completed
 
@@ -37,6 +38,11 @@ None - work complete, pending a look in the browser.
 - [x] Step 2: `getLookInfo` reports the water surface elevation
 - [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
       labels that used to sound like it
+- [x] Verified by hovering the wet sand. Confirmed as agreed: the dash fires
+      on exact zero rather than an epsilon, so a cell holding the swash's
+      residual film (~1e-6) reads `Depth 0.00  Water top 4.00` and not a
+      dash. Intended behaviour, but the first thing that will look like a
+      defect to anyone reading it fresh.
 
 Separately (behaviour-preserving, no browser check needed) — all three
 verified bit-exact against the same 400-step golden master:
@@ -54,12 +60,8 @@ None.
 
 ## Next Action
 
-Hover the wet sand in the browser and confirm the reading. Note the dash
-fires on exact zero, not an epsilon: cells holding the swash's residual
-film (~1e-6) will read `Depth 0.00  Water top 4.00` rather than a dash.
-That is the agreed behaviour, not a defect - but it is the first thing
-that will look like one.
-
-Nothing else outstanding. The `D` selects Dump check carried over from
-earlier work was verified in the browser on 2026-08-20, as was the
+Nothing outstanding. Every browser check is done: the Look panel reading,
+the `D` selects Dump check carried over from earlier work, and the
 persistence work (discard-and-revisit restores the beach exactly).
+
+Ready for the next piece of work to overwrite this file.
