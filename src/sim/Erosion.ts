@@ -27,7 +27,7 @@ const DIRTY_EPSILON = 1e-4
 // reads a one-sided gradient rather than falling off the grid.
 const surfaceSlope = (grid: Grid, x: number, z: number): number => {
   const surfaceAt = (sx: number, sz: number): number =>
-    (grid.getSurfaceHeight(sx, sz) ?? 0) + (grid.getWaterHeight(sx, sz) ?? 0)
+    grid.getWaterSurfaceHeight(sx, sz) ?? 0
 
   return Math.hypot(
     (surfaceAt(Math.min(x + 1, grid.width - 1), z) - surfaceAt(Math.max(x - 1, 0), z)) / 2,
