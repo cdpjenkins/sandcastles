@@ -176,7 +176,8 @@ bends at all. 2s (~28 cells) works. Lengthening the period silently costs refrac
 
 ### These are knobs. Don't let a test pin one.
 
-`EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`.
+`EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`,
+`FILM_DEPTH`, `DRY_RATE`.
 
 Magnitude assertions against them have needed re-deriving five times over. Prefer a comparison — "the
 ground ten cells from the channel is untouched" — or a floor far below any sensible setting. If a test
@@ -184,6 +185,42 @@ breaks every time the model improves, it is describing the model's flaws rather 
 
 A comparison is not automatically safe, though. See the saturation trap below: "a thin sheet scours
 more than a deep pool carrying the same flux" is a comparison, and it still cannot referee anything.
+
+### A film cannot drain away — only a sink can dry it
+
+Once wet, a cell stayed wet forever. Two things had to be true at once.
+
+`withDrag` divides the flux by `1 + g·n²·|q|·dt / h^(7/3)`, so a film is glued down by its own bed
+friction: at `h = 1e-4` that denominator is ~1e9. This is correct Manning physics, not a bug — the
+thinner the sheet, the harder friction dominates, so the drainage rate falls faster than the depth
+does. Drainage therefore *asymptotes* and can never finish. Measured on a draining slope: the wetted
+area did not shrink by a single cell in 600s, and the residual decayed like `1/t` — 1.24e-4 at 600s,
+which extrapolates to roughly 20 hours to reach `DRY_DEPTH` and never reaches exactly zero.
+
+And `grid.water` had no sink at all. `Moisture` evaporates, but that is the sand's dampness, not the
+water column. So the only way out of a cell was to flow somewhere else, which is precisely what
+friction had ruled out.
+
+`Drying` is a *linear* sink, and linearity is the whole point: a constant rate reaches zero in finite
+time where the drainage law cannot. It is gated on `FILM_DEPTH` so the sea and real puddles are
+untouched. On the full beach this dried 4,316 cells — 12% of the wetted area — while costing 0.065%
+of water volume over 120s, against tide swings of ±30,000. The shoreline does sit permanently in the
+film range, so the gate is a continuous sink there; it is just far too small to matter.
+
+Note what is *not* fixed: a puddle above `FILM_DEPTH` still persists forever. Only the invisible film
+is targeted, deliberately.
+
+The tempting cheap fix — thresholding `TerrainMesh`'s and `Moisture`'s `water > 0` tests instead —
+was rejected. It makes the display claim dry while the sim still holds water, which is exactly the
+disagreement recorded under the Look panel dash below. Fixing it in the sim makes that dash correct
+instead.
+
+`Drying` marks a cell dirty on *any* change, not on the siblings' `DIRTY_EPSILON` of 1e-4. The step
+that takes the last of the film to zero is a change of about that size, and it is the one transition
+that must reach the mesh.
+
+`FILM_DEPTH` and `DRY_RATE` are knobs coupled to the world's unit scale. Don't let a test pin one —
+the tests speak in terms of a measured residual (1e-4) and a clearly-real puddle (1.0).
 
 ### Screen-space directions go through `isoProjection`
 
@@ -298,4 +335,10 @@ not agree with, and the two readings would then disagree about the same cell.
 
 Recorded because it is the first thing in that panel that will look like a
 defect, and it is not one.
+
+Since `Drying` landed, a film reaches *exactly* zero rather than sitting at
+1e-6 forever, so the dash now appears on ground that has dried out — which is
+what it always claimed to mean. The reading above is still reachable while a
+cell is mid-swash and genuinely holds a sliver of water; it is just no longer
+a permanent state.
 

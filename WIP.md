@@ -27,11 +27,11 @@ dash *correct*.
 
 ## Current Step
 
-Step 3: Game runs the drying step
+None - implementation complete, browser check outstanding.
 
 ## Status
 
-🟢 GREEN — suite 301, tsc clean
+⏸️ WAITING — suite 301, tsc clean, build clean. Needs a browser check.
 
 ## Completed
 
@@ -43,6 +43,21 @@ Step 3: Game runs the drying step
 - [x] Step 2: a cell that reaches dry settles its stranded sediment into the
       sand. `Erosion` skips anything below `MIN_WATER_TO_ERODE` (1e-5), so
       the film's load would otherwise sit in a dry cell forever.
+- [x] Step 3: `Game` runs `Drying` after `Sponge` (the last thing to write
+      water heights) and before `Erosion`/`Moisture`, so both see the dried
+      cell in the same step. Its mask joins the `orInto` combine. No test:
+      `Game` cannot be built under jsdom, and none of the other six sims'
+      wiring is tested either. Documented TDD exception, browser check below.
+
+Measured on the draining slope that produced the bug report: the probed cell
+reaches exactly 0 by 10s, and the wetted area collapses from 288-forever to
+40 — the cells where water genuinely pooled. Volume settles at 41.220 and
+stays, so the sink stops once nothing is a film rather than leaking.
+
+Measured on the full beach over 120s (drying off vs on): water volume 182980
+vs 182861, a 0.065% cost against tide swings of ±30,000; wet cells 35865 vs
+31549, so 4,316 cells reclaimed as dry; sand +99 from sediment settling
+instead of stranding.
 
 ## Blockers
 
@@ -50,4 +65,7 @@ None.
 
 ## Next Action
 
-Write the failing test for step 3 (Game wiring).
+Browser check: run the sim, let the swash retreat, and confirm the sand
+behind the waterline visibly dries — colour returns to dry sand and the noise
+jitter comes back (`TerrainMesh.ts:81-82` both key off `water > 0`). Also
+hover a dried cell and confirm the Look panel now prints `Water top —`.

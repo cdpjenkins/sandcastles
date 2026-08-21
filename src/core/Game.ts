@@ -13,6 +13,7 @@ import { ToolMode, dig, dump } from '../input/Tools.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
+import { Drying } from '../sim/Drying.ts'
 import { Erosion } from '../sim/Erosion.ts'
 import { Moisture } from '../sim/Moisture.ts'
 import { Slope } from '../sim/Slope.ts'
@@ -38,6 +39,7 @@ export class Game {
   private readonly grid: Grid
   private readonly bucket: Bucket
   private readonly waterSim: WaterSim
+  private readonly drying: Drying
   private readonly erosion: Erosion
   private readonly moisture: Moisture
   private readonly slope: Slope
@@ -107,6 +109,7 @@ export class Game {
     this.grid.initSpring(STREAM_RATE)
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
+    this.drying = new Drying(this.grid.width, this.grid.depth)
     this.erosion = new Erosion(this.grid.width, this.grid.depth)
     this.moisture = new Moisture(this.grid.width, this.grid.depth)
     this.slope = new Slope(this.grid.width, this.grid.depth)
@@ -296,13 +299,14 @@ export class Game {
     const waterDirty = this.waterSim.step(this.grid, dt)
     const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (x, z) =>
       this.waves.surfaceAt(x, z, seaSurface))
+    const dryingDirty = this.drying.step(this.grid, dt)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)
     const slopeDirty = this.slope.step(this.grid)
 
     orInto(
       this.combinedDirty,
-      wavesDirty, waterDirty, spongeDirty, erosionDirty, moistureDirty, slopeDirty,
+      wavesDirty, waterDirty, spongeDirty, dryingDirty, erosionDirty, moistureDirty, slopeDirty,
     )
     this.terrain.updateDirtyCells(this.combinedDirty)
   }
