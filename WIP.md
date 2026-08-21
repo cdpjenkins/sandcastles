@@ -11,14 +11,14 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 1 complete. Next: Step 2, `Bucket.setAmount` — sets rather than adds,
-clamped to `[0, capacity]`. `Game.restore` calls `fill(saved.bucket.amount)`,
-which is right only because the bucket is empty at boot; import restores into a
-bucket that may already hold sand.
+Step 2 complete. Next: Step 3, `applySnapshot` — extract from `Game.restore`,
+take in the camera so boot and import share one path, and switch the bucket to
+`setAmount`. Prove `createSnapshot -> applySnapshot -> createSnapshot` is
+identical over real components.
 
 ## Status
 
-⏸️ WAITING — suite green (308), tsc clean.
+⏸️ WAITING — suite green (312), tsc clean.
 
 ## Completed
 
@@ -27,7 +27,9 @@ bucket that may already hold sand.
       its bytes as arguments and a 262,144-byte layer overflows the call stack.
       Decode treats its input as hostile: not-base64 and wrong-cell-count both
       give `null`. Encode honours a view's `byteOffset`/`byteLength`.
-- [ ] Step 2: `Bucket.setAmount`
+- [x] Step 2: `Bucket.setAmount` sets rather than adds, clamped to
+      `[0, capacity]`. `fill` stays as it is — expressing it via `setAmount`
+      would clamp `fill(-1)` at zero, which no test covers.
 - [ ] Step 3: `applySnapshot`
 - [ ] Step 4: `toGameFile`
 - [ ] Step 5: `parseGameFile`

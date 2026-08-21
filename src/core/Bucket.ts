@@ -18,6 +18,10 @@ export class Bucket {
     return this._amount >= this.capacity
   }
 
+  setAmount(n: number): void {
+    this._amount = Math.max(0, Math.min(n, this.capacity))
+  }
+
   fill(n: number): number {
     const added = Math.min(n, this.capacity - this._amount)
     this._amount += added

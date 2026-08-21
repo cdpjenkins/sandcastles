@@ -59,4 +59,32 @@ describe('Bucket', () => {
     b.fill(1)
     expect(b.empty(5)).toBe(1)
   })
+
+  it('setAmount sets the amount', () => {
+    const b = new Bucket(10)
+    b.setAmount(4)
+    expect(b.amount).toBe(4)
+  })
+
+  it('setAmount replaces what the bucket already holds', () => {
+    const b = new Bucket(10)
+    b.fill(6)
+    b.setAmount(4)
+    expect(b.amount).toBe(4)
+  })
+
+  it('setAmount clamps to capacity', () => {
+    const b = new Bucket(10)
+    b.setAmount(15)
+    expect(b.amount).toBe(10)
+    expect(b.isFull).toBe(true)
+  })
+
+  it('setAmount clamps to zero', () => {
+    const b = new Bucket(10)
+    b.fill(3)
+    b.setAmount(-1)
+    expect(b.amount).toBe(0)
+    expect(b.isEmpty).toBe(true)
+  })
 })
