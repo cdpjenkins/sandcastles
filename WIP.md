@@ -1,56 +1,45 @@
-# WIP: Look view shows the absolute water surface elevation
+# WIP: A wetted cell dries out
 
-The Look panel shows the bed elevation (labelled `Surface`) and the water
-*column* (labelled `Water`), but never the elevation of the water's top —
-the number `TerrainMesh` writes as the mesh y. Adding it, and renaming the
-two labels that currently sound like it.
+Once a cell became wet it stayed wet forever. Measured on a draining slope
+(no waves): the wetted area never shrank by a cell in 600s, and the residual
+film decayed like `1/t` — 1.24e-4 at 600s, heading for `DRY_DEPTH` (1e-6)
+somewhere around 20 hours and never reaching exactly zero.
 
-Agreed shape:
+Two causes. `withDrag` divides the flux by `1 + g·n²·|q|·dt / h^(7/3)`, so at
+h = 1e-4 the film is glued down by its own bed friction — correct Manning
+physics, and it means drainage can never *finish*. And nothing removes water
+anywhere: `grid.water`'s only sink is flowing somewhere else.
 
-```
-Cell (5, 9)
-Sand 3.00  Rock 1.00  Bed 4.00
-Depth 0.75  Water top 4.75
-Moisture 60%
-Sediment 0.20  Source 2.50
-Flow 1.40 ↘
-```
+Then two strict `> 0` tests turn 1e-4 into "fully wet": `TerrainMesh.ts:81`
+paints water colour, and `Moisture.ts:26` pins moisture at 1.0 so the sand
+never begins to dry. That second one is the visible symptom.
 
-Dry cells print `Water top —`. No tide or swell reference, so `getLookInfo`
-keeps its `Grid` + `WaterSim` dependencies. `bed + water` becomes a named
-`Grid` accessor rather than a seventh open-coded site — the sim call sites
-keep their locals and are deliberately not migrated. One exception followed
-later: `Erosion`'s `surfaceSlope` had no locals to keep, so it was migrated
-in `5d97987`.
+Fix: a thin-film sink. Below a film depth, drain at a constant rate and clamp
+to zero — a *linear* sink reaches zero in finite time, which the drainage law
+cannot. Gated on depth so the sea and real puddles are untouched. A new
+`Drying` class, matching the one-class-per-process shape of `Moisture` and
+`Slope`.
+
+Rejected: thresholding `TerrainMesh`/`Moisture` instead, which would make the
+display claim dry while the sim still holds water — exactly the disagreement
+CLAUDE.md records under the Look panel dash. Fixing it in the sim makes that
+dash *correct*.
 
 ## Current Step
 
-None - work complete and verified.
+Step 2: sediment in a drying cell is returned to the sand
 
 ## Status
 
-✅ DONE - suite green (294), tsc clean, build clean, and confirmed in the
-browser on 2026-08-20.
+🟢 GREEN — suite 300, tsc clean
 
 ## Completed
 
-- [x] Step 1: `Grid.getWaterSurfaceHeight` returns bed + water as an elevation
-- [x] Step 2: `getLookInfo` reports the water surface elevation
-- [x] Step 3: the panel prints `Water top`, with `Bed`/`Depth` for the two
-      labels that used to sound like it
-- [x] Verified by hovering the wet sand. The dash-on-exact-zero behaviour it
-      confirmed is written up in CLAUDE.md, under "The Look panel's dash
-      means dry".
-
-Separately (behaviour-preserving, no browser check needed) — all three
-verified bit-exact against the same 400-step golden master:
-
-- [x] `Erosion` holds its three scratch buffers instead of allocating them
-      every step (`b96adbd`). Removes ~23 MB/s of garbage at 30 Hz.
-- [x] `Grid.getWaterSurfaceHeight` computes its index once (`d1d5fc9`)
-- [x] `Erosion.surfaceSlope` reads the named accessor (`5d97987`). The swap
-      alone cost ~3.7%; with `d1d5fc9` it lands at ~2.93 ms/step against a
-      ~2.99 baseline.
+- [x] Step 1: `Drying` drains a sub-film-depth column at a constant rate and
+      clamps it to zero, marking the cell dirty on any change. Deliberately
+      not the siblings' `DIRTY_EPSILON`: the step that takes the last of the
+      film to zero is a change of about 1e-4, and it is the one transition
+      that must reach the mesh.
 
 ## Blockers
 
@@ -58,8 +47,4 @@ None.
 
 ## Next Action
 
-Nothing outstanding. Every browser check is done: the Look panel reading,
-the `D` selects Dump check carried over from earlier work, and the
-persistence work (discard-and-revisit restores the beach exactly).
-
-Ready for the next piece of work to overwrite this file.
+Write the failing test for step 2 (sediment deposit on drying).
