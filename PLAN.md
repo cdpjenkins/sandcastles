@@ -1,403 +1,192 @@
-# Plan: survive a browser-initiated restart
+# Plan: export and import the beach as a JSON file
 
 ## Context
 
-### Why the app restarts
+The game already snapshots itself: `createSnapshot` (`src/core/GameSnapshot.ts`)
+assembles a `GameSnapshot` from `Grid`, `WaterSim`, `Waves`, `Tide`, `Bucket` and
+`IsoCamera`, `isValidSnapshot` guards it, and `IndexedDbSnapshotStore` persists it
+across a Chrome tab discard. That is invisible machinery with no UI — the player
+cannot get a beach *out* of the browser, hand it to someone, or keep two of them.
 
-Chrome discards background tabs. Once a tab has been backgrounded and the system
-is under memory pressure, Chrome first **freezes** it (Page Lifecycle API) and
-then **discards** it, tearing down the renderer process. The tab stays on the
-strip, but clicking back to it **reloads the page from scratch** — new document,
-new JS heap, `new Game()` from line one. Everything in memory is gone. This is
-deliberate Chrome behaviour (Memory Saver), not a crash, and a page cannot opt
-out of it.
+This plan adds an **Export** button that writes the current beach to a JSON file,
+and an **Import** button that reads one back.
 
-Two things make this app an attractive target:
+### Decisions taken up front
 
-- **It is memory-hungry.** A WebGL context with a 2048×2048 PCFSoft shadow map,
-  ~2.7 MiB of live sim arrays, and ~3 MiB of `TerrainMesh` geometry with GPU-side
-  copies. Nothing is ever disposed.
-- **It allocates hard while running.** `Erosion.transportSediment`
-  (`src/sim/Erosion.ts:86`) allocates three fresh `Float32Array(65536)` on *every*
-  sim step — ~768 KiB per step at 30 Hz, roughly **23 MB/s of garbage**.
-
-A secondary path to the same symptom: a page running a permanent
-`requestAnimationFrame` loop with a live WebGL context is frequently ineligible
-for the back/forward cache, so even an ordinary navigate-away-and-back returns as
-a full reload rather than a restore.
-
-**The app has no persistence of any kind** — greps for `localStorage`,
-`sessionStorage`, `indexedDB`, `JSON`, `structuredClone`, `serialise`, service
-workers and manifests return zero hits repo-wide. So a discard costs the whole
-beach.
-
-### What this plan does
-
-Makes a discard a non-event: the game snapshots itself periodically and when the
-tab is backgrounded, and silently restores on load. No save UI, no slots.
-Restoration is **exact**, including tide and swell phase, so a resumed game is
-indistinguishable from an uninterrupted one.
-
-Reducing the memory pressure that provokes the discard (the `Erosion` churn
-above) is a real fix worth doing, but it is a **separate change and out of scope
-here**. Persistence is the robust answer; using less memory only makes the
-discard rarer.
+- **Cell layers are base64, not JSON numbers.** Measured on this grid: a dense
+  layer as JSON numbers is 1.23 MB (`[1.0000000, 1.0004883, …]`, ~19 chars a
+  float), a sparse one 0.32 MB — roughly 5 MB for the eight layers, and a
+  several-hundred-millisecond `JSON.stringify` on the main thread. base64 of the
+  raw bytes is a flat 0.35 MB a layer, **2.80 MB total**, and bit-exact. Rounding
+  to 4 dp would give ~2 MB and readability, but sediment columns sit around 1e-6
+  and the drying film at 1e-4 — both round away, and the export stops being a
+  faithful snapshot. The file is JSON in shape; the payload is opaque.
+- **Export is enabled only while the sim is paused.** A still world is a world
+  the player can see is the one in the file.
+- **Import is available whether paused or running**, but is confirmed before it
+  replaces the beach: there is no undo, and the next autosave tick overwrites the
+  IndexedDB save with the imported world.
 
 ## Design
 
-### Store: IndexedDB, holding typed arrays directly
+### The file format
 
-The faithful snapshot is 8 × `Float32Array(65536)` = **exactly 2.00 MiB** plus
-~12 scalars. That rules out `localStorage`: it is string-only, so 2 MiB becomes
-~2.8M base64 chars ≈ 5.6 MB of UTF-16 quota against a ~5 MB limit, and the write
-is synchronous on the main thread.
+The file is the `GameSnapshot` shape with every `Float32Array` replaced by a
+base64 string, plus an `encoding` tag and a `savedAt` stamp:
 
-IndexedDB stores structured-cloneable values, and the structured clone algorithm
-handles `Float32Array` natively. **So there is no serialisation format to write** —
-we `put` a plain object with typed-array fields and get it back the same. No
-base64, no manual binary packing, no `CompressionStream`.
-
-### The testability problem, and the seam it forces
-
-Measured under this project's actual vitest/jsdom config:
-
-| global | jsdom |
-| --- | --- |
-| `indexedDB` | **`undefined`** |
-| `structuredClone` | available |
-| `localStorage` | available |
-| `document.visibilityState` | `'visible'` (read-only getter) |
-
-So no IndexedDB code can be tested without adding `fake-indexeddb`. The plan
-was to avoid the dependency; **that decision was reversed during
-implementation** and `fake-indexeddb` is now a devDependency. The adapter was
-the only production code touching user data with no coverage, and the tests
-immediately found a real defect (see "connections and versionchange" below).
-The interface split is still worth having:
-
-```ts
-// src/core/SnapshotStore.ts
-export interface SnapshotStore {
-  load(): Promise<unknown>              // unknown: whatever was on disk, unvalidated
-  save(snapshot: GameSnapshot): Promise<void>
+```json
+{
+  "version": 1,
+  "encoding": "base64-f32le",
+  "savedAt": "2026-08-21T17:40:00.000Z",
+  "width": 256,
+  "depth": 256,
+  "grid":   { "rock": "AACAP…", "sand": "…", "water": "…",
+              "moisture": "…", "source": "…", "sediment": "…" },
+  "water":  { "flowX": "…", "flowZ": "…" },
+  "waves":  { "elapsed": 1.5, "timeUntilWave": 0.5 },
+  "tide":   { "elapsed": 12 },
+  "bucket": { "amount": 250 },
+  "camera": { "zoom": 80, "panX": 128, "panZ": 128 },
+  "toolMode": "spade",
+  "paused": true,
+  "lookEnabled": false
 }
-export class IndexedDbSnapshotStore implements SnapshotStore { /* thin wiring */ }
 ```
 
-Everything that can actually be wrong — *what* to snapshot, whether a save is
-valid, when to write — sits on the tested side against a hand-rolled in-memory
-fake. Only the ~40 lines of `IDBRequest` plumbing go untested, and browser
-verification covers them. This is the `SimClock` pattern PLAN.md argues for:
-extract the risky logic, leave `Game` a mechanical wiring change.
+**One `version` field, not two.** It is `SNAPSHOT_VERSION`, carried through
+unchanged, so a file written by an older schema is rejected by the *existing*
+check in `isValidSnapshot` rather than by a second parallel version rule. The
+container's own concern — how the arrays are packed — is the separate `encoding`
+tag, bumped if that ever changes.
 
-`structuredClone` being available is the compensating gift: it is *the same
-algorithm* IndexedDB serialises with, so round-tripping a snapshot through
-`structuredClone` in jsdom is a genuine proof that the stored data survives
-intact. That gets its own test step.
+`savedAt` is written and never read. It is there for a human looking at the file
+and for the filename; the guard must not require it, so an ancient or
+hand-edited file that lacks it still loads.
 
-### Traps this feature has to avoid
+**`base64-f32le` assumes little-endian**, which is the raw byte order of a
+`Float32Array` on every platform a browser runs on. The tag records the
+assumption so a future reader is not left guessing. The endian-swapping branch is
+deliberately *not* written: it could never be executed or tested here, and
+untestable dead code is worse than a documented assumption.
 
-**1. Async load versus synchronous construction.** Reading IndexedDB is async;
-`new Game()` is synchronous and starts rAF immediately. If `Game` boots a fresh
-beach and the snapshot lands later, you see a flash of the wrong world. Fix:
-`main.ts` becomes async and awaits the load before constructing:
+### Parsing is guarded by the code that already guards a load
 
-```ts
-const store = new IndexedDbSnapshotStore()
-const saved = await loadSnapshot(store, WIDTH, DEPTH)   // GameSnapshot | null, never throws
-new Game(store, saved)
-```
+`parseGameFile` decodes the eight strings back into `Float32Array`s, assembles a
+candidate object, and hands it to **`isValidSnapshot`**. Every rule about what a
+valid beach is — version, dimensions, layer lengths, finite scalars, a known
+`toolMode` — stays in one place, and an imported file is held to exactly the
+standard a loaded save is.
 
-`Game` applies the snapshot **before** `new TerrainMesh(grid)` — `TerrainMesh`'s
-constructor ends in `rebuildAll()` (`src/render/TerrainMesh.ts:44`), so the mesh
-comes up correct first time with no extra rebuild.
+The posture is the one `loadSnapshot` already takes: a file is hostile input, and
+anything unreadable, stale or corrupt comes back as `null`. Malformed JSON, a
+truncated base64 layer, a save from a 512×512 grid — all one answer, and the
+answer never throws into the game loop.
 
-**2. A save on `pagehide`/`freeze` is not guaranteed to commit.** IndexedDB writes
-are async and the page may be frozen or discarded before the transaction lands.
-Do not rely on them. The reliable trigger for *this* threat is
-**`visibilitychange → hidden`**: Chrome only discards backgrounded tabs, and
-`visibilitychange` fires at the instant of backgrounding — minutes before the
-freeze. A throttled **periodic** save while visible then covers the cases
-`visibilitychange` misses (crash, hard kill, GPU process loss). `pagehide` and
-`freeze` are best-effort belt-and-braces on top. Getting this ordering right is
-the difference between the feature working and only appearing to.
+### Import shares the boot restore path
 
-**3. Snapshot cost.** Copying 2 MiB at 30 Hz would be absurd. Save on a **5 s**
-interval: the `.slice()` copies cost well under a millisecond and the write goes
-off-thread, so it is noise against a 16 ms frame. Do *not* skip the save while
-paused — tools stay live while paused by design (see PLAN.md), so state still
-changes. A dirty-flag optimisation is possible but would thread a flag through
-six classes to save a sub-millisecond copy; not worth it.
+`Game.restore` currently handles grid, water, waves, tide, bucket and the three
+UI flags, while `isoCamera.restore(saved.camera)` is called separately further
+down the constructor, because at that point in the constructor the camera does
+not exist yet. Import needs the whole thing in one go, and having two restore
+paths that must stay in step is exactly how a field gets restored on boot but not
+on import.
 
-**4. Overlapping writes.** A 2 MiB IndexedDB write can outlast the 5 s interval on
-a loaded machine. `AutoSaver` must skip a tick while a save is in flight rather
-than queueing, or a stall turns into an unbounded backlog.
+So `Game.restore` becomes `applySnapshot(targets, snapshot)` in `GameSnapshot.ts`
+— structurally typed like `SnapshotSources` and symmetric with `createSnapshot`,
+including the camera. In the constructor the single call moves to just after
+`IsoCamera` is built and before `new TerrainMesh(this.grid)`, which is
+behaviour-preserving: nothing between the old and new call sites reads any of the
+restored state.
 
-**5. A corrupt or half-written save must not brick the app.** `loadSnapshot`
-catches everything and returns `null`; validation rejects rather than throws; a
-`null` result means a fresh beach, silently.
+That symmetry buys a real test — `createSnapshot → applySnapshot → createSnapshot`
+over live components must come back identical. `Game` itself cannot be built
+under jsdom (WebGL), so this round trip through real objects is what keeps the
+feature honest, the same way `createSnapshot`'s test does today.
 
-**6. Losing `Waves.elapsed` and `Tide.elapsed` is what makes "exact" inexact.**
-Both are `private elapsed = 0` and both feed a `sin()` phase. Drop them and the
-sea teleports on resume — the most visible possible failure.
+### `Bucket.fill` adds; restore needs to set
 
-### Snapshot shape
+`Bucket.fill(n)` adds `n` up to capacity and returns what it took. `Game.restore`
+calls `fill(saved.bucket.amount)` and gets the right answer *only because the
+bucket is empty at boot*. Import restores into a bucket that may already hold
+sand, where `fill` would add to it — a 250-sand bucket importing a 250-sand file
+would land on 500, or clamp at capacity.
 
-```ts
-// src/core/GameSnapshot.ts
-export const SNAPSHOT_VERSION = 1
+This is latent today and becomes a live bug the moment restore is reused. `Bucket`
+gains `setAmount`, clamped to `[0, capacity]`, and `applySnapshot` uses it.
 
-export interface GameSnapshot {
-  version: number
-  width: number
-  depth: number
-  grid:   { rock: Float32Array; sand: Float32Array; water: Float32Array
-            moisture: Float32Array; source: Float32Array; sediment: Float32Array }
-  water:  { flowX: Float32Array; flowZ: Float32Array }
-  waves:  { elapsed: number; timeUntilWave: number }
-  tide:   { elapsed: number }
-  bucket: { amount: number }
-  camera: { zoom: number; panX: number; panZ: number }
-  toolMode: ToolMode
-  paused: boolean
-  lookEnabled: boolean
-}
+### Restoring mid-flight is safe, and lands paused
 
-export function isValidSnapshot(value: unknown, width: number, depth: number): value is GameSnapshot
-```
+Import is available while the sim runs, but the apply never interleaves with a
+sim step: the file read is async, so the callback lands between frames, and
+`simStep` is synchronous. Nothing else needs guarding. `simClock`'s accumulator
+holds at most 1/30 s and needs no reset, and the frame that spans the decode is
+already clamped by `MAX_FRAME`.
 
-Deliberately **not** stored, with reasons:
+Two consequences to expect rather than treat as defects:
 
-- **The seven `Uint8Array(N)` dirty masks and `WaterSim.velocityArr`** — all
-  scratch, `fill(0)` or recomputed at the top of each step.
-- **All of `TerrainMesh`** (~3 MiB) — derived from `Grid`.
-- **`SimClock.accumulator`** — a sub-step remainder, ≤ 1/30 s. Below perceptibility.
-- **`rock`** *is* stored, even though it is never mutated by the sim (verified:
-  `Erosion` and `Slope` write only `sand`; nothing writes `rock` after
-  `initBeach`). Regenerating it instead would save 256 KiB of 2 MiB at the cost of
-  coupling the save format to the noise constants in `Grid.ts`. Not worth it —
-  noted here so the optimisation is not rediscovered as an oversight.
+- The imported world **arrives paused**, because export is only possible while
+  paused, so `paused: true` is what every file carries and `applySnapshot`
+  applies it faithfully. That is also the better landing: a still world to look
+  at before resuming.
+- `TerrainMesh` must `rebuildAll()`. The dirty-cell path cannot express "every
+  cell changed", and the mesh is derived state that is deliberately not stored.
 
-### Restore paths per class
+### Failure has to be visible
 
-`Grid` and `WaterSim` keep their arrays private and gain `snapshot()`/`restore()`
-that copy (`.slice()` out, `.set()` in). Aliasing would let the sim mutate a
-buffer mid-write.
-
-`Bucket` needs **no new API** — `fill(amount)` on a fresh zero bucket sets exactly
-`amount` (`src/core/Bucket.ts:21`). Don't add a setter that isn't needed.
-
-`IsoCamera` needs one small refactor: `restore()` has to call `updateFrustum`,
-which takes the canvas, and the class doesn't currently keep a reference to it.
-Store the canvas in the constructor.
-
-## Acceptance criteria
-
-All verified in the browser on 2026-08-20.
-
-- [x] Build a castle, discard the tab via `chrome://discards`, return — the beach,
-      the castle, the water and the bucket are exactly as left
-- [x] The sea does not lurch or teleport on resume (tide and swell phase restored)
-- [x] A first-ever load, with no save present, starts a normal fresh beach
-- [x] A save written by an older `SNAPSHOT_VERSION`, or for different grid
-      dimensions, is discarded and a fresh beach starts — no crash
-- [x] A deliberately corrupted record produces a fresh beach, not a broken page.
-      Note: DevTools' IndexedDB viewer is read-only — corrupting a record needs
-      a Console snippet, and it must reload in the same breath or the running
-      game's 5 s autosave overwrites the corruption first
-- [x] Saving costs no visible hitch at 5 s intervals
-- [x] Full suite green, `npx tsc --noEmit` clean
+A rejected file must say so. `Toolbar.setReadouts` is rewritten by `updateHud` on
+every frame, so the message needs its own element: `Toolbar` gains a status span
+and `setStatus(text)`, which `updateHud` does not touch.
 
 ## Steps
 
-Each step is one RED-GREEN-REFACTOR cycle, committed on its own.
+Each step is a RED-GREEN-REFACTOR cycle, committed on its own once `npm test` and
+`tsc --noEmit` are clean.
 
-### Step 1: `Grid` round-trips its six arrays
+1. **`encodeCells` / `decodeCells`** — `src/core/base64Cells.ts`. Round-trips a
+   `Float32Array` through base64 bit-exactly, including negatives and 1e-6
+   magnitudes. Must chunk: `btoa(String.fromCharCode(...bytes))` overflows the
+   call stack at 256 KiB, so a full 65536-cell layer is the test that matters.
+   `decodeCells` returns `null` for a string that is not base64 or does not
+   decode to the expected cell count.
+2. **`Bucket.setAmount`** — sets rather than adds, clamped to `[0, capacity]`.
+3. **`applySnapshot`** — extract from `Game.restore`, add the camera, use
+   `setAmount`, and prove `createSnapshot → applySnapshot → createSnapshot` is
+   identical over real components. Move the constructor's call site and drop the
+   separate `isoCamera.restore`.
+4. **`toGameFile`** — `src/core/GameFile.ts`. `GameSnapshot` → the file object:
+   layers encoded, scalars verbatim, `encoding` and `savedAt` stamped.
+5. **`parseGameFile`** — text → `GameSnapshot | null`, decoding then deferring to
+   `isValidSnapshot`. Tests: a genuine `toGameFile → JSON.stringify →
+   parseGameFile` round trip over real components, and `null` for malformed JSON,
+   a wrong `version`, a wrong `encoding`, a missing layer, a truncated layer, and
+   a mismatched grid size.
+6. **`exportFilename(date)`** — `sandcastles-2026-08-21T17-40-00.json`. Colons are
+   illegal in Windows filenames, so the ISO stamp is punctuated with dashes.
+7. **Toolbar: Export and Import** — an Export button that `setPaused` enables and
+   disables, an Import button that is always enabled, `onExport` / `onImport`
+   handlers, and `setStatus`. Tests assert Export fires nothing while running and
+   fires once when paused.
+8. **Wire into `Game`** — Export: `createSnapshot` → `toGameFile` →
+   `JSON.stringify` → download. Import: a hidden `<input type="file"
+   accept="application/json">` → `file.text()` → `parseGameFile` → on `null`,
+   `setStatus`; otherwise `confirm` → `applySnapshot` → `terrain.rebuildAll()` →
+   reflect tool, pause and look state in the toolbar → `updateHud`.
+   The Blob/object-URL download and the file input are plumbing only, in the
+   spirit of `IndexedDbSnapshotStore`: every decision in the feature — what a
+   valid file is, what the filename is, when the button is live — has been pulled
+   out into a tested unit above.
+9. **Verify in the browser** — export a beach mid-storm, reload with a cleared
+   IndexedDB, import it back, and confirm the terrain, the tide phase and the
+   camera all come back where they were.
 
-**Test** (`src/core/grid.test.ts`): dig a cell and set a source, `snapshot()`,
-mutate the grid further, `restore()` — the mutations are undone and the dug cell
-is back. Separately: mutating the grid after `snapshot()` does **not** change the
-snapshot (proves the copy).
-**Implementation**: `Grid.snapshot(): GridSnapshot` using `.slice()`;
-`Grid.restore(s)` using `.set()`.
-**Done when**: grid tests green, nothing else touched.
+## Out of scope
 
-### Step 2: `WaterSim` round-trips its flow field
-
-**Test** (`src/sim/waterSim.test.ts`): set `flowX`/`flowZ` at a cell, snapshot,
-`reset()`, restore, assert the flows return. Plus the same copy-not-alias test.
-**Implementation**: `snapshot()`/`restore()` over `flowX`/`flowZ` only —
-`velocityArr` and `dirty` are excluded deliberately.
-**Done when**: waterSim tests green.
-
-### Step 3: `Tide` round-trips its phase
-
-**Test** (`src/sim/tide.test.ts`): step a tide to a non-trivial `offset`,
-snapshot, restore into a fresh `Tide`, assert `offset` matches (`toBeCloseTo`).
-**Implementation**: `snapshot(): { elapsed: number }` / `restore()`.
-**Done when**: tide tests green.
-
-### Step 4: `Waves` round-trips its phase and countdown
-
-**Test** (`src/sim/waves.test.ts`): step, snapshot, restore into a fresh `Waves`,
-assert `surfaceAt(x, z, seaSurface)` and `timeUntilWave` match.
-**Implementation**: `snapshot()`/`restore()` over `elapsed` and `timeUntilWave`.
-Note `timeUntilWave` is derivable from `elapsed`, but storing both is cheaper than
-re-deriving the relation and keeps the two from drifting.
-**Done when**: waves tests green.
-
-### Step 5: `IsoCamera` round-trips zoom and pan
-
-**Test** (new `src/render/isoCamera.test.ts`): `restore({zoom, panX, panZ})` then
-`snapshot()` returns the same values. This works under jsdom despite
-`clientWidth` being 0 — assert on the snapshot values, never on the camera
-frustum, which is NaN there.
-**Implementation**: keep the canvas as a field; `snapshot()`/`restore()`, with
-`restore()` calling `updateFrustum` and `updateCameraPosition`.
-**Done when**: the new test is green.
-
-### Step 6: `isValidSnapshot` rejects anything it should not load
-
-**Test** (new `src/core/gameSnapshot.test.ts`) — the heaviest test in the change.
-A well-formed snapshot passes. Each of these fails: `null`; `undefined`; a
-non-object; a wrong `version`; a mismatched `width`/`depth`; a missing nested
-group; a `Float32Array` of the wrong length; a plain array where a
-`Float32Array` is required; a `NaN` scalar.
-**Implementation**: the pure type guard. It returns `false`; it never throws.
-**Done when**: every rejection case is green.
-
-### Step 7: a snapshot survives a structured-clone round trip intact
-
-**Test** (`src/core/gameSnapshot.test.ts`): build a snapshot with distinctive
-values in every array, `structuredClone` it, assert `isValidSnapshot` still
-passes and every array is `toEqual` the original. Float32Array-to-Float32Array
-comparison is exact, so `toEqual` is safe here — CLAUDE.md's warning is about
-comparing against JS number *literals*, which this test must avoid.
-**Implementation**: none expected; this is a characterisation test standing in
-for the untestable IndexedDB path.
-**Done when**: green, with a comment recording *why* it exists.
-
-### Step 8: `AutoSaver` writes on schedule, and only one at a time
-
-**Test** (new `src/core/autoSaver.test.ts`) against an inline fake `SnapshotStore`
-whose `save` returns a promise the test resolves by hand:
-no save before the interval elapses; one save once it does; the interval restarts
-after a save; **a tick while a save is in flight is skipped, not queued**; a
-rejected save does not prevent the next one; `saveNow()` saves immediately and
-resets the interval.
-**Implementation**: `new AutoSaver(store, intervalSeconds, () => GameSnapshot)`
-with `tick(elapsedSeconds)` and `saveNow()`.
-**Done when**: all six behaviours green. This is the step with the real content.
-
-### Step 9: `loadSnapshot` turns a hostile store into `GameSnapshot | null`
-
-**Test** (`src/core/gameSnapshot.test.ts`): a store returning a valid snapshot
-yields it; one returning `null`, garbage, or a stale version yields `null`; a
-store whose `load()` **rejects** yields `null` rather than propagating.
-**Implementation**: `loadSnapshot(store, width, depth): Promise<GameSnapshot|null>`
-— try/catch around `store.load()`, then `isValidSnapshot`.
-**Done when**: green. This is the "a corrupt save must not brick the app"
-guarantee, under test.
-
-### Step 10: `IndexedDbSnapshotStore` — tested against `fake-indexeddb`
-
-**Test**: `src/core/indexedDbSnapshotStore.test.ts`, 8 cases. Reversed from the
-plan's "untested wiring" — see the note above.
-**Implementation**: open a `sandcastles` database with one `saves` object store,
-`put`/`get` under a fixed key. Promise-wrap `IDBRequest`. Keep it to plumbing —
-no validation, no scheduling; those are Steps 6–9 and already tested.
-**Done when**: `tsc --noEmit` clean and a manual save/load visible in DevTools →
-Application → IndexedDB.
-
-### Step 11: `Game` restores from a snapshot and drives an `AutoSaver`
-
-**Test**: none — `Game`'s constructor builds a WebGL `Renderer`, so it has no
-harness. Behaviour-preserving where a snapshot is absent, and every piece it
-composes is tested by Steps 1–9.
-**Implementation**: `constructor(store: SnapshotStore, saved: GameSnapshot | null)`.
-After building `Grid`/`Bucket`/sim objects but **before** `new TerrainMesh(grid)`,
-apply `saved` if present: grid, waterSim, waves, tide, `bucket.fill(amount)`,
-`toolMode`, `paused`, `lookEnabled`, then camera after `new IsoCamera(...)`.
-Build a private `takeSnapshot(): GameSnapshot`. Add `autoSaver.tick(frameSeconds)`
-to `loop`. `main.ts` becomes async per the trap above.
-**Done when**: app runs unchanged with no save present; a save appears in
-DevTools after ~5 s; a manual reload restores it.
-
-### Step 12: lifecycle events trigger a save
-
-**Test**: none. `document.visibilityState` is a read-only getter in jsdom, so a
-test would have to `Object.defineProperty` it and dispatch a synthetic event —
-that asserts the test's own scaffolding, not Chrome's behaviour, which is the
-thing actually in question. Browser verification is the real check.
-**Implementation**: in `Game`'s constructor, `visibilitychange` →
-`if (document.visibilityState === 'hidden') autoSaver.saveNow()`, plus `pagehide`
-and `freeze` as best-effort. Comment the ordering rationale from trap 2 — it is
-non-obvious and someone will otherwise "simplify" the periodic save away.
-**Done when**: verified in the browser per below.
-
-## Verification
-
-1. `npm test` and `npx tsc --noEmit` clean.
-2. `npm run dev`, dig a distinctive castle, set a stream, note the bucket reading.
-3. **DevTools → Application → IndexedDB → sandcastles** — confirm a record appears
-   within ~5 s and its `version` and dimensions look right.
-4. Switch to another tab, switch back — confirm a save fired on backgrounding.
-5. Reload (⌘R). The castle, water, stream, bucket and camera come back; **watch
-   the sea for a lurch** in the first second — that is the tide/swell phase check.
-6. **Simulate the real failure**: open `chrome://discards`, find the sandcastles
-   tab, click **Discard** in its row, then click back to the tab. It reloads — and
-   must come back exactly as left. This is the acceptance test for the whole change.
-7. **Corruption**: in DevTools, edit the stored record's `version` to `999`,
-   reload — expect a clean fresh beach, no console error. Repeat with the record
-   deleted, and with a field set to garbage.
-8. Confirm no frame hitch every 5 s (Performance panel, or just watch the water).
-
-## Notes
-
-- Steps 10–12 are the only untested ones, each justified above; all three are
-  wiring around logic that Steps 1–9 already cover.
-- Follow the project's commit discipline: commit after each step with `npm test`
-  and `tsc --noEmit` clean, and update `WIP.md` at each 🔴/🟢/⏸️ transition.
-- `PLAN.md` and `WIP.md` currently hold the finished "D selects Dump" work, which
-  is awaiting only a browser check. Confirm that check before overwriting them.
-- Worth a follow-up, not in scope: the `Erosion.transportSediment` allocation
-  churn (three `Float32Array(65536)` per step). Hoisting those to instance fields
-  is a small change that would cut ~23 MB/s of garbage and make a discard less
-  likely in the first place.
-
-## What changed during implementation
-
-Three things diverged from the plan above, all recorded in the commits:
-
-### `fake-indexeddb` was added after all
-
-Reversed on evidence. The adapter tests found that the store holds its
-connection for the life of the page, so a second tab running a newer schema
-blocks on `open()` until the first tab closes — and that tab's `onblocked` path
-means it silently loses its beach. Fixed by releasing the connection on
-`versionchange`. Browser verification would not plausibly have caught this.
-
-### `instanceof Float32Array` is not safe across a realm
-
-Deserialising from storage is a realm crossing by nature. Under jsdom the clone
-lands in Node's realm and `instanceof` is `false` for a perfectly good
-`Float32Array`. `isCellArray` brand-checks with `Object.prototype.toString`
-instead, which is realm-independent and still rejects plain and other typed
-arrays.
-
-### `createSnapshot` was extracted, which the plan did not call for
-
-Nothing verified that what `Game` writes is what `isValidSnapshot` accepts. That
-drift is the feature's worst failure mode — every save written, every load
-rejected, autosave silently doing nothing while looking healthy. `Game` cannot
-be built under jsdom, so the assembly moved to a structurally-typed
-`createSnapshot` that the test drives with the real components.
-
-### Still untested, and why
-
-- `Game`'s constructor wiring and `restore` — the constructor builds a WebGL
-  `Renderer`, so there is no harness. Every part it composes is tested.
-- The `visibilitychange` / `pagehide` / `freeze` listeners — jsdom's
-  `visibilityState` is a read-only getter, so a test would assert its own
-  scaffolding rather than Chrome's behaviour. **This is what the browser
-  verification below is for.**
+- **Multiple save slots or named saves.** The file *is* the slot.
+- **Compression.** `CompressionStream('gzip')` would take 2.80 MB to a few
+  hundred KB, but it makes the file no longer JSON, which is what was asked for.
+- **Changing the IndexedDB autosave.** It keeps its own format; the two share
+  `GameSnapshot`, `isValidSnapshot` and now `applySnapshot`, which is the whole
+  of what they should share.
+- **Migrating old files.** A file whose `version` is not current is rejected, not
+  upgraded. There is exactly one version in the wild.
