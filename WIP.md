@@ -11,12 +11,13 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 3 complete. Next: Step 4, `toGameFile` — `GameSnapshot` to the file
-object, layers encoded, scalars verbatim, `encoding` and `savedAt` stamped.
+Step 4 complete. Next: Step 5, `parseGameFile` — text to `GameSnapshot | null`,
+decoding the layers then deferring to `isValidSnapshot` so one guard covers both
+a stored save and an imported file.
 
 ## Status
 
-⏸️ WAITING — suite green (314), tsc clean, build clean.
+⏸️ WAITING — suite green (320), tsc clean, build clean.
 
 ## Completed
 
@@ -32,7 +33,11 @@ object, layers encoded, scalars verbatim, `encoding` and `savedAt` stamped.
       describes, camera included, so boot and import share one path. Verified
       by mutation that the round-trip test catches both a dropped camera and a
       bucket that adds instead of sets.
-- [ ] Step 4: `toGameFile`
+- [x] Step 4: `toGameFile` turns a snapshot into the file object. Takes the
+      timestamp as an argument rather than reading the clock. `GridLayerFile`
+      and `FlowLayerFile` are mapped types over the sim's own snapshot shapes,
+      so a layer added to the sim is a compile error here rather than a layer
+      quietly missing from every exported file — verified by adding one.
 - [ ] Step 5: `parseGameFile`
 - [ ] Step 6: `exportFilename`
 - [ ] Step 7: Toolbar Export and Import
