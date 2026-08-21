@@ -11,13 +11,13 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 4 complete. Next: Step 5, `parseGameFile` — text to `GameSnapshot | null`,
-decoding the layers then deferring to `isValidSnapshot` so one guard covers both
-a stored save and an imported file.
+Step 5 complete. Next: Step 6, `exportFilename(date)` —
+`sandcastles-2026-08-21T17-40-00.json`. Colons are illegal in Windows
+filenames, so the ISO stamp is punctuated with dashes.
 
 ## Status
 
-⏸️ WAITING — suite green (320), tsc clean, build clean.
+⏸️ WAITING — suite green (330), tsc clean, build clean.
 
 ## Completed
 
@@ -38,7 +38,11 @@ a stored save and an imported file.
       and `FlowLayerFile` are mapped types over the sim's own snapshot shapes,
       so a layer added to the sim is a compile error here rather than a layer
       quietly missing from every exported file — verified by adding one.
-- [ ] Step 5: `parseGameFile`
+- [x] Step 5: `parseGameFile` reads a file back, decoding the layers and then
+      deferring to `isValidSnapshot` rather than growing a second set of rules.
+      The explicit null check on the decoded groups turned out to be dead - the
+      guard already rejects a null group - so it went. Every remaining guard
+      was mutation-checked against the test that holds it up.
 - [ ] Step 6: `exportFilename`
 - [ ] Step 7: Toolbar Export and Import
 - [ ] Step 8: Wire into `Game`

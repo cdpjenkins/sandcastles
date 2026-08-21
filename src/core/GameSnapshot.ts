@@ -8,8 +8,8 @@ import type { SnapshotStore } from './SnapshotStore.ts'
 
 export const SNAPSHOT_VERSION = 1
 
-const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
-const FLOW_LAYERS = ['flowX', 'flowZ'] as const
+export const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
+export const FLOW_LAYERS = ['flowX', 'flowZ'] as const
 
 export interface GameSnapshot {
   version: number

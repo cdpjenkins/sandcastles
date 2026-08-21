@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { toGameFile, FILE_ENCODING } from './GameFile.ts'
-import { decodeCells } from './base64Cells.ts'
+import { toGameFile, parseGameFile, FILE_ENCODING } from './GameFile.ts'
+import { encodeCells, decodeCells } from './base64Cells.ts'
 import { SNAPSHOT_VERSION, createSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { Grid } from './Grid.ts'
@@ -97,4 +97,82 @@ function decodeLayers(group: object) {
   return Object.fromEntries(
     Object.entries(group).map(([name, text]) => [name, decodeCells(text, SIZE * SIZE)]),
   )
+}
+
+describe('parseGameFile', () => {
+  // The property the whole feature rests on: what Export writes, Import reads.
+  // If these drift, every file is written and every one of them is refused.
+  it('reads back a beach written by toGameFile', () => {
+    const snapshot = aSnapshot()
+
+    const text = JSON.stringify(toGameFile(snapshot, SAVED_AT))
+
+    expect(parseGameFile(text, SIZE, SIZE)).toEqual(snapshot)
+  })
+
+  it('refuses text that is not JSON at all', () => {
+    expect(parseGameFile('', SIZE, SIZE)).toBeNull()
+    expect(parseGameFile('a beach', SIZE, SIZE)).toBeNull()
+    expect(parseGameFile('{ "version": ', SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses JSON that is not an object', () => {
+    expect(parseGameFile('42', SIZE, SIZE)).toBeNull()
+    expect(parseGameFile('null', SIZE, SIZE)).toBeNull()
+    expect(parseGameFile('"a beach"', SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses a file whose layers are packed some other way', () => {
+    const text = aFileWith({ encoding: 'base64-f64le' })
+
+    expect(parseGameFile(text, SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses a file written by a different schema version', () => {
+    const text = aFileWith({ version: SNAPSHOT_VERSION + 1 })
+
+    expect(parseGameFile(text, SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses a file with a layer missing', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT)
+    const { sand: _dropped, ...withoutSand } = file.grid
+
+    expect(parseGameFile(JSON.stringify({ ...file, grid: withoutSand }), SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses a file whose layer does not hold a whole beach', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT)
+    const truncated = { ...file.grid, sand: encodeCells(new Float32Array(SIZE * SIZE - 1)) }
+
+    expect(parseGameFile(JSON.stringify({ ...file, grid: truncated }), SIZE, SIZE)).toBeNull()
+  })
+
+  it('refuses a file taken on a grid of another size', () => {
+    const text = JSON.stringify(toGameFile(aSnapshot(), SAVED_AT))
+
+    expect(parseGameFile(text, SIZE + 1, SIZE)).toBeNull()
+  })
+
+  it('refuses a file with a whole group of state missing', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT)
+    const { grid: _noGrid, ...withoutGrid } = file
+    const { water: _noWater, ...withoutWater } = file
+
+    expect(parseGameFile(JSON.stringify(withoutGrid), SIZE, SIZE)).toBeNull()
+    expect(parseGameFile(JSON.stringify(withoutWater), SIZE, SIZE)).toBeNull()
+  })
+
+  // savedAt is written for a human and never read back, so a file that
+  // predates it - or one somebody edited by hand - still has to load.
+  it('loads a file that carries no savedAt', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT)
+    const { savedAt: _unused, ...withoutStamp } = file
+
+    expect(parseGameFile(JSON.stringify(withoutStamp), SIZE, SIZE)).toEqual(aSnapshot())
+  })
+})
+
+function aFileWith(overrides: Record<string, unknown>): string {
+  return JSON.stringify({ ...toGameFile(aSnapshot(), SAVED_AT), ...overrides })
 }
