@@ -27,11 +27,11 @@ dash *correct*.
 
 ## Current Step
 
-Step 2: sediment in a drying cell is returned to the sand
+Step 3: Game runs the drying step
 
 ## Status
 
-🟢 GREEN — suite 300, tsc clean
+🟢 GREEN — suite 301, tsc clean
 
 ## Completed
 
@@ -40,6 +40,9 @@ Step 2: sediment in a drying cell is returned to the sand
       not the siblings' `DIRTY_EPSILON`: the step that takes the last of the
       film to zero is a change of about 1e-4, and it is the one transition
       that must reach the mesh.
+- [x] Step 2: a cell that reaches dry settles its stranded sediment into the
+      sand. `Erosion` skips anything below `MIN_WATER_TO_ERODE` (1e-5), so
+      the film's load would otherwise sit in a dry cell forever.
 
 ## Blockers
 
@@ -47,4 +50,4 @@ None.
 
 ## Next Action
 
-Write the failing test for step 2 (sediment deposit on drying).
+Write the failing test for step 3 (Game wiring).

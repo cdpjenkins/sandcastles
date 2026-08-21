@@ -74,4 +74,17 @@ describe('Drying', () => {
 
     expect(dirty[0]).toBe(0)
   })
+
+  it('returns stranded sediment to the sand when a cell dries', () => {
+    const grid = flatGrid(1, 1)
+    grid.setSandHeight(0, 0, 3.0)
+    grid.setWaterHeight(0, 0, RESIDUAL_FILM)
+    grid.setSediment(0, 0, 0.2)
+    const drying = new Drying(grid.width, grid.depth)
+
+    for (let i = 0; i < 60 / DT; i++) drying.step(grid, DT)
+
+    expect(grid.getSediment(0, 0)!).toBe(0)
+    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(3.2)
+  })
 })

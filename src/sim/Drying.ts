@@ -23,6 +23,17 @@ export class Drying {
         const dried = Math.max(0, w - DRY_RATE * dt)
         grid.setWaterHeight(x, z, dried)
 
+        // Erosion ignores a cell this dry, so whatever the film was still
+        // carrying would sit in it forever. Water is what held it up; with the
+        // water gone it settles.
+        if (dried === 0) {
+          const sediment = grid.getSediment(x, z) ?? 0
+          if (sediment > 0) {
+            grid.setSandHeight(x, z, (grid.getSandHeight(x, z) ?? 0) + sediment)
+            grid.setSediment(x, z, 0)
+          }
+        }
+
         // Any change at all, where the sibling sims use a DIRTY_EPSILON of 1e-4.
         // The step that takes the last of the film to zero is a change of about
         // that size, and it is the one transition that must reach the mesh.
