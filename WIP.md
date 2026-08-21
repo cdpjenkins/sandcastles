@@ -27,11 +27,12 @@ dash *correct*.
 
 ## Current Step
 
-None - implementation complete, browser check outstanding.
+None - work complete and verified.
 
 ## Status
 
-⏸️ WAITING — suite 301, tsc clean, build clean. Needs a browser check.
+✅ DONE - suite green (301), tsc clean, build clean, and confirmed in the
+browser on 2026-08-21.
 
 ## Completed
 
@@ -47,7 +48,8 @@ None - implementation complete, browser check outstanding.
       water heights) and before `Erosion`/`Moisture`, so both see the dried
       cell in the same step. Its mask joins the `orInto` combine. No test:
       `Game` cannot be built under jsdom, and none of the other six sims'
-      wiring is tested either. Documented TDD exception, browser check below.
+      wiring is tested either. Documented TDD exception, covered by the
+      browser check instead — verified 2026-08-21.
 
 Measured on the draining slope that produced the bug report: the probed cell
 reaches exactly 0 by 10s, and the wetted area collapses from 288-forever to
@@ -65,7 +67,7 @@ None.
 
 ## Next Action
 
-Browser check: run the sim, let the swash retreat, and confirm the sand
-behind the waterline visibly dries — colour returns to dry sand and the noise
-jitter comes back (`TerrainMesh.ts:81-82` both key off `water > 0`). Also
-hover a dried cell and confirm the Look panel now prints `Water top —`.
+Nothing outstanding. The browser check is done: the sand behind a retreating
+swash visibly dries out.
+
+Ready for the next piece of work to overwrite this file.
