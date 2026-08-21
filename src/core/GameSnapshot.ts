@@ -127,3 +127,21 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
     lookEnabled: sources.lookEnabled,
   }
 }
+
+export interface SnapshotTargets {
+  grid: { restore(snapshot: GridSnapshot): void }
+  waterSim: { restore(snapshot: WaterSimSnapshot): void }
+  waves: { restore(snapshot: WavesSnapshot): void }
+  tide: { restore(snapshot: TideSnapshot): void }
+  bucket: { setAmount(amount: number): void }
+  camera: { restore(snapshot: CameraSnapshot): void }
+}
+
+export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot): void {
+  targets.grid.restore(snapshot.grid)
+  targets.waterSim.restore(snapshot.water)
+  targets.waves.restore(snapshot.waves)
+  targets.tide.restore(snapshot.tide)
+  targets.bucket.setAmount(snapshot.bucket.amount)
+  targets.camera.restore(snapshot.camera)
+}

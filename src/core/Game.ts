@@ -1,6 +1,6 @@
 import { Grid } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
-import { createSnapshot } from './GameSnapshot.ts'
+import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
@@ -118,11 +118,11 @@ export class Game {
     this.tide = new Tide()
     this.combinedDirty = new Uint8Array(this.grid.width * this.grid.depth)
 
-    if (saved !== null) this.restore(saved)
-
     this.renderer = new Renderer(canvas)
     this.isoCamera = new IsoCamera(canvas)
-    if (saved !== null) this.isoCamera.restore(saved.camera)
+    // After the camera exists and before TerrainMesh reads the grid: the mesh
+    // is built from whatever the restore leaves behind.
+    if (saved !== null) this.restore(saved)
     this.terrain = new TerrainMesh(this.grid)
     this.renderer.scene.add(this.terrain.mesh)
 
@@ -162,12 +162,21 @@ export class Game {
     requestAnimationFrame(this.loop)
   }
 
+  // The components that carry state across a restart. Named once so the
+  // snapshot and the restore cannot drift apart over which those are.
+  private get snapshotComponents() {
+    return {
+      grid: this.grid,
+      waterSim: this.waterSim,
+      waves: this.waves,
+      tide: this.tide,
+      bucket: this.bucket,
+      camera: this.isoCamera,
+    }
+  }
+
   private restore(saved: GameSnapshot): void {
-    this.grid.restore(saved.grid)
-    this.waterSim.restore(saved.water)
-    this.waves.restore(saved.waves)
-    this.tide.restore(saved.tide)
-    this.bucket.fill(saved.bucket.amount)
+    applySnapshot(this.snapshotComponents, saved)
     this.toolMode = saved.toolMode
     this.paused = saved.paused
     this.lookEnabled = saved.lookEnabled
@@ -175,12 +184,7 @@ export class Game {
 
   private takeSnapshot(): GameSnapshot {
     return createSnapshot({
-      grid: this.grid,
-      waterSim: this.waterSim,
-      waves: this.waves,
-      tide: this.tide,
-      bucket: this.bucket,
-      camera: this.isoCamera,
+      ...this.snapshotComponents,
       toolMode: this.toolMode,
       paused: this.paused,
       lookEnabled: this.lookEnabled,

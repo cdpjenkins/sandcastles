@@ -11,14 +11,12 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 2 complete. Next: Step 3, `applySnapshot` — extract from `Game.restore`,
-take in the camera so boot and import share one path, and switch the bucket to
-`setAmount`. Prove `createSnapshot -> applySnapshot -> createSnapshot` is
-identical over real components.
+Step 3 complete. Next: Step 4, `toGameFile` — `GameSnapshot` to the file
+object, layers encoded, scalars verbatim, `encoding` and `savedAt` stamped.
 
 ## Status
 
-⏸️ WAITING — suite green (312), tsc clean.
+⏸️ WAITING — suite green (314), tsc clean, build clean.
 
 ## Completed
 
@@ -30,7 +28,10 @@ identical over real components.
 - [x] Step 2: `Bucket.setAmount` sets rather than adds, clamped to
       `[0, capacity]`. `fill` stays as it is — expressing it via `setAmount`
       would clamp `fill(-1)` at zero, which no test covers.
-- [ ] Step 3: `applySnapshot`
+- [x] Step 3: `applySnapshot` puts a fresh game into the state a snapshot
+      describes, camera included, so boot and import share one path. Verified
+      by mutation that the round-trip test catches both a dropped camera and a
+      bucket that adds instead of sets.
 - [ ] Step 4: `toGameFile`
 - [ ] Step 5: `parseGameFile`
 - [ ] Step 6: `exportFilename`

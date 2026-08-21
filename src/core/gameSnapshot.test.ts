@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot, createSnapshot } from './GameSnapshot.ts'
+import {
+  SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot, createSnapshot, applySnapshot,
+} from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { Grid } from './Grid.ts'
@@ -226,5 +228,60 @@ describe('createSnapshot', () => {
     }))
 
     expect(isValidSnapshot(stored, 64, 64)).toBe(true)
+  })
+})
+
+const SIZE = 64
+
+function freshComponents() {
+  return {
+    grid: new Grid(SIZE, SIZE),
+    waterSim: new WaterSim(SIZE, SIZE),
+    waves: new Waves(SIZE, SIZE),
+    tide: new Tide(),
+    bucket: new Bucket(1000),
+    camera: new IsoCamera(document.createElement('canvas')),
+  }
+}
+
+function aLiveBeach() {
+  const components = freshComponents()
+  components.grid.initBeach()
+  components.grid.setSandHeight(3, 4, 7.5)
+  components.grid.setWaterHeight(5, 6, 2.25)
+  components.waterSim.setFlowX(2, 2, 0.75)
+  components.waterSim.setFlowZ(1, 1, -0.5)
+  components.waves.step(components.grid, 0.5, 2)
+  components.tide.step(9)
+  components.bucket.fill(120)
+  components.camera.restore({ zoom: 55, panX: 10, panZ: 20 })
+  return components
+}
+
+const UI = { toolMode: ToolMode.Stream, paused: true, lookEnabled: true }
+
+describe('applySnapshot', () => {
+  // The other half of the property createSnapshot's tests protect. Game cannot
+  // be built under jsdom, so this round trip through real components is what
+  // says boot and import put the beach back the same way.
+  it('puts a fresh game into the state the snapshot describes', () => {
+    const snapshot = createSnapshot({ ...aLiveBeach(), ...UI })
+    const restored = freshComponents()
+
+    applySnapshot(restored, snapshot)
+
+    expect(createSnapshot({ ...restored, ...UI })).toEqual(snapshot)
+  })
+
+  // The bucket is the one target that is not a plain restore: fill() adds, and
+  // an import lands in a game whose bucket may already hold sand.
+  it('sets the bucket rather than adding to what it holds', () => {
+    const snapshot = createSnapshot({ ...aLiveBeach(), ...UI })
+    const restored = freshComponents()
+    restored.bucket.fill(300)
+
+    applySnapshot(restored, snapshot)
+
+    expect(restored.bucket.amount).toBe(120)
   })
 })
