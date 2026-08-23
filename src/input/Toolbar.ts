@@ -23,13 +23,17 @@ export class Toolbar {
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private readonly lookButton: HTMLButtonElement
   private readonly pauseButton: HTMLButtonElement
+  private readonly exportButton: HTMLButtonElement
   private readonly readouts: HTMLSpanElement
+  private readonly status: HTMLSpanElement
   private lookEnabled = false
   private paused = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
   private lookToggleHandler: (enabled: boolean) => void = () => {}
   private resetHandler: () => void = () => {}
   private pauseToggleHandler: (paused: boolean) => void = () => {}
+  private exportHandler: () => void = () => {}
+  private importHandler: () => void = () => {}
 
   constructor() {
     this.element = document.createElement('div')
@@ -57,38 +61,43 @@ export class Toolbar {
       this.labels.set(mode, label)
     }
 
-    this.lookButton = document.createElement('button')
-    this.lookButton.dataset.action = 'look'
-    this.lookButton.textContent = '🔎 Look'
-    this.lookButton.style.cssText = CONTROL_STYLE
-    this.lookButton.addEventListener('click', () => {
+    this.lookButton = this.addButton('look', '🔎 Look', () => {
       this.setLook(!this.lookEnabled)
       this.lookToggleHandler(this.lookEnabled)
     })
     this.reflectLook()
-    this.element.appendChild(this.lookButton)
 
-    this.pauseButton = document.createElement('button')
-    this.pauseButton.dataset.action = 'pause'
-    this.pauseButton.style.cssText = CONTROL_STYLE
-    this.pauseButton.addEventListener('click', () => {
+    this.pauseButton = this.addButton('pause', PAUSE_LABELS.running, () => {
       this.setPaused(!this.paused)
       this.pauseToggleHandler(this.paused)
     })
     this.reflectPaused()
-    this.element.appendChild(this.pauseButton)
 
-    const resetButton = document.createElement('button')
-    resetButton.dataset.action = 'reset'
-    resetButton.textContent = '↺ Reset water'
-    resetButton.style.cssText = CONTROL_STYLE
-    resetButton.addEventListener('click', () => this.resetHandler())
-    this.element.appendChild(resetButton)
+    this.exportButton = this.addButton('export', '⬇ Export', () => this.exportHandler())
+    this.reflectExportable()
+
+    this.addButton('import', '⬆ Import', () => this.importHandler())
+    this.addButton('reset', '↺ Reset water', () => this.resetHandler())
 
     this.readouts = document.createElement('span')
     this.readouts.dataset.role = 'readouts'
     this.readouts.style.cssText = 'margin-left:4px;opacity:0.85'
     this.element.appendChild(this.readouts)
+
+    this.status = document.createElement('span')
+    this.status.dataset.role = 'status'
+    this.status.style.cssText = 'margin-left:4px;color:#ffd479'
+    this.element.appendChild(this.status)
+  }
+
+  private addButton(action: string, label: string, onClick: () => void): HTMLButtonElement {
+    const button = document.createElement('button')
+    button.dataset.action = action
+    button.textContent = label
+    button.style.cssText = CONTROL_STYLE
+    button.addEventListener('click', onClick)
+    this.element.appendChild(button)
+    return button
   }
 
   onToolChange(handler: (mode: ToolMode) => void): void {
@@ -103,12 +112,26 @@ export class Toolbar {
     this.pauseToggleHandler = handler
   }
 
+  onExport(handler: () => void): void {
+    this.exportHandler = handler
+  }
+
+  onImport(handler: () => void): void {
+    this.importHandler = handler
+  }
+
   onReset(handler: () => void): void {
     this.resetHandler = handler
   }
 
   setReadouts(text: string): void {
     this.readouts.textContent = text
+  }
+
+  // Its own element rather than part of the readouts: the readouts are
+  // rewritten every frame, which would wipe a message before it was read.
+  setStatus(text: string): void {
+    this.status.textContent = text
   }
 
   setLook(enabled: boolean): void {
@@ -119,6 +142,7 @@ export class Toolbar {
   setPaused(paused: boolean): void {
     this.paused = paused
     this.reflectPaused()
+    this.reflectExportable()
   }
 
   setTool(mode: ToolMode): void {
@@ -135,6 +159,12 @@ export class Toolbar {
     this.pauseButton.textContent = this.paused ? PAUSE_LABELS.paused : PAUSE_LABELS.running
     this.pauseButton.setAttribute('aria-pressed', String(this.paused))
     highlight(this.pauseButton, this.paused)
+  }
+
+  // A file is only offered for a still world, so the export is the beach the
+  // player can see.
+  private reflectExportable(): void {
+    this.exportButton.disabled = !this.paused
   }
 
   private markSelected(mode: ToolMode): void {

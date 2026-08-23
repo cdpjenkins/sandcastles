@@ -39,6 +39,15 @@ const pausePressed = (toolbar: Toolbar): boolean =>
 const resetButton = (toolbar: Toolbar): HTMLButtonElement =>
   toolbar.element.querySelector<HTMLButtonElement>('button[data-action="reset"]')!
 
+const exportButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="export"]')!
+
+const importButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="import"]')!
+
+const status = (toolbar: Toolbar): HTMLElement =>
+  toolbar.element.querySelector<HTMLElement>('[data-role="status"]')!
+
 const readouts = (toolbar: Toolbar): HTMLElement =>
   toolbar.element.querySelector<HTMLElement>('[data-role="readouts"]')!
 
@@ -210,5 +219,81 @@ describe('Toolbar', () => {
     toolbar.setReadouts('bucket: 12.0 / 100')
 
     expect(readouts(toolbar).textContent).toBe('bucket: 12.0 / 100')
+  })
+
+  // Exporting is only offered on a still world, so the file is the beach the
+  // player can see.
+  it('offers Export only while the simulation is paused', () => {
+    const toolbar = new Toolbar()
+
+    expect(exportButton(toolbar).disabled).toBe(true)
+
+    toolbar.setPaused(true)
+    expect(exportButton(toolbar).disabled).toBe(false)
+
+    toolbar.setPaused(false)
+    expect(exportButton(toolbar).disabled).toBe(true)
+  })
+
+  it('fires onExport when Export is clicked on a paused game', () => {
+    const toolbar = new Toolbar()
+    let exports = 0
+    toolbar.onExport(() => exports++)
+    toolbar.setPaused(true)
+
+    exportButton(toolbar).click()
+
+    expect(exports).toBe(1)
+  })
+
+  it('does not export while the simulation is running', () => {
+    const toolbar = new Toolbar()
+    let exports = 0
+    toolbar.onExport(() => exports++)
+
+    exportButton(toolbar).click()
+
+    expect(exports).toBe(0)
+  })
+
+  it('fires onImport when Import is clicked', () => {
+    const toolbar = new Toolbar()
+    let imports = 0
+    toolbar.onImport(() => imports++)
+
+    importButton(toolbar).click()
+
+    expect(imports).toBe(1)
+  })
+
+  // Deliberately not gated the way Export is: a player who wants to load a
+  // beach should not have to pause first to be allowed to.
+  it('offers Import whether the simulation is running or paused', () => {
+    const toolbar = new Toolbar()
+
+    expect(importButton(toolbar).disabled).toBe(false)
+
+    toolbar.setPaused(true)
+    expect(importButton(toolbar).disabled).toBe(false)
+  })
+
+  it('shows a status message', () => {
+    const toolbar = new Toolbar()
+
+    toolbar.setStatus('That file is not a beach')
+
+    expect(status(toolbar).textContent).toBe('That file is not a beach')
+  })
+
+  // The reason the status is not part of the readouts: Game rewrites those on
+  // every frame, which would wipe a message before anyone could read it.
+  it('keeps a status message while the readouts are rewritten', () => {
+    const toolbar = new Toolbar()
+    toolbar.setStatus('That file is not a beach')
+
+    toolbar.setReadouts('bucket: 0.0 / 1000   wave: 2s')
+
+    expect(status(toolbar).textContent).toBe('That file is not a beach')
+    expect(readouts(toolbar).textContent).toBe('bucket: 0.0 / 1000   wave: 2s')
   })
 })

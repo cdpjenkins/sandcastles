@@ -11,13 +11,14 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 6 complete. Next: Step 7, the Toolbar buttons — Export, which `setPaused`
-enables and disables, Import, which is always enabled, and `setStatus` for a
-message `updateHud` will not overwrite.
+Step 7 complete. Next: Step 8, wiring into `Game` — Export builds the file and
+downloads it; Import reads a chosen file, parses it, confirms, then applies it
+and rebuilds the terrain. The Blob download and the file input are plumbing
+only; every decision in the feature is already tested above.
 
 ## Status
 
-⏸️ WAITING — suite green (332), tsc clean, build clean.
+⏸️ WAITING — suite green (339), tsc clean, build clean.
 
 ## Completed
 
@@ -46,6 +47,9 @@ message `updateHud` will not overwrite.
 - [x] Step 6: `exportFilename(date)` names the download. Dashes because a
       colon is illegal in a Windows filename; the ISO form otherwise, so a
       directory of exports sorts into the order it was saved.
-- [ ] Step 7: Toolbar Export and Import
+- [x] Step 7: Toolbar gained Export (disabled unless paused), Import (never
+      disabled, deliberately) and `setStatus`. The status is its own element
+      because `updateHud` rewrites the readouts every frame. jsdom's `.click()`
+      honours `disabled`, so the gate needs no second guard in the handler.
 - [ ] Step 8: Wire into `Game`
 - [ ] Step 9: Verify in the browser
