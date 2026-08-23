@@ -120,3 +120,10 @@ export function parseGameFile(
 
   return isValidSnapshot(candidate, width, depth) ? candidate : null
 }
+
+// Colons are illegal in a Windows filename. The ISO form is kept otherwise, so
+// a directory of exports sorts by name into the order they were saved.
+export function exportFilename(savedAt: Date): string {
+  const stamp = savedAt.toISOString().slice(0, 19).replaceAll(':', '-')
+  return `sandcastles-${stamp}.json`
+}

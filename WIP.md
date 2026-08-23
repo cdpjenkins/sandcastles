@@ -11,13 +11,13 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 5 complete. Next: Step 6, `exportFilename(date)` —
-`sandcastles-2026-08-21T17-40-00.json`. Colons are illegal in Windows
-filenames, so the ISO stamp is punctuated with dashes.
+Step 6 complete. Next: Step 7, the Toolbar buttons — Export, which `setPaused`
+enables and disables, Import, which is always enabled, and `setStatus` for a
+message `updateHud` will not overwrite.
 
 ## Status
 
-⏸️ WAITING — suite green (330), tsc clean, build clean.
+⏸️ WAITING — suite green (332), tsc clean, build clean.
 
 ## Completed
 
@@ -43,7 +43,9 @@ filenames, so the ISO stamp is punctuated with dashes.
       The explicit null check on the decoded groups turned out to be dead - the
       guard already rejects a null group - so it went. Every remaining guard
       was mutation-checked against the test that holds it up.
-- [ ] Step 6: `exportFilename`
+- [x] Step 6: `exportFilename(date)` names the download. Dashes because a
+      colon is illegal in a Windows filename; the ISO form otherwise, so a
+      directory of exports sorts into the order it was saved.
 - [ ] Step 7: Toolbar Export and Import
 - [ ] Step 8: Wire into `Game`
 - [ ] Step 9: Verify in the browser

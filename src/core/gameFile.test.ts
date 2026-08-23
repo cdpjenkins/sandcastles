@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toGameFile, parseGameFile, FILE_ENCODING } from './GameFile.ts'
+import { toGameFile, parseGameFile, exportFilename, FILE_ENCODING } from './GameFile.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
 import { SNAPSHOT_VERSION, createSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
@@ -170,6 +170,21 @@ describe('parseGameFile', () => {
     const { savedAt: _unused, ...withoutStamp } = file
 
     expect(parseGameFile(JSON.stringify(withoutStamp), SIZE, SIZE)).toEqual(aSnapshot())
+  })
+})
+
+describe('exportFilename', () => {
+  it('names the file for the beach and the moment it was saved', () => {
+    expect(exportFilename(SAVED_AT)).toBe('sandcastles-2026-08-21T17-40-00.json')
+  })
+
+  // The time is punctuated with dashes because a colon is illegal in a Windows
+  // filename. Zero-padding comes from the ISO form and has to stay: a
+  // hand-rolled format would sort wrongly in a directory listing.
+  it('zero-pads a single-digit month, day and time', () => {
+    const earlyInTheYear = new Date('2026-01-05T09:07:03.000Z')
+
+    expect(exportFilename(earlyInTheYear)).toBe('sandcastles-2026-01-05T09-07-03.json')
   })
 })
 
