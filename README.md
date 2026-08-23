@@ -28,6 +28,10 @@ Then open the local URL Vite prints. No build step needed for development.
 
 Click any cell to apply the active tool.
 
+**Export** and **Import** are buttons in the toolbar. Export writes the whole
+beach to a JSON file and is offered only while the simulation is paused, so the
+file is the beach you can see. Import asks before replacing what you have.
+
 ## What's been built
 
 ### Terrain (M1)

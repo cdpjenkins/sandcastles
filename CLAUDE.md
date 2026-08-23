@@ -317,6 +317,60 @@ base64 needs ~5.6 MB of a ~5 MB quota, synchronously on the main thread.
 IndexedDB structured-clones typed arrays natively, so there is no serialisation
 format to write at all.
 
+## Exporting the beach to a file
+
+`GameFile.ts` (the file's shape, `toGameFile`, `parseGameFile`, `exportFilename`),
+`base64Cells.ts` (the layer packing) and `downloadFile.ts` (the download itself).
+Export is offered only on a paused game; import is not gated. Verified in Chrome:
+revoking the object URL immediately after `link.click()` is fine, and the anchor
+does not need appending to the document. What was expensive to learn:
+
+### The layers travel as base64 because numbers cost four times as much
+
+Measured on this grid: a dense layer as JSON numbers is 1.23 MB — a float32
+prints as ~19 characters of double — against 0.35 MB as base64. That is 2.80 MB
+for the whole file against roughly 5 MB, plus a several-hundred-millisecond
+`stringify` on the main thread.
+
+Rounding to 4 dp is the tempting middle ground: ~2 MB *and* readable. Don't. A
+sediment column sits around 1e-6 and the drying film at 1e-4, and both round to
+zero. The file would still load, and the beach would be quietly wrong.
+
+### `String.fromCharCode(...bytes)` cannot take a whole layer
+
+262,144 bytes as arguments overflows the call stack. `encodeCells` chunks at
+0x8000 and concatenates; `btoa` still sees one string. Only a full-size layer
+shows this — every smaller one passes, which is why the test uses 256×256.
+
+### An import arrives paused, and that is not a defect
+
+Export is reachable only while paused, so every file carries `paused: true` and
+`applySnapshot` applies it faithfully. Importing into a running game therefore
+stops the sim. Same category as the Look panel dash below: the first thing here
+that will look like a bug.
+
+### A restore that has only ever run on a fresh game hides set-vs-add
+
+`Game.restore` put the bucket back with `Bucket.fill`, which *adds*. That is
+correct at boot, where the bucket is empty, and wrong the moment the same path
+is reused for an import — 250 sand loading a 250-sand file gives 500.
+`Bucket.setAmount` exists for this.
+
+The camera had the same shape of bug waiting: it was restored on a *separate*
+path further down the constructor, so a second caller would have missed it
+entirely. Both are now the one call to `applySnapshot`, and the test that keeps
+them honest is `createSnapshot -> applySnapshot -> createSnapshot` over live
+components. Don't let the paths split again.
+
+### One guard decides what a loadable beach is
+
+`parseGameFile` decodes the eight layers and then defers to `isValidSnapshot`
+rather than growing rules of its own, and the file carries a single `version` —
+the snapshot's — so a stale file is refused by the check that already exists.
+An explicit null check on the decoded layer groups was written and then deleted:
+`isValidSnapshot` already rejects a null group, and removing it broke no test.
+`savedAt` is written and never read, so the guard must never require it.
+
 ## The Look panel's dash means dry, and dry means exactly zero
 
 `formatLookInfo` prints `Water top —` when `waterDepth === 0`, a strict

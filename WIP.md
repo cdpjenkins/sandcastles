@@ -11,14 +11,12 @@ columns (~1e-6) and the drying film (~1e-4).
 
 ## Current Step
 
-Step 7 complete. Next: Step 8, wiring into `Game` — Export builds the file and
-downloads it; Import reads a chosen file, parses it, confirms, then applies it
-and rebuilds the terrain. The Blob download and the file input are plumbing
-only; every decision in the feature is already tested above.
+None - work complete and verified.
 
 ## Status
 
-⏸️ WAITING — suite green (339), tsc clean, build clean.
+✅ DONE - suite green (339), tsc clean, build clean, and confirmed in the
+browser on 2026-08-23.
 
 ## Completed
 
@@ -51,5 +49,16 @@ only; every decision in the feature is already tested above.
       disabled, deliberately) and `setStatus`. The status is its own element
       because `updateHud` rewrites the readouts every frame. jsdom's `.click()`
       honours `disabled`, so the gate needs no second guard in the handler.
-- [ ] Step 8: Wire into `Game`
-- [ ] Step 9: Verify in the browser
+- [x] Step 8: `Game` wires both buttons. Export snapshots, builds the file and
+      downloads it. Import opens a hidden file input, parses the chosen file,
+      refuses it with a status message or confirms before replacing, then
+      restores, rebuilds the terrain and puts the toolbar back in step.
+      `reflectState` is shared with the boot restore. No unit test: `Game`
+      cannot be built under jsdom.
+- [x] Step 9: Verified in the browser. Export is refused while running and
+      offered when paused; the downloaded file is 2,796,709 bytes - 2.80 MB, as
+      predicted - with all eight layers exactly 65,536 cells and no NaN. The
+      real file parses at 256x256 through the real `parseGameFile`, and
+      re-exporting it is byte-identical. Import restored terrain and camera,
+      refused a non-beach file without a dialog, honoured Cancel, worked twice
+      running, and survived a reload.

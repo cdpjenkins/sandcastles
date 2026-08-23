@@ -1,6 +1,8 @@
 import { Grid } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
+import { toGameFile, parseGameFile, exportFilename } from './GameFile.ts'
+import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
@@ -34,6 +36,9 @@ const AUTOSAVE_SECONDS = 5
 export const GRID_WIDTH = 256
 export const GRID_DEPTH = 256
 const STREAM_RATE = 1.0
+// Importing cannot be undone, and the next autosave overwrites the stored
+// beach with the imported one.
+const REPLACE_WARNING = 'Replace the current beach? This cannot be undone.'
 
 export class Game {
   private readonly grid: Grid
@@ -56,6 +61,7 @@ export class Game {
   private readonly autoSaver: AutoSaver
   private readonly helpOverlay: HTMLDivElement
   private readonly lookPanel: HTMLDivElement
+  private readonly fileInput: HTMLInputElement
 
   private toolMode: ToolMode = ToolMode.Spade
   private lastTime = 0
@@ -73,6 +79,8 @@ export class Game {
     this.toolbar.onToolChange((mode) => this.selectTool(mode))
     this.toolbar.onLookToggle((enabled) => this.setLook(enabled))
     this.toolbar.onReset(() => this.resetWater())
+    this.toolbar.onExport(() => this.exportBeach())
+    this.toolbar.onImport(() => this.fileInput.click())
     this.toolbar.onPauseToggle((paused) => this.setPaused(paused))
     document.body.appendChild(this.toolbar.element)
 
@@ -97,6 +105,19 @@ export class Game {
       '?        Toggle this help',
     ].join('\n')
     document.body.appendChild(this.helpOverlay)
+
+    this.fileInput = document.createElement('input')
+    this.fileInput.type = 'file'
+    this.fileInput.accept = 'application/json,.json'
+    this.fileInput.style.display = 'none'
+    this.fileInput.addEventListener('change', () => {
+      const file = this.fileInput.files?.[0]
+      // Cleared so that choosing the same file twice still fires a change.
+      this.fileInput.value = ''
+      if (file === undefined) return
+      void file.text().then((text) => this.importBeach(text))
+    })
+    document.body.appendChild(this.fileInput)
 
     this.lookPanel = document.createElement('div')
     this.lookPanel.style.cssText =
@@ -154,11 +175,7 @@ export class Game {
     window.addEventListener('pagehide', () => this.autoSaver.saveNow())
     window.addEventListener('freeze', () => this.autoSaver.saveNow())
 
-    this.toolbar.setTool(this.toolMode)
-    this.toolbar.setLook(this.lookEnabled)
-    this.toolbar.setPaused(this.paused)
-    this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
-    this.updateHud()
+    this.reflectState()
     requestAnimationFrame(this.loop)
   }
 
@@ -180,6 +197,41 @@ export class Game {
     this.toolMode = saved.toolMode
     this.paused = saved.paused
     this.lookEnabled = saved.lookEnabled
+  }
+
+  // Puts the toolbar and the panels back in step with the game's own state,
+  // after a boot restore or an import.
+  private reflectState(): void {
+    this.toolbar.setTool(this.toolMode)
+    this.toolbar.setLook(this.lookEnabled)
+    this.toolbar.setPaused(this.paused)
+    this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
+    this.updateHud()
+  }
+
+  private exportBeach(): void {
+    const savedAt = new Date()
+    const filename = exportFilename(savedAt)
+    downloadJson(filename, JSON.stringify(toGameFile(this.takeSnapshot(), savedAt)))
+    this.toolbar.setStatus(`Saved ${filename}`)
+  }
+
+  // An imported beach always arrives paused, because Export is only offered on
+  // a paused game, so every file carries paused: true.
+  private importBeach(text: string): void {
+    const snapshot = parseGameFile(text, GRID_WIDTH, GRID_DEPTH)
+    if (snapshot === null) {
+      this.toolbar.setStatus('That file is not a Sandcastles beach')
+      return
+    }
+    if (!window.confirm(REPLACE_WARNING)) {
+      this.toolbar.setStatus('Import cancelled')
+      return
+    }
+    this.restore(snapshot)
+    this.terrain.rebuildAll()
+    this.reflectState()
+    this.toolbar.setStatus('Beach imported')
   }
 
   private takeSnapshot(): GameSnapshot {
