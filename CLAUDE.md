@@ -177,7 +177,7 @@ bends at all. 2s (~28 cells) works. Lengthening the period silently costs refrac
 ### These are knobs. Don't let a test pin one.
 
 `EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`,
-`FILM_DEPTH`, `DRY_RATE`.
+`EVAPORATION_RATE`.
 
 Magnitude assertions against them have needed re-deriving five times over. Prefer a comparison — "the
 ground ten cells from the channel is untouched" — or a floor far below any sensible setting. If a test
@@ -186,41 +186,79 @@ breaks every time the model improves, it is describing the model's flaws rather 
 A comparison is not automatically safe, though. See the saturation trap below: "a thin sheet scours
 more than a deep pool carrying the same flux" is a comparison, and it still cannot referee anything.
 
+### Evaporation is a sink at every depth — a gated one strangles an advancing sheet
+
+`Drying` was a numerical cleanup wearing evaporation's clothes, and the disguise cost real
+behaviour. It gated on `FILM_DEPTH = 0.01` and removed water at `0.02/s` below it, nothing above.
+That makes the rate a *step function of depth*: water at 0.011 never dried, water at 0.009 was gone
+in half a second.
+
+An advancing front is thin at its leading edge — that is what a front is — so the wetting cell always
+sits inside that band and is fought by the sink the whole way across. Measured on a dry slope fed a
+steady sheet, front position after 60s: no sink 28 cells, with `Drying` **0**. A channel escaped
+because it concentrates the same discharge into fewer cells, so its edge arrives already deeper than
+the gate. Hence the symptom that started this: water crossed dry ground only through a narrow
+channel.
+
+`Evaporation` is the fix: a zeroth-order sink, `dh/dt = -k` at every depth, no threshold anywhere.
+Evaporation is a surface process and has no idea how much water is stacked beneath it. Time-to-dry is
+therefore `h/k`, linear in depth, so *a constant rate already gives films-go-fast and puddles-persist*
+— the volume ratio does it, and no depth-dependent rate is needed. This was the thing worth
+understanding: the two behaviours read as if they pull against each other and do not.
+
+### An ungated sink must exempt the sea, or it drains the beach
+
+Ungating is not free. The beach holds 189,702 water over 28,528 wet cells, and the tide's full swing
+moves 22,822. At the old `0.02/s` an ungated sink would take 68,467 in 120s — a third of all water,
+300% of the tide swing. The low rate is doing double duty here: it is what brings the deficit into a
+range anything can absorb.
+
+The exemption is the replenishment: a cell whose surface sits at or below the tide-adjusted sea
+surface *is* the sea, replenished by the ocean it belongs to, and is skipped. `Sponge` already pins
+the seaward rows to the swell, so the open boundary was covered; this covers the shallows. Measured:
+beach volume over a 180s tide period is 189702.2 -> 189702.2, unchanged.
+
+Note `step` takes a sea *elevation*, like `Waves`. Same trap as sea level above.
+
+### `EVAPORATION_RATE` is bounded below by float32, not by taste
+
+`Grid.water` is a `Float32Array`, so a small enough per-step subtraction rounds straight back to the
+original value and the sink silently does nothing. At `0.00002` the per-step delta is 6.7e-7 and the
+loss over a minute measures ~2% short at depth 1, ~29% at depth 5, and **exactly zero** at depth 20.
+0.0001 was the lowest rate that survived every depth tested.
+
+The current 0.00002 is a deliberate choice accepting that: films and shallow puddles, which are the
+point of the feature, are unaffected, and deep standing water is normally sea and exempt anyway. It
+is recorded so it is not rediscovered as a bug. If exact evaporation at depth is ever wanted, the fix
+is accumulating the per-cell deficit until it is large enough to register — not raising the rate.
+
+This is why `evaporation.test.ts` asserts a *ratio* between a shallow and a deep cell's loss rather
+than `toBeCloseTo` at 6 dp: the tight assertion fails on float noise, not on behaviour.
+
 ### A film cannot drain away — only a sink can dry it
 
-Once wet, a cell stayed wet forever. Two things had to be true at once.
-
-`withDrag` divides the flux by `1 + g·n²·|q|·dt / h^(7/3)`, so a film is glued down by its own bed
-friction: at `h = 1e-4` that denominator is ~1e9. This is correct Manning physics, not a bug — the
-thinner the sheet, the harder friction dominates, so the drainage rate falls faster than the depth
-does. Drainage therefore *asymptotes* and can never finish. Measured on a draining slope: the wetted
-area did not shrink by a single cell in 600s, and the residual decayed like `1/t` — 1.24e-4 at 600s,
-which extrapolates to roughly 20 hours to reach `DRY_DEPTH` and never reaches exactly zero.
+The reason a sink has to exist at all. `withDrag` divides the flux by `1 + g·n²·|q|·dt / h^(7/3)`, so
+a film is glued down by its own bed friction: at `h = 1e-4` that denominator is ~1e9. This is correct
+Manning physics, not a bug — the thinner the sheet, the harder friction dominates, so the drainage
+rate falls faster than the depth does. Drainage therefore *asymptotes* and can never finish. Measured
+on a draining slope: the wetted area did not shrink by a single cell in 600s, and the residual
+decayed like `1/t` — 1.24e-4 at 600s, extrapolating to roughly 20 hours to reach `DRY_DEPTH` and
+never reaching exactly zero.
 
 And `grid.water` had no sink at all. `Moisture` evaporates, but that is the sand's dampness, not the
-water column. So the only way out of a cell was to flow somewhere else, which is precisely what
-friction had ruled out.
+water column — two separate things whose rate constants were both 0.02, which invites confusion.
 
-`Drying` is a *linear* sink, and linearity is the whole point: a constant rate reaches zero in finite
-time where the drainage law cannot. It is gated on `FILM_DEPTH` so the sea and real puddles are
-untouched. On the full beach this dried 4,316 cells — 12% of the wetted area — while costing 0.065%
-of water volume over 120s, against tide swings of ±30,000. The shoreline does sit permanently in the
-film range, so the gate is a continuous sink there; it is just far too small to matter.
-
-Note what is *not* fixed: a puddle above `FILM_DEPTH` still persists forever. Only the invisible film
-is targeted, deliberately.
+A *linear* sink is the whole point: a constant rate reaches zero in finite time where the drainage
+law cannot.
 
 The tempting cheap fix — thresholding `TerrainMesh`'s and `Moisture`'s `water > 0` tests instead —
 was rejected. It makes the display claim dry while the sim still holds water, which is exactly the
 disagreement recorded under the Look panel dash below. Fixing it in the sim makes that dash correct
 instead.
 
-`Drying` marks a cell dirty on *any* change, not on the siblings' `DIRTY_EPSILON` of 1e-4. The step
-that takes the last of the film to zero is a change of about that size, and it is the one transition
-that must reach the mesh.
-
-`FILM_DEPTH` and `DRY_RATE` are knobs coupled to the world's unit scale. Don't let a test pin one —
-the tests speak in terms of a measured residual (1e-4) and a clearly-real puddle (1.0).
+`Evaporation` marks a cell dirty on *any* change, not on the siblings' `DIRTY_EPSILON` of 1e-4. The
+step that takes the last of the water to zero is a change of about that size, and it is the one
+transition that must reach the mesh.
 
 ### Screen-space directions go through `isoProjection`
 
@@ -333,7 +371,7 @@ for the whole file against roughly 5 MB, plus a several-hundred-millisecond
 `stringify` on the main thread.
 
 Rounding to 4 dp is the tempting middle ground: ~2 MB *and* readable. Don't. A
-sediment column sits around 1e-6 and the drying film at 1e-4, and both round to
+sediment column sits around 1e-6 and an evaporating film at 1e-4, and both round to
 zero. The file would still load, and the beach would be quietly wrong.
 
 ### `String.fromCharCode(...bytes)` cannot take a whole layer
@@ -390,9 +428,10 @@ not agree with, and the two readings would then disagree about the same cell.
 Recorded because it is the first thing in that panel that will look like a
 defect, and it is not one.
 
-Since `Drying` landed, a film reaches *exactly* zero rather than sitting at
-1e-6 forever, so the dash now appears on ground that has dried out — which is
-what it always claimed to mean. The reading above is still reachable while a
-cell is mid-swash and genuinely holds a sliver of water; it is just no longer
-a permanent state.
+Since `Evaporation` landed, a film reaches *exactly* zero rather than sitting
+at 1e-6 forever, so the dash now appears on ground that has dried out — which
+is what it always claimed to mean. It now also appears on a puddle that has
+fully evaporated, which the gated `Drying` could never reach. The reading
+above is still reachable while a cell is mid-swash and genuinely holds a
+sliver of water; it is just no longer a permanent state.
 

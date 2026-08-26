@@ -1,64 +1,53 @@
-# WIP: Export and import the beach as a JSON file
+# WIP: Evaporation as a real, ungated sink
 
-`PLAN.md` has the design. The game already snapshots itself into IndexedDB, but
-a player cannot get a beach out of the browser. Adding an Export button (enabled
-only while paused) that writes a JSON file, and an Import button that reads one
-back.
+`Drying` was a numerical cleanup for a drainage artifact wearing evaporation's
+clothes: it gated on `FILM_DEPTH = 0.01` and removed water at `0.02/s` below
+that, zero above. The gate made the rate a step function of depth — water at
+0.011 never dried, water at 0.009 dried in half a second — and an advancing
+sheet's leading edge lives permanently inside that band, so a thin sheet was
+annihilated at its tip while a deeper channel crossed free. Measured: a steady
+sheet fed onto a dry slope reached cell 28 without drying and cell 0 with it.
 
-Cell layers travel as base64 rather than JSON numbers: measured 2.80 MB against
-~5 MB, and bit-exact where a 4 dp rounding would round away the sediment
-columns (~1e-6) and the drying film (~1e-4).
+Replacing it with a true zeroth-order sink: `dh/dt = -k` at every depth, so
+time-to-dry is `h/k` and the volume ratio alone makes films vanish while
+puddles persist. Cells at or below the tide-adjusted sea surface are exempt —
+they are the sea, replenished by the ocean they belong to, and `Sponge`
+already pins the seaward rows to the swell.
+
+Renaming to `Evaporation`, which is what it now genuinely is.
 
 ## Current Step
 
-None - work complete and verified.
+None - work complete.
 
 ## Status
 
-✅ DONE - suite green (339), tsc clean, build clean, and confirmed in the
-browser on 2026-08-23.
+⏸️ WAITING - suite green (335), tsc clean apart from the pre-existing
+`fake-indexeddb` dev-dependency error in `indexedDbSnapshotStore.test.ts`.
 
 ## Completed
 
-- [x] Step 1: `encodeCells` / `decodeCells` round-trip a layer through base64
-      bit-exactly. Chunked at 0x8000 bytes because `String.fromCharCode` takes
-      its bytes as arguments and a 262,144-byte layer overflows the call stack.
-      Decode treats its input as hostile: not-base64 and wrong-cell-count both
-      give `null`. Encode honours a view's `byteOffset`/`byteLength`.
-- [x] Step 2: `Bucket.setAmount` sets rather than adds, clamped to
-      `[0, capacity]`. `fill` stays as it is — expressing it via `setAmount`
-      would clamp `fill(-1)` at zero, which no test covers.
-- [x] Step 3: `applySnapshot` puts a fresh game into the state a snapshot
-      describes, camera included, so boot and import share one path. Verified
-      by mutation that the round-trip test catches both a dropped camera and a
-      bucket that adds instead of sets.
-- [x] Step 4: `toGameFile` turns a snapshot into the file object. Takes the
-      timestamp as an argument rather than reading the clock. `GridLayerFile`
-      and `FlowLayerFile` are mapped types over the sim's own snapshot shapes,
-      so a layer added to the sim is a compile error here rather than a layer
-      quietly missing from every exported file — verified by adding one.
-- [x] Step 5: `parseGameFile` reads a file back, decoding the layers and then
-      deferring to `isValidSnapshot` rather than growing a second set of rules.
-      The explicit null check on the decoded groups turned out to be dead - the
-      guard already rejects a null group - so it went. Every remaining guard
-      was mutation-checked against the test that holds it up.
-- [x] Step 6: `exportFilename(date)` names the download. Dashes because a
-      colon is illegal in a Windows filename; the ISO form otherwise, so a
-      directory of exports sorts into the order it was saved.
-- [x] Step 7: Toolbar gained Export (disabled unless paused), Import (never
-      disabled, deliberately) and `setStatus`. The status is its own element
-      because `updateHud` rewrites the readouts every frame. jsdom's `.click()`
-      honours `disabled`, so the gate needs no second guard in the handler.
-- [x] Step 8: `Game` wires both buttons. Export snapshots, builds the file and
-      downloads it. Import opens a hidden file input, parses the chosen file,
-      refuses it with a status message or confirms before replacing, then
-      restores, rebuilds the terrain and puts the toolbar back in step.
-      `reflectState` is shared with the boot restore. No unit test: `Game`
-      cannot be built under jsdom.
-- [x] Step 9: Verified in the browser. Export is refused while running and
-      offered when paused; the downloaded file is 2,796,709 bytes - 2.80 MB, as
-      predicted - with all eight layers exactly 65,536 cells and no NaN. The
-      real file parses at 256x256 through the real `parseGameFile`, and
-      re-exporting it is byte-identical. Import restored terrain and camera,
-      refused a non-beach file without a dialog, honoured Cancel, worked twice
-      running, and survived a reload.
+- [x] Step 1: `Evaporation` takes the same depth from every wet cell per
+      second, with no threshold. Renamed from `Drying`, which described the
+      numerical cleanup it used to be rather than the sink it now is.
+- [x] Step 2: cells at or below the tide-adjusted sea surface are exempt —
+      they are the sea, replenished by the ocean they belong to. `step` takes
+      that elevation the way `Waves` and `Sponge` already do. Measured: beach
+      volume over 180s is 189702.2 -> 189702.2, unchanged.
+- [x] Step 3: wired into `Game.simStep`, which already had `seaSurface` to hand.
+
+## Verified
+
+- The reported bug: a sheet fed onto a dry slope reached cell 27 of 28 against
+  the no-sink baseline, where under `Drying` it reached 0. At feed 0.1 and
+  above the advance is byte-identical to no sink at all.
+- Castle under 120s of waves loses 6.6% of its sand with evaporation against
+  6.8% without, so `CRITICAL_POWER` is undisturbed.
+
+## Notes
+
+`EVAPORATION_RATE = 0.00002` is the user's choice, accepting that float32
+quantisation makes the sink progressively lossier with depth — ~2% short at
+depth 1, ~29% at depth 5, and nothing at all by depth 20. Films and shallow
+puddles, the target of the feature, are unaffected. Recorded so it is not
+rediscovered as a bug.
