@@ -1,6 +1,7 @@
 import { Grid, STREAM_RATE } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
+import { confirmNewGame } from './NewGame.ts'
 import { toGameFile, parseGameFile, exportFilename } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
@@ -80,6 +81,7 @@ export class Game {
     this.toolbar.onReset(() => this.resetWater())
     this.toolbar.onExport(() => this.exportBeach())
     this.toolbar.onImport(() => this.fileInput.click())
+    this.toolbar.onNewGame(() => this.newGame())
     this.toolbar.onPauseToggle((paused) => this.setPaused(paused))
     document.body.appendChild(this.toolbar.element)
 
@@ -98,6 +100,7 @@ export class Game {
       'W        Water stream',
       'L        Toggle Look (independent of the tool)',
       'R        Reset water (or the Reset button)',
+      'N        New game (asks first)',
       'P        Pause / resume the simulation',
       'Pinch    Zoom',
       '2-finger Pan',
@@ -193,9 +196,15 @@ export class Game {
 
   private restore(saved: GameSnapshot): void {
     applySnapshot(this.snapshotComponents, saved)
-    this.toolMode = saved.toolMode
-    this.paused = saved.paused
-    this.lookEnabled = saved.lookEnabled
+    this.adoptUiState(saved)
+  }
+
+  // Named once so a restore and a new game cannot drift apart over which
+  // fields the UI state is made of. reflectState puts the toolbar in step.
+  private adoptUiState(snapshot: GameSnapshot): void {
+    this.toolMode = snapshot.toolMode
+    this.paused = snapshot.paused
+    this.lookEnabled = snapshot.lookEnabled
   }
 
   // Puts the toolbar and the panels back in step with the game's own state,
@@ -231,6 +240,21 @@ export class Game {
     this.terrain.rebuildAll()
     this.reflectState()
     this.toolbar.setStatus('Beach imported')
+  }
+
+  // The beach the player built is destroyed with no undo, so they are asked
+  // first. Declining leaves the game exactly as it was, mesh and toolbar
+  // included, which is why nothing here runs until a snapshot comes back.
+  private newGame(): void {
+    const started = confirmNewGame(
+      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, (message) => window.confirm(message),
+    )
+    if (started === null) return
+
+    this.adoptUiState(started)
+    this.terrain.rebuildAll()
+    this.reflectState()
+    this.toolbar.setStatus('New beach')
   }
 
   private takeSnapshot(): GameSnapshot {
@@ -289,6 +313,9 @@ export class Game {
     }
     if (e.key === 'r' || e.key === 'R') {
       this.resetWater()
+    }
+    if (e.key === 'n' || e.key === 'N') {
+      this.newGame()
     }
     if (e.key === '?') {
       const visible = this.helpOverlay.style.display === 'block'

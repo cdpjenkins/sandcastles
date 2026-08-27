@@ -14,11 +14,11 @@ from reopening on a third path.
 
 ## Current Step
 
-Step 3: Game confirms with the player, then starts the new game.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - suite green (351), tsc clean.
+⏸️ WAITING - suite green (358), tsc clean, production build clean.
 
 ## Completed
 
@@ -33,3 +33,11 @@ Step 3: Game confirms with the player, then starts the new game.
       read as a lost position rather than a new game. `STREAM_RATE` moved to
       `Grid` (a property of the beach's layout) and `DEFAULT_CAMERA` out of
       `IsoCamera`, so neither is duplicated.
+- [x] Step 3: `confirmNewGame` asks before destroying the beach and returns
+      the state the new game starts in, or null for "change nothing". Asking
+      is injected rather than reaching for `window.confirm`, so the decision
+      and what follows from it are testable apart from the browser - the
+      existing import confirm is inside `Game` and therefore untested.
+      Wired to the toolbar button and the N key, and `Game.adoptUiState`
+      names the three UI fields once so a restore and a new game cannot
+      drift over what they are.
