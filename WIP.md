@@ -41,3 +41,8 @@ None - work complete.
       Wired to the toolbar button and the N key, and `Game.adoptUiState`
       names the three UI fields once so a restore and a new game cannot
       drift over what they are.
+- [x] Step 4: the same treatment for the import confirmation, which was the
+      gap step 3 pointed at. `confirmImport` returns the loaded state and a
+      refusal reason, because a file that is not a beach and an import the
+      player declined both change nothing but are different things to say.
+      Verified by mutation: inverting the confirmation kills four tests.

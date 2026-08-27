@@ -2,7 +2,8 @@ import { Grid, STREAM_RATE } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
 import { confirmNewGame } from './NewGame.ts'
-import { toGameFile, parseGameFile, exportFilename } from './GameFile.ts'
+import { confirmImport } from './ImportBeach.ts'
+import { toGameFile, exportFilename } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
@@ -36,9 +37,6 @@ const BUCKET_CAPACITY = 1000
 const AUTOSAVE_SECONDS = 5
 export const GRID_WIDTH = 256
 export const GRID_DEPTH = 256
-// Importing cannot be undone, and the next autosave overwrites the stored
-// beach with the imported one.
-const REPLACE_WARNING = 'Replace the current beach? This cannot be undone.'
 
 export class Game {
   private readonly grid: Grid
@@ -227,16 +225,18 @@ export class Game {
   // An imported beach always arrives paused, because Export is only offered on
   // a paused game, so every file carries paused: true.
   private importBeach(text: string): void {
-    const snapshot = parseGameFile(text, GRID_WIDTH, GRID_DEPTH)
-    if (snapshot === null) {
-      this.toolbar.setStatus('That file is not a Sandcastles beach')
+    const { imported, refusal } = confirmImport(
+      this.snapshotComponents, text, GRID_WIDTH, GRID_DEPTH,
+      (message) => window.confirm(message),
+    )
+    if (imported === null) {
+      this.toolbar.setStatus(
+        refusal === 'cancelled' ? 'Import cancelled' : 'That file is not a Sandcastles beach',
+      )
       return
     }
-    if (!window.confirm(REPLACE_WARNING)) {
-      this.toolbar.setStatus('Import cancelled')
-      return
-    }
-    this.restore(snapshot)
+
+    this.adoptUiState(imported)
     this.terrain.rebuildAll()
     this.reflectState()
     this.toolbar.setStatus('Beach imported')

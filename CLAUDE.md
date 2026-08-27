@@ -446,13 +446,26 @@ since an exemption is exactly the kind of thing that desyncs the autosave.
 
 ### Inject the asking, don't reach for `window.confirm`
 
-`Game.importBeach` calls `window.confirm` inline, and because `Game` cannot be
-built under jsdom that confirmation is untested — nothing catches it if the
-branches are ever inverted. `confirmNewGame` takes `ask` as a parameter, so
-"warns before destroying", "lays a fresh beach on yes" and "changes nothing on
-no" are all covered. Declining returns `null` rather than a flag: the caller
-reads it as *change nothing*, so no mesh rebuild and no toolbar rewrite happen
-on a decline.
+A confirmation called inline from `Game` cannot be tested at all, because
+`Game` cannot be built under jsdom — so nothing catches it if the branches are
+ever inverted, which is a bug that silently destroys the player's beach.
+`confirmNewGame` and `confirmImport` both take `ask` as a parameter, so "warns
+before destroying", "does it on yes" and "changes nothing on no" are covered.
+Verified by mutation: inverting either confirmation kills four tests.
+
+Declining returns `null` rather than a flag: the caller reads it as *change
+nothing*, so no mesh rebuild and no toolbar rewrite happen on a decline.
+
+`confirmImport` also returns *why* it refused. A file that is not a beach and
+an import the player declined both leave the beach alone, but they are
+different things to tell the player, and collapsing them to a bare `null` left
+`Game` unable to pick the message. The test asserting the two are
+distinguishable is what forced that — the first shape written here had a
+`confirmImport` wrapper returning only the snapshot, and it could not pass.
+
+A file that will not parse is refused *before* the player is asked. Asking
+first would have them agree to lose their beach only to be told the file was
+no good.
 
 ## The Look panel's dash means dry, and dry means exactly zero
 
