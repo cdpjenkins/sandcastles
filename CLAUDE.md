@@ -174,6 +174,30 @@ Refraction is emergent from `c = √(g·h)`, but Snell's law only applies where 
 a wavelength. The sea is 56 rows deep; at a 5s period the wavelength is `c·T` = 70 cells and nothing
 bends at all. 2s (~28 cells) works. Lengthening the period silently costs refraction.
 
+Silently is the word: **nothing tests refraction**, because it is emergent rather than computed, so
+the whole suite stays green while it flattens. Measure it as the swell's spread between the near and
+far shore. Now at 3.5s / 0.15 (49 cells, a little over one wavelength across the sea) that spread is
+0.09, against 0.58 at the old 2.0 / 0.3. Both knobs cost it and the *period* costs more than the
+amplitude: dropping the amplitude alone leaves 0.18, so a little under half the loss is amplitude and
+the rest is the longer period flattening the phase ramp.
+
+That was a deliberate trade for castle survival — see below — not an accident. But it is most of the
+refraction budget spent, so treat a further lengthening as spending what is left.
+
+### A castle's survival is a swell knob, and only one test can see it
+
+`SWELL_PERIOD` and `SWELL_AMPLITUDE` set how long a shoreline castle lasts, and every other test in
+the suite is blind to it: both could be halved with all of them green while castles quietly became
+near-permanent. At 2.0 / 0.3 a cone lost 61% of its sand to 60s of waves — gone while you watch. At
+3.5 / 0.15 it loses 11%, against a flat-sea control that stays at 3.4% either way.
+
+`castle.test.ts` is what holds this, and it asserts a *ratio* against that flat-sea control rather
+than an amount. The control is not zero — a castle slumps into its own footprint and the tide alone
+moves sand — so only the difference between the two runs is the swell's doing. How fast a castle goes
+is set by `EROSION_K`, `CRITICAL_POWER` and these two together, all of which have moved and will move
+again; that waves take a real bite and do not level a castle inside a minute is what the game needs at
+any sensible setting. Same discipline as the note below.
+
 ### These are knobs. Don't let a test pin one.
 
 `EROSION_K`, `MAX_BED_RATE`, `SWELL_PERIOD`, `SWELL_AMPLITUDE`, `MANNING_N`, `MAX_VELOCITY`,
