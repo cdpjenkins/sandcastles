@@ -14,12 +14,11 @@ from reopening on a third path.
 
 ## Current Step
 
-Step 2: starting a new game restores the beach to a fresh state, after the
-player confirms.
+Step 3: Game confirms with the player, then starts the new game.
 
 ## Status
 
-⏸️ WAITING - suite green (343), tsc clean.
+⏸️ WAITING - suite green (351), tsc clean.
 
 ## Completed
 
@@ -27,3 +26,10 @@ player confirms.
       Ungated like Import rather than paused-only like Export: a player who
       has dug themselves into a beach they don't want should not have to
       pause before being allowed to start over.
+- [x] Step 2: `newGameSnapshot` describes an undug beach and `startNewGame`
+      lays it over the components. Built from real components rather than a
+      literal, so it cannot drift from what a first boot produces. The camera
+      is exempt: the new beach is the same world, so moving the view would
+      read as a lost position rather than a new game. `STREAM_RATE` moved to
+      `Grid` (a property of the beach's layout) and `DEFAULT_CAMERA` out of
+      `IsoCamera`, so neither is duplicated.

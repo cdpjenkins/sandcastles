@@ -9,6 +9,7 @@ const ROCK_SHORE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
+export const STREAM_RATE = 1.0
 
 export interface GridSnapshot {
   rock: Float32Array

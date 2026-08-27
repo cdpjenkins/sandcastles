@@ -12,11 +12,15 @@ export interface CameraSnapshot {
   panZ: number
 }
 
+// The view a first-ever boot opens on. Exported so a snapshot can name it
+// without constructing a camera, which needs a canvas.
+export const DEFAULT_CAMERA: CameraSnapshot = { zoom: 80, panX: 128, panZ: 128 }
+
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera
 
-  private zoom = 80
-  private panTarget = new THREE.Vector3(128, 0, 128)
+  private zoom = DEFAULT_CAMERA.zoom
+  private panTarget = new THREE.Vector3(DEFAULT_CAMERA.panX, 0, DEFAULT_CAMERA.panZ)
   private readonly canvas: HTMLCanvasElement
 
   constructor(canvas: HTMLCanvasElement) {

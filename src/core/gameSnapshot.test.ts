@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot, createSnapshot, applySnapshot,
+  newGameSnapshot, startNewGame,
 } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
@@ -283,5 +284,79 @@ describe('applySnapshot', () => {
     applySnapshot(restored, snapshot)
 
     expect(restored.bucket.amount).toBe(120)
+  })
+})
+
+
+describe('starting a new game', () => {
+  const played = () => {
+    const components = aLiveBeach()
+    startNewGame(components, SIZE, SIZE)
+    return components
+  }
+
+  it('is a loadable beach', () => {
+    expect(isValidSnapshot(newGameSnapshot(SIZE, SIZE), SIZE, SIZE)).toBe(true)
+  })
+
+  it('lays out the same beach a first-ever boot gets', () => {
+    const booted = freshComponents()
+    booted.grid.initBeach()
+    booted.grid.initSpring(1.0)
+
+    expect(played().grid.snapshot()).toEqual(booted.grid.snapshot())
+  })
+
+  // The beach the player dug is gone, not merged into the new one: every
+  // layer is laid out afresh, so no sand, water, damp patch or dug channel
+  // survives from the game before.
+  it('leaves nothing of the beach the player was digging', () => {
+    const beach = aLiveBeach()
+    beach.grid.setMoisture(8, 9, 0.9)
+    beach.grid.setSediment(8, 9, 0.4)
+    beach.grid.setSourceRate(20, 21, 1.0)
+    const dug = beach.grid.snapshot()
+
+    startNewGame(beach, SIZE, SIZE)
+
+    expect(beach.grid.snapshot()).not.toEqual(dug)
+    expect(beach.grid.getMoisture(8, 9)).toBe(0)
+    expect(beach.grid.getSediment(8, 9)).toBe(0)
+    expect(beach.grid.getSourceRate(20, 21)).toBe(0)
+  })
+
+  it('stills the water the old beach was carrying', () => {
+    const started = played()
+
+    expect(started.waterSim.getFlowX(2, 2)).toBe(0)
+    expect(started.waterSim.getFlowZ(1, 1)).toBe(0)
+  })
+
+  it('starts the swell and the tide from the beginning', () => {
+    const started = played()
+
+    expect(started.waves.snapshot().elapsed).toBe(0)
+    expect(started.tide.snapshot().elapsed).toBe(0)
+  })
+
+  it('hands the player an empty bucket', () => {
+    expect(played().bucket.amount).toBe(0)
+  })
+
+  // The camera is where the player left it on purpose: a new beach occupies
+  // the same world, and yanking the view back would read as a lost position
+  // rather than a new game.
+  it('leaves the camera where the player had it', () => {
+    const started = played()
+
+    expect(started.camera.snapshot()).toEqual({ zoom: 55, panX: 10, panZ: 20 })
+  })
+
+  it('starts unpaused, with the spade in hand and Look off', () => {
+    const snapshot = newGameSnapshot(SIZE, SIZE)
+
+    expect(snapshot.toolMode).toBe(ToolMode.Spade)
+    expect(snapshot.paused).toBe(false)
+    expect(snapshot.lookEnabled).toBe(false)
   })
 })

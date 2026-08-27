@@ -1,4 +1,4 @@
-import { Grid } from './Grid.ts'
+import { Grid, STREAM_RATE } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
 import { toGameFile, parseGameFile, exportFilename } from './GameFile.ts'
@@ -35,7 +35,6 @@ const BUCKET_CAPACITY = 1000
 const AUTOSAVE_SECONDS = 5
 export const GRID_WIDTH = 256
 export const GRID_DEPTH = 256
-const STREAM_RATE = 1.0
 // Importing cannot be undone, and the next autosave overwrites the stored
 // beach with the imported one.
 const REPLACE_WARNING = 'Replace the current beach? This cannot be undone.'

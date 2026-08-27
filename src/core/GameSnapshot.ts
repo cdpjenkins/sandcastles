@@ -1,7 +1,12 @@
+import { Grid, STREAM_RATE } from './Grid.ts'
 import type { GridSnapshot } from './Grid.ts'
+import { WaterSim } from '../sim/WaterSim.ts'
 import type { WaterSimSnapshot } from '../sim/WaterSim.ts'
+import { Waves } from '../sim/Waves.ts'
 import type { WavesSnapshot } from '../sim/Waves.ts'
+import { Tide } from '../sim/Tide.ts'
 import type { TideSnapshot } from '../sim/Tide.ts'
+import { DEFAULT_CAMERA } from '../render/IsoCamera.ts'
 import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
@@ -144,4 +149,48 @@ export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot):
   targets.tide.restore(snapshot.tide)
   targets.bucket.setAmount(snapshot.bucket.amount)
   targets.camera.restore(snapshot.camera)
+}
+
+// A beach as it is before anyone has dug it, expressed as a snapshot so that
+// starting over reuses the one path boot and import already take rather than
+// adding a reset() to each of the six components that hold state.
+//
+// Built from real components rather than a hand-written literal: a fresh game
+// is whatever a fresh Grid, WaterSim, Waves and Tide say it is, so this cannot
+// drift from what a first-ever boot produces.
+//
+// The camera it carries is the one a first boot starts at. startNewGame is
+// what a player's New game goes through, and that leaves the view alone.
+export function newGameSnapshot(width: number, depth: number): GameSnapshot {
+  const grid = new Grid(width, depth)
+  grid.initBeach()
+  grid.initSpring(STREAM_RATE)
+
+  return {
+    version: SNAPSHOT_VERSION,
+    width,
+    depth,
+    grid: grid.snapshot(),
+    water: new WaterSim(width, depth).snapshot(),
+    waves: new Waves(width, depth).snapshot(),
+    tide: new Tide().snapshot(),
+    bucket: { amount: 0 },
+    camera: DEFAULT_CAMERA,
+    toolMode: ToolMode.Spade,
+    paused: false,
+    lookEnabled: false,
+  }
+}
+
+// Lays a fresh beach over whatever the player had, leaving the camera where
+// they left it: the new beach occupies the same world, so pulling the view
+// back to the default would read as a lost position rather than a new game.
+export function startNewGame(
+  targets: Omit<SnapshotTargets, 'camera'>,
+  width: number,
+  depth: number,
+): GameSnapshot {
+  const snapshot = newGameSnapshot(width, depth)
+  applySnapshot({ ...targets, camera: { restore: () => {} } }, snapshot)
+  return snapshot
 }
