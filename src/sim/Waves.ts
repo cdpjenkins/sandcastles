@@ -1,11 +1,21 @@
 import type { Grid } from '../core/Grid.ts'
 
-// Short for ocean swell, and deliberately so: refraction only shows if several
-// wavelengths fit across the sloping floor. At 5s the wavelength was 70 cells
-// against a 56-row sea -- under one -- and Snell, which assumes depth varies
-// slowly over a wavelength, simply did not apply. Nothing bent.
-const SWELL_PERIOD = 2.0
-const SWELL_AMPLITUDE = 0.3
+// Tuned so a castle on the shoreline weathers rather than dissolves: at
+// 2.0/0.3 a cone lost 61% of its sand to 60s of waves, which is a castle gone
+// while you watch. At 3.5/0.15 it loses 11%, against an unchanged 3.4% on a
+// flat sea, so the swell is still clearly what does the damage.
+//
+// Both knobs cost refraction, and the period costs more of it than the
+// amplitude does. Refraction only shows if several wavelengths fit across the
+// sloping floor -- at 5s the wavelength was 70 cells against a 56-row sea,
+// under one, and Snell, which assumes depth varies slowly over a wavelength,
+// did not apply at all. 3.5s puts it at 49 cells, so a little over one
+// wavelength fits. Measured as the swell's spread between the near and far
+// shore: 0.58 at 2.0/0.3, 0.18 from the longer period alone, 0.09 here.
+// Nothing tests refraction -- it is emergent -- so lengthening this further
+// will quietly flatten it with the suite still green.
+const SWELL_PERIOD = 3.5
+const SWELL_AMPLITUDE = 0.15
 // Celerity at the boundary depth, sqrt(9.8 * 20). Only sets the phase ramp
 // across the sponge; once inshore the sim carries the wave at its own sqrt(g*h).
 const SWELL_SPEED = 14
