@@ -409,6 +409,51 @@ An explicit null check on the decoded layer groups was written and then deleted:
 `isValidSnapshot` already rejects a null group, and removing it broke no test.
 `savedAt` is written and never read, so the guard must never require it.
 
+## Starting a new game
+
+`NewGame.ts` (`confirmNewGame`) and `newGameSnapshot`/`startNewGame` in
+`GameSnapshot.ts`. Reachable from the toolbar's New game button and the N key.
+What was expensive to learn:
+
+### A fresh game is a snapshot, not six `reset()` methods
+
+The tempting shape is `reset()` on each of `Grid`, `WaterSim`, `Waves`, `Tide`,
+`Bucket` and `IsoCamera`. `applySnapshot` already puts all six into a given
+state, and an undug beach is just a particular state — so `newGameSnapshot`
+describes one and starting over goes through the path boot and import already
+take. That is also what keeps the set-vs-add trap recorded above from reopening
+on a third caller: there is no third caller.
+
+It is built from *real* components (`new Grid(...)`, `initBeach`, `initSpring`)
+rather than a hand-written literal, so it cannot drift from what a first-ever
+boot produces. The test asserting exactly that is the one holding it.
+
+### `initBeach` alone does not give a new game
+
+It overwrites rock, sand and water at every cell and leaves `moisture`,
+`source` and `sediment` untouched — so a naive "just call `initBeach` again"
+keeps the player's damp patches, dug stream sources and suspended sediment
+under a brand new beach. Nothing in the rendered result makes that obvious.
+
+### The camera is deliberately exempt
+
+`startNewGame` restores everything but the view. A new beach occupies the same
+world, so pulling the camera back to the default reads as a lost position
+rather than as a new game. This is why `startNewGame` exists beside
+`newGameSnapshot` rather than callers using `applySnapshot` directly — and why
+a test asserts the reported state still round-trips through `createSnapshot`,
+since an exemption is exactly the kind of thing that desyncs the autosave.
+
+### Inject the asking, don't reach for `window.confirm`
+
+`Game.importBeach` calls `window.confirm` inline, and because `Game` cannot be
+built under jsdom that confirmation is untested — nothing catches it if the
+branches are ever inverted. `confirmNewGame` takes `ask` as a parameter, so
+"warns before destroying", "lays a fresh beach on yes" and "changes nothing on
+no" are all covered. Declining returns `null` rather than a flag: the caller
+reads it as *change nothing*, so no mesh rebuild and no toolbar rewrite happen
+on a decline.
+
 ## The Look panel's dash means dry, and dry means exactly zero
 
 `formatLookInfo` prints `Water top —` when `waterDepth === 0`, a strict
