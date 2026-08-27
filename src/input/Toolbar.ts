@@ -34,6 +34,7 @@ export class Toolbar {
   private pauseToggleHandler: (paused: boolean) => void = () => {}
   private exportHandler: () => void = () => {}
   private importHandler: () => void = () => {}
+  private newGameHandler: () => void = () => {}
 
   constructor() {
     this.element = document.createElement('div')
@@ -77,6 +78,7 @@ export class Toolbar {
     this.reflectExportable()
 
     this.addButton('import', '⬆ Import', () => this.importHandler())
+    this.addButton('new-game', '✦ New game', () => this.newGameHandler())
     this.addButton('reset', '↺ Reset water', () => this.resetHandler())
 
     this.readouts = document.createElement('span')
@@ -118,6 +120,10 @@ export class Toolbar {
 
   onImport(handler: () => void): void {
     this.importHandler = handler
+  }
+
+  onNewGame(handler: () => void): void {
+    this.newGameHandler = handler
   }
 
   onReset(handler: () => void): void {

@@ -45,6 +45,9 @@ const exportButton = (toolbar: Toolbar): HTMLButtonElement =>
 const importButton = (toolbar: Toolbar): HTMLButtonElement =>
   toolbar.element.querySelector<HTMLButtonElement>('button[data-action="import"]')!
 
+const newGameButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="new-game"]')!
+
 const status = (toolbar: Toolbar): HTMLElement =>
   toolbar.element.querySelector<HTMLElement>('[data-role="status"]')!
 
@@ -275,6 +278,27 @@ describe('Toolbar', () => {
 
     toolbar.setPaused(true)
     expect(importButton(toolbar).disabled).toBe(false)
+  })
+
+  it('fires onNewGame when New game is clicked', () => {
+    const toolbar = new Toolbar()
+    let starts = 0
+    toolbar.onNewGame(() => starts++)
+
+    newGameButton(toolbar).click()
+
+    expect(starts).toBe(1)
+  })
+
+  // Not gated the way Export is: a player who has dug themselves into a beach
+  // they don't want should not have to pause before being allowed to start over.
+  it('offers New game whether the simulation is running or paused', () => {
+    const toolbar = new Toolbar()
+
+    expect(newGameButton(toolbar).disabled).toBe(false)
+
+    toolbar.setPaused(true)
+    expect(newGameButton(toolbar).disabled).toBe(false)
   })
 
   it('shows a status message', () => {

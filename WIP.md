@@ -1,53 +1,29 @@
-# WIP: Evaporation as a real, ungated sink
+# WIP: A menu option to start a new game
 
-`Drying` was a numerical cleanup for a drainage artifact wearing evaporation's
-clothes: it gated on `FILM_DEPTH = 0.01` and removed water at `0.02/s` below
-that, zero above. The gate made the rate a step function of depth — water at
-0.011 never dried, water at 0.009 dried in half a second — and an advancing
-sheet's leading edge lives permanently inside that band, so a thin sheet was
-annihilated at its tip while a deeper channel crossed free. Measured: a steady
-sheet fed onto a dry slope reached cell 28 without drying and cell 0 with it.
+The toolbar can export and import a beach but cannot start a fresh one: a
+player who has dug their beach into a state they don't want has no way back
+short of clearing site data. Adding a "New game" button that confirms first,
+because it destroys the current beach and the next autosave overwrites the
+stored one.
 
-Replacing it with a true zeroth-order sink: `dh/dt = -k` at every depth, so
-time-to-dry is `h/k` and the volume ratio alone makes films vanish while
-puddles persist. Cells at or below the tide-adjusted sea surface are exempt —
-they are the sea, replenished by the ocean they belong to, and `Sponge`
-already pins the seaward rows to the swell.
-
-Renaming to `Evaporation`, which is what it now genuinely is.
+Reusing the snapshot restore path rather than adding a `reset()` to each of
+Grid, Waves, Tide, WaterSim, Bucket and IsoCamera: `applySnapshot` already
+puts every one of those back to a given state, and a fresh game is just a
+particular state. That also keeps the set-vs-add trap recorded in CLAUDE.md
+from reopening on a third path.
 
 ## Current Step
 
-None - work complete.
+Step 2: starting a new game restores the beach to a fresh state, after the
+player confirms.
 
 ## Status
 
-⏸️ WAITING - suite green (335), tsc clean apart from the pre-existing
-`fake-indexeddb` dev-dependency error in `indexedDbSnapshotStore.test.ts`.
+⏸️ WAITING - suite green (343), tsc clean.
 
 ## Completed
 
-- [x] Step 1: `Evaporation` takes the same depth from every wet cell per
-      second, with no threshold. Renamed from `Drying`, which described the
-      numerical cleanup it used to be rather than the sink it now is.
-- [x] Step 2: cells at or below the tide-adjusted sea surface are exempt —
-      they are the sea, replenished by the ocean they belong to. `step` takes
-      that elevation the way `Waves` and `Sponge` already do. Measured: beach
-      volume over 180s is 189702.2 -> 189702.2, unchanged.
-- [x] Step 3: wired into `Game.simStep`, which already had `seaSurface` to hand.
-
-## Verified
-
-- The reported bug: a sheet fed onto a dry slope reached cell 27 of 28 against
-  the no-sink baseline, where under `Drying` it reached 0. At feed 0.1 and
-  above the advance is byte-identical to no sink at all.
-- Castle under 120s of waves loses 6.6% of its sand with evaporation against
-  6.8% without, so `CRITICAL_POWER` is undisturbed.
-
-## Notes
-
-`EVAPORATION_RATE = 0.00002` is the user's choice, accepting that float32
-quantisation makes the sink progressively lossier with depth — ~2% short at
-depth 1, ~29% at depth 5, and nothing at all by depth 20. Films and shallow
-puddles, the target of the feature, are unaffected. Recorded so it is not
-rediscovered as a bug.
+- [x] Step 1: the toolbar offers New game and fires a handler when clicked.
+      Ungated like Import rather than paused-only like Export: a player who
+      has dug themselves into a beach they don't want should not have to
+      pause before being allowed to start over.
