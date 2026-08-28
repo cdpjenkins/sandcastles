@@ -1,48 +1,39 @@
-# WIP: A menu option to start a new game
+# WIP: Export a running game
 
-The toolbar can export and import a beach but cannot start a fresh one: a
-player who has dug their beach into a state they don't want has no way back
-short of clearing site data. Adding a "New game" button that confirms first,
-because it destroys the current beach and the next autosave overwrites the
-stored one.
+Export is offered only on a paused game, so saving a beach means pausing
+first. The gate was believed to be about coherence — "the export is the beach
+the player can see" — but it is not buying that:
 
-Reusing the snapshot restore path rather than adding a `reset()` to each of
-Grid, Waves, Tide, WaterSim, Bucket and IsoCamera: `applySnapshot` already
-puts every one of those back to a given state, and a fresh game is just a
-particular state. That also keeps the set-vs-add trap recorded in CLAUDE.md
-from reopening on a third path.
+- The whole export path (`takeSnapshot` -> `toGameFile` -> `JSON.stringify` ->
+  `downloadJson`) is synchronous, with no `await` anywhere. A click handler
+  runs to completion before the next `requestAnimationFrame`, so `simStep`
+  cannot interleave with it.
+- Every `snapshot()` copies its layers with `.slice()`.
+- `AutoSaver` already snapshots a *running* game every 5s through the same
+  `takeSnapshot()`. If that were unsafe, autosave would have been corrupting
+  saves since it shipped.
+
+So a running export already yields a coherent single-frame snapshot. Removing
+the gate, and saying in the status which moment was captured.
 
 ## Current Step
 
-None - work complete.
+Step 2: the status names the moment the file captured, since the beach is
+still moving when it is written.
 
 ## Status
 
-⏸️ WAITING - suite green (358), tsc clean, production build clean.
+⏸️ WAITING - suite green (366), tsc clean.
 
 ## Completed
 
-- [x] Step 1: the toolbar offers New game and fires a handler when clicked.
-      Ungated like Import rather than paused-only like Export: a player who
-      has dug themselves into a beach they don't want should not have to
-      pause before being allowed to start over.
-- [x] Step 2: `newGameSnapshot` describes an undug beach and `startNewGame`
-      lays it over the components. Built from real components rather than a
-      literal, so it cannot drift from what a first boot produces. The camera
-      is exempt: the new beach is the same world, so moving the view would
-      read as a lost position rather than a new game. `STREAM_RATE` moved to
-      `Grid` (a property of the beach's layout) and `DEFAULT_CAMERA` out of
-      `IsoCamera`, so neither is duplicated.
-- [x] Step 3: `confirmNewGame` asks before destroying the beach and returns
-      the state the new game starts in, or null for "change nothing". Asking
-      is injected rather than reaching for `window.confirm`, so the decision
-      and what follows from it are testable apart from the browser - the
-      existing import confirm is inside `Game` and therefore untested.
-      Wired to the toolbar button and the N key, and `Game.adoptUiState`
-      names the three UI fields once so a restore and a new game cannot
-      drift over what they are.
-- [x] Step 4: the same treatment for the import confirmation, which was the
-      gap step 3 pointed at. `confirmImport` returns the loaded state and a
-      refusal reason, because a file that is not a beach and an import the
-      player declined both change nothing but are different things to say.
-      Verified by mutation: inverting the confirmation kills four tests.
+- [x] Step 1: Export is offered whether the game is running or paused. The
+      two tests asserting the gate were replaced rather than left, since
+      they described the belief the gate was based on.
+
+## Shipped before this
+
+- A menu option to start a new game (`89a274d`..`5510c69`), and the same
+  testable-confirmation treatment for import (`2e7aeb7`).
+- A gentler swell so a shoreline castle weathers rather than dissolves
+  (`966ac94`), with the castle/refraction trade-off recorded (`c3ad8eb`).

@@ -224,18 +224,30 @@ describe('Toolbar', () => {
     expect(readouts(toolbar).textContent).toBe('bucket: 12.0 / 100')
   })
 
-  // Exporting is only offered on a still world, so the file is the beach the
-  // player can see.
-  it('offers Export only while the simulation is paused', () => {
+  // Was once paused-only, on the belief that a running game could not be
+  // snapshotted coherently. It can: the whole export path is synchronous, so
+  // simStep cannot interleave with it, and AutoSaver has been snapshotting a
+  // running game every 5s all along. Making the player pause bought nothing.
+  it('offers Export whether the simulation is running or paused', () => {
     const toolbar = new Toolbar()
 
-    expect(exportButton(toolbar).disabled).toBe(true)
+    expect(exportButton(toolbar).disabled).toBe(false)
 
     toolbar.setPaused(true)
     expect(exportButton(toolbar).disabled).toBe(false)
 
     toolbar.setPaused(false)
-    expect(exportButton(toolbar).disabled).toBe(true)
+    expect(exportButton(toolbar).disabled).toBe(false)
+  })
+
+  it('fires onExport when Export is clicked on a running game', () => {
+    const toolbar = new Toolbar()
+    let exports = 0
+    toolbar.onExport(() => exports++)
+
+    exportButton(toolbar).click()
+
+    expect(exports).toBe(1)
   })
 
   it('fires onExport when Export is clicked on a paused game', () => {
@@ -247,16 +259,6 @@ describe('Toolbar', () => {
     exportButton(toolbar).click()
 
     expect(exports).toBe(1)
-  })
-
-  it('does not export while the simulation is running', () => {
-    const toolbar = new Toolbar()
-    let exports = 0
-    toolbar.onExport(() => exports++)
-
-    exportButton(toolbar).click()
-
-    expect(exports).toBe(0)
   })
 
   it('fires onImport when Import is clicked', () => {

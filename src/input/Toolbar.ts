@@ -23,7 +23,6 @@ export class Toolbar {
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private readonly lookButton: HTMLButtonElement
   private readonly pauseButton: HTMLButtonElement
-  private readonly exportButton: HTMLButtonElement
   private readonly readouts: HTMLSpanElement
   private readonly status: HTMLSpanElement
   private lookEnabled = false
@@ -74,9 +73,7 @@ export class Toolbar {
     })
     this.reflectPaused()
 
-    this.exportButton = this.addButton('export', '⬇ Export', () => this.exportHandler())
-    this.reflectExportable()
-
+    this.addButton('export', '⬇ Export', () => this.exportHandler())
     this.addButton('import', '⬆ Import', () => this.importHandler())
     this.addButton('new-game', '✦ New game', () => this.newGameHandler())
     this.addButton('reset', '↺ Reset water', () => this.resetHandler())
@@ -148,7 +145,6 @@ export class Toolbar {
   setPaused(paused: boolean): void {
     this.paused = paused
     this.reflectPaused()
-    this.reflectExportable()
   }
 
   setTool(mode: ToolMode): void {
@@ -165,12 +161,6 @@ export class Toolbar {
     this.pauseButton.textContent = this.paused ? PAUSE_LABELS.paused : PAUSE_LABELS.running
     this.pauseButton.setAttribute('aria-pressed', String(this.paused))
     highlight(this.pauseButton, this.paused)
-  }
-
-  // A file is only offered for a still world, so the export is the beach the
-  // player can see.
-  private reflectExportable(): void {
-    this.exportButton.disabled = !this.paused
   }
 
   private markSelected(mode: ToolMode): void {
