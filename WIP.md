@@ -18,18 +18,25 @@ the gate, and saying in the status which moment was captured.
 
 ## Current Step
 
-Step 2: the status names the moment the file captured, since the beach is
-still moving when it is written.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - suite green (366), tsc clean.
+⏸️ WAITING - suite green (368), tsc clean, production build clean.
 
 ## Completed
 
 - [x] Step 1: Export is offered whether the game is running or paused. The
       two tests asserting the gate were replaced rather than left, since
       they described the belief the gate was based on.
+- [x] Step 2: `exportStatus` names the moment captured as well as the file,
+      since a running beach has moved on by the time the file lands. Local
+      clock rather than the filename's UTC, because it is read at a glance
+      against a running sim. The first test written for it asserted a UTC
+      time and would have passed or failed on the runner's timezone.
+- [x] Step 3: docs. README and CLAUDE.md both recorded the gate as settled
+      behaviour, and CLAUDE.md's "an import arrives paused" note was
+      materially wrong once a file could carry `paused: false`.
 
 ## Shipped before this
 

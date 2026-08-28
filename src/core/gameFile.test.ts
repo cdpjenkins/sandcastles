@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { toGameFile, parseGameFile, exportFilename, FILE_ENCODING } from './GameFile.ts'
+import {
+  toGameFile, parseGameFile, exportFilename, exportStatus, FILE_ENCODING,
+} from './GameFile.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
 import { SNAPSHOT_VERSION, createSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
@@ -191,3 +193,28 @@ describe('exportFilename', () => {
 function aFileWith(overrides: Record<string, unknown>): string {
   return JSON.stringify({ ...toGameFile(aSnapshot(), SAVED_AT), ...overrides })
 }
+
+
+describe('exportStatus', () => {
+  // The beach is still moving when the file is written, so the message says
+  // which moment was captured rather than just that something was saved.
+  //
+  // Built as a local date rather than reusing SAVED_AT: that one is UTC, and
+  // asserting its clock time here would pass or fail on the runner's timezone.
+  it('names the file and the moment the beach was captured', () => {
+    const savedAt = new Date(2026, 7, 21, 17, 40, 0)
+
+    const status = exportStatus('sandcastles-2026-08-21T17-40-00.json', savedAt)
+
+    expect(status).toContain('sandcastles-2026-08-21T17-40-00.json')
+    expect(status).toMatch(/17:40:00|5:40:00/)
+  })
+
+  // Read at a glance next to a running sim, so the time is the local clock the
+  // player is looking at, not the UTC the filename sorts by.
+  it('shows the time on the local clock', () => {
+    const noon = new Date(2026, 7, 21, 12, 5, 9)
+
+    expect(exportStatus('beach.json', noon)).toMatch(/12:05:09/)
+  })
+})

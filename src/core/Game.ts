@@ -3,7 +3,7 @@ import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
 import { confirmNewGame } from './NewGame.ts'
 import { confirmImport } from './ImportBeach.ts'
-import { toGameFile, exportFilename } from './GameFile.ts'
+import { toGameFile, exportFilename, exportStatus } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
@@ -215,11 +215,13 @@ export class Game {
     this.updateHud()
   }
 
+  // Offered on a running game: the snapshot below is synchronous, so the sim
+  // cannot advance part-way through it and the file holds a single frame.
   private exportBeach(): void {
     const savedAt = new Date()
     const filename = exportFilename(savedAt)
     downloadJson(filename, JSON.stringify(toGameFile(this.takeSnapshot(), savedAt)))
-    this.toolbar.setStatus(`Saved ${filename}`)
+    this.toolbar.setStatus(exportStatus(filename, savedAt))
   }
 
   // An imported beach always arrives paused, because Export is only offered on

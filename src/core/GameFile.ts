@@ -121,6 +121,15 @@ export function parseGameFile(
   return isValidSnapshot(candidate, width, depth) ? candidate : null
 }
 
+// What the player is told after a download. The beach is still moving when the
+// file is written - export is offered on a running game - so this names the
+// moment that was captured rather than just reporting that something saved.
+// The local clock, not the filename's UTC: this is read at a glance against a
+// running sim.
+export function exportStatus(filename: string, savedAt: Date): string {
+  return `Saved ${filename} (beach at ${savedAt.toLocaleTimeString()})`
+}
+
 // Colons are illegal in a Windows filename. The ISO form is kept otherwise, so
 // a directory of exports sorts by name into the order they were saved.
 export function exportFilename(savedAt: Date): string {

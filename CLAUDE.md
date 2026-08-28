@@ -383,7 +383,7 @@ format to write at all.
 
 `GameFile.ts` (the file's shape, `toGameFile`, `parseGameFile`, `exportFilename`),
 `base64Cells.ts` (the layer packing) and `downloadFile.ts` (the download itself).
-Export is offered only on a paused game; import is not gated. Verified in Chrome:
+Neither export nor import is gated on pause. Verified in Chrome:
 revoking the object URL immediately after `link.click()` is fine, and the anchor
 does not need appending to the document. What was expensive to learn:
 
@@ -404,12 +404,35 @@ zero. The file would still load, and the beach would be quietly wrong.
 0x8000 and concatenates; `btoa` still sees one string. Only a full-size layer
 shows this — every smaller one passes, which is why the test uses 256×256.
 
-### An import arrives paused, and that is not a defect
+### A file carries the pause state it was saved in, and applying it is faithful
 
-Export is reachable only while paused, so every file carries `paused: true` and
-`applySnapshot` applies it faithfully. Importing into a running game therefore
-stops the sim. Same category as the Look panel dash below: the first thing here
-that will look like a bug.
+`applySnapshot` restores `paused` along with everything else, so importing a
+file saved while paused stops a running sim. That is the first thing here that
+will look like a bug and is not one.
+
+It used to be *every* file, because export was reachable only while paused.
+That gate is gone (below), so a file now carries whichever state it was saved
+in — which makes this less surprising, not more, but does mean the state is no
+longer a constant you can assume.
+
+### Exporting never needed a pause, and the gate was hiding that
+
+Export was offered only on a paused game, on the belief that a running sim
+could tear the file. It cannot. The whole path — `takeSnapshot` -> `toGameFile`
+-> `JSON.stringify` -> `downloadJson` — is synchronous with no `await`, so a
+click handler runs to completion before the next `requestAnimationFrame` and
+`simStep` cannot interleave with it. Every `snapshot()` copies its layers with
+`.slice()`.
+
+The proof it was never needed: `AutoSaver` has been snapshotting a *running*
+game every 5s through the same `takeSnapshot()` since it shipped. If that were
+unsafe, every autosave would already be corrupt.
+
+What the gate did cost is real: a player had to pause before they were allowed
+to save. The one genuine downside of removing it is that `JSON.stringify` on
+~2.8 MB blocks the main thread for a few hundred ms — invisible when paused, a
+brief stutter when running. That is a UX cost, not a correctness one, and
+`SimClock`'s `MAX_FRAME` clamp means the sim slows rather than jumping.
 
 ### A restore that has only ever run on a fresh game hides set-vs-add
 

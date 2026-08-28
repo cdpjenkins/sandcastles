@@ -30,8 +30,8 @@ Then open the local URL Vite prints. No build step needed for development.
 Click any cell to apply the active tool.
 
 **Export** and **Import** are buttons in the toolbar. Export writes the whole
-beach to a JSON file and is offered only while the simulation is paused, so the
-file is the beach you can see. Import asks before replacing what you have.
+beach to a JSON file, running or paused, and tells you the moment it captured.
+Import asks before replacing what you have.
 
 ## What's been built
 
@@ -84,7 +84,7 @@ Storage holds the eight `Float32Array` layers directly — IndexedDB structured-
 
 The whole beach can be written to a JSON file and read back, so a world can outlive the browser profile it was made in. The eight cell layers travel as base64 rather than JSON numbers: 2.80 MB against roughly 5 MB, and bit-exact where rounding for readability would round away the sediment columns and the drying film.
 
-Export is offered only while the simulation is paused, so the file is the beach the player can see. Import is not gated that way, but asks before replacing — there is no undo. An imported file is held to exactly the guard a stored save is, so anything unreadable, stale or corrupt is refused with a message rather than half-loaded.
+Export is offered whether the simulation is running or paused: the snapshot is taken synchronously, so the sim cannot advance part-way through it and the file always holds a single frame. The status names the moment captured, since a running beach has moved on by the time the file lands. Import asks before replacing — there is no undo. An imported file is held to exactly the guard a stored save is, so anything unreadable, stale or corrupt is refused with a message rather than half-loaded.
 
 ## Architecture
 
