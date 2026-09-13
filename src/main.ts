@@ -8,4 +8,13 @@ import { IndexedDbSnapshotStore } from './core/IndexedDbSnapshotStore.ts'
 const store = new IndexedDbSnapshotStore()
 const saved = await loadSnapshot(store, GRID_WIDTH, GRID_DEPTH)
 
-new Game(store, saved)
+const game = new Game(store, saved)
+
+// A console handle on the running game, under `npm run dev` only: ES modules do
+// not put their bindings on the global object, so without this nothing in here
+// is reachable from DevTools. `game.isoCamera.snapshot()` is the camera's
+// look-at target on the ground plane. The literal `import.meta.env.DEV` is what
+// lets the production build drop this branch, so don't lift it into a constant.
+if (import.meta.env.DEV) {
+  Object.assign(globalThis, { game })
+}
