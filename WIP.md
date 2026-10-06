@@ -1,46 +1,31 @@
-# WIP: Export a running game
+# WIP: List the beach's water sources
 
-Export is offered only on a paused game, so saving a beach means pausing
-first. The gate was believed to be about coherence — "the export is the beach
-the player can see" — but it is not buying that:
+A source is a cell with a non-zero `grid.source` rate, and nothing in the game
+says where they are. Finding them meant reaching into the running game from
+the DevTools console (`game.grid.snapshot().source`, since `e449f4c`), which
+is a dev-server-only affordance and no use to a player who has lost track of
+a spring they dug.
 
-- The whole export path (`takeSnapshot` -> `toGameFile` -> `JSON.stringify` ->
-  `downloadJson`) is synchronous, with no `await` anywhere. A click handler
-  runs to completion before the next `requestAnimationFrame`, so `simStep`
-  cannot interleave with it.
-- Every `snapshot()` copies its layers with `.slice()`.
-- `AutoSaver` already snapshots a *running* game every 5s through the same
-  `takeSnapshot()`. If that were unsafe, autosave would have been corrupting
-  saves since it shipped.
-
-So a running export already yields a coherent single-frame snapshot. Removing
-the gate, and saying in the status which moment was captured.
+A toolbar button toggling a panel that lists them, alongside the Look panel
+and the help overlay.
 
 ## Current Step
 
-None - work complete.
+Step 2: `formatSourceList` renders the list for the panel.
 
 ## Status
 
-⏸️ WAITING - suite green (368), tsc clean, production build clean.
+🟢 GREEN - suite green (374), tsc clean.
 
 ## Completed
 
-- [x] Step 1: Export is offered whether the game is running or paused. The
-      two tests asserting the gate were replaced rather than left, since
-      they described the belief the gate was based on.
-- [x] Step 2: `exportStatus` names the moment captured as well as the file,
-      since a running beach has moved on by the time the file lands. Local
-      clock rather than the filename's UTC, because it is read at a glance
-      against a running sim. The first test written for it asserted a UTC
-      time and would have passed or failed on the runner's timezone.
-- [x] Step 3: docs. README and CLAUDE.md both recorded the gate as settled
-      behaviour, and CLAUDE.md's "an import arrives paused" note was
-      materially wrong once a file could carry `paused: false`.
+- [x] Step 1: `getSources` scans the grid for every non-zero source cell,
+      reporting the rate rather than assuming `STREAM_RATE`. Scanned rather
+      than tracked alongside the layer: five separate paths write `source`,
+      so a cached list would have five places to drift.
 
 ## Shipped before this
 
-- A menu option to start a new game (`89a274d`..`5510c69`), and the same
-  testable-confirmation treatment for import (`2e7aeb7`).
-- A gentler swell so a shoreline castle weathers rather than dissolves
-  (`966ac94`), with the castle/refraction trade-off recorded (`c3ad8eb`).
+- A console handle on the running game under `npm run dev` (`e449f4c`).
+- Export offered on a running game, naming the moment captured
+  (`9af657f`..`abf1621`).
