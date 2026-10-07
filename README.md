@@ -29,6 +29,11 @@ Then open the local URL Vite prints. No build step needed for development.
 
 Click any cell to apply the active tool.
 
+**Sources** is a toolbar toggle that lists every water source on the beach -
+its cell and its rate - in a panel, bottom-right. A source is any cell with a
+non-zero inflow rate, so this is the one place to find a spring you dug and
+lost track of. Long lists are capped at twenty, with the rest counted.
+
 **Export** and **Import** are buttons in the toolbar. Export writes the whole
 beach to a JSON file, running or paused, and tells you the moment it captured.
 Import asks before replacing what you have.
@@ -110,8 +115,9 @@ src/
 ├── input/
 │   ├── KeyBindings.ts      Key → tool
 │   ├── LookInfo.ts         Per-cell readout for the Look tool
+│   ├── SourceList.ts       Finds and formats the beach's water sources
 │   ├── Picker.ts           Raycast → grid cell
-│   ├── Toolbar.ts          Tools, pause, look, reset, export, import, readouts
+│   ├── Toolbar.ts          Tools, pause, look, sources, reset, export, import, readouts
 │   └── Tools.ts            Dig / dump pure functions
 ├── render/
 │   ├── IsoCamera.ts        Orthographic isometric camera

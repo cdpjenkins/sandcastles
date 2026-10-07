@@ -11,11 +11,11 @@ and the help overlay.
 
 ## Current Step
 
-Step 5: docs.
+None - work complete.
 
 ## Status
 
-🟢 GREEN - suite green (386), tsc clean, production build clean.
+⏸️ WAITING - suite green (386), tsc clean, production build clean.
 
 ## Completed
 
@@ -30,6 +30,9 @@ Step 5: docs.
 - [x] Step 4: the panel, bottom-right so it misses the Look panel, rescanned
       per frame while open (measured 0.151 ms, 0.9% of a 60fps frame) rather
       than refreshed at the five places that write `source`.
+- [x] Step 5: docs. README's controls section and tree, and CLAUDE.md on why
+      the list is scanned rather than cached and why the panel's visibility
+      stays out of the snapshot.
 
 ## Shipped before this
 

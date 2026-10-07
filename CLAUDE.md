@@ -514,6 +514,32 @@ A file that will not parse is refused *before* the player is asked. Asking
 first would have them agree to lose their beach only to be told the file was
 no good.
 
+## Listing the water sources
+
+`SourceList.ts` (`getSources`, `formatSourceList`), a Sources toggle on the
+toolbar and a panel in `Game`. What was expensive to learn:
+
+### A list of sources must be scanned, not tracked
+
+Five separate paths write `grid.source`: the Stream tool, `resetWater`, an
+import, a new game and a restore. A list cached alongside the layer therefore
+has five places to fall out of step, and a stale entry is wrong in the one way
+nobody would notice - it names a cell that looks exactly like a source and
+behaves nothing like one.
+
+So the panel rescans the whole grid every frame while it is open. That sounds
+expensive and is not: the full 256x256 scan and format measures 0.151 ms, 0.9%
+of a 60fps frame, and is paid only while the panel is open. Measured before
+believing it, because the instinct to cache it is strong.
+
+### The panel is not part of the beach
+
+`sourcesVisible` is deliberately absent from `GameSnapshot`, where
+`lookEnabled` sits. The panel answers a question *about* the beach rather than
+being part of it, so it does not survive a reload - and keeping it out means
+the save format did not need a version bump for a read-only view. Recorded so
+the asymmetry with `lookEnabled` does not read as an oversight.
+
 ## The Look panel's dash means dry, and dry means exactly zero
 
 `formatLookInfo` prints `Water top —` when `waterDepth === 0`, a strict
