@@ -11,11 +11,11 @@ and the help overlay.
 
 ## Current Step
 
-Step 2: `formatSourceList` renders the list for the panel.
+Step 3: a Sources toggle button on the toolbar.
 
 ## Status
 
-🟢 GREEN - suite green (374), tsc clean.
+🟢 GREEN - suite green (381), tsc clean.
 
 ## Completed
 
@@ -23,6 +23,8 @@ Step 2: `formatSourceList` renders the list for the panel.
       reporting the rate rather than assuming `STREAM_RATE`. Scanned rather
       than tracked alongside the layer: five separate paths write `source`,
       so a cached list would have five places to drift.
+- [x] Step 2: `formatSourceList` renders it, capped at 20 listed cells with
+      the rest counted, and the empty case saying how to dig a source.
 
 ## Shipped before this
 

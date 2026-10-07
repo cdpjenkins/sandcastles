@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Grid, STREAM_RATE } from '../core/Grid.ts'
-import { getSources } from './SourceList.ts'
+import { getSources, formatSourceList, type SourceCell } from './SourceList.ts'
 
 describe('getSources', () => {
   it('finds nothing on a grid nobody has dug a spring into', () => {
@@ -49,5 +49,65 @@ describe('getSources', () => {
     grid.initSpring(STREAM_RATE)
 
     expect(getSources(grid)).toHaveLength(1)
+  })
+})
+
+describe('formatSourceList', () => {
+  const cells = (...coords: [number, number][]): SourceCell[] =>
+    coords.map(([x, z]) => ({ x, z, rate: STREAM_RATE }))
+
+  it('counts the sources in the heading', () => {
+    const text = formatSourceList(cells([1, 2], [3, 4]))
+
+    expect(text).toContain('Sources (2)')
+  })
+
+  it('gives one line per source, with its coordinates and rate', () => {
+    const lines = formatSourceList(cells([12, 40], [33, 51])).split('\n')
+
+    expect(lines.some((l) => l.includes('12') && l.includes('40') && l.includes('1.00'))).toBe(true)
+    expect(lines.some((l) => l.includes('33') && l.includes('51') && l.includes('1.00'))).toBe(true)
+  })
+
+  it('shows the rate a source actually has, not the one the tool sets', () => {
+    const text = formatSourceList([{ x: 1, z: 1, rate: 0.25 }])
+
+    expect(text).toContain('0.25')
+  })
+
+  // The panel says what to do about it, because the empty list is what a
+  // player sees on a beach they have not dug a spring into yet - the one
+  // moment the list cannot explain itself.
+  it('says there are none, and how to make one', () => {
+    const text = formatSourceList([])
+
+    expect(text).toContain('Sources (0)')
+    expect(text).toMatch(/Stream/)
+  })
+
+  // The Stream tool paints a cell per pick, so a player who drags it can leave
+  // hundreds behind. An uncapped list would run off the bottom of the screen
+  // and bury the count, which is the part worth reading.
+  it('caps a long list rather than running off the screen', () => {
+    const many = cells(...Array.from({ length: 60 }, (_, i): [number, number] => [i, i]))
+
+    const lines = formatSourceList(many).split('\n')
+
+    expect(lines.length).toBeLessThan(30)
+  })
+
+  it('still reports the true total when the list is capped, and how many it hid', () => {
+    const many = cells(...Array.from({ length: 60 }, (_, i): [number, number] => [i, i]))
+
+    const text = formatSourceList(many)
+
+    expect(text).toContain('Sources (60)')
+    expect(text).toContain('40 more')
+  })
+
+  it('does not claim to have hidden anything when it listed them all', () => {
+    const text = formatSourceList(cells([1, 1], [2, 2]))
+
+    expect(text).not.toMatch(/more/)
   })
 })
