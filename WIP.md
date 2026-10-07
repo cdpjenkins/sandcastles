@@ -11,11 +11,11 @@ and the help overlay.
 
 ## Current Step
 
-Step 4: the panel itself, wired up in `Game`.
+Step 5: docs.
 
 ## Status
 
-🟢 GREEN - suite green (386), tsc clean.
+🟢 GREEN - suite green (386), tsc clean, production build clean.
 
 ## Completed
 
@@ -27,6 +27,9 @@ Step 4: the panel itself, wired up in `Game`.
       the rest counted, and the empty case saying how to dig a source.
 - [x] Step 3: a Sources toggle on the toolbar, beside Look and built the
       same way, ungated on pause.
+- [x] Step 4: the panel, bottom-right so it misses the Look panel, rescanned
+      per frame while open (measured 0.151 ms, 0.9% of a 60fps frame) rather
+      than refreshed at the five places that write `source`.
 
 ## Shipped before this
 
