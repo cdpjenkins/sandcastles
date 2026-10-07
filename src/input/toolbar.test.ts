@@ -48,6 +48,12 @@ const importButton = (toolbar: Toolbar): HTMLButtonElement =>
 const newGameButton = (toolbar: Toolbar): HTMLButtonElement =>
   toolbar.element.querySelector<HTMLButtonElement>('button[data-action="new-game"]')!
 
+const sourcesButton = (toolbar: Toolbar): HTMLButtonElement =>
+  toolbar.element.querySelector<HTMLButtonElement>('button[data-action="sources"]')!
+
+const sourcesPressed = (toolbar: Toolbar): boolean =>
+  sourcesButton(toolbar).getAttribute('aria-pressed') === 'true'
+
 const status = (toolbar: Toolbar): HTMLElement =>
   toolbar.element.querySelector<HTMLElement>('[data-role="status"]')!
 
@@ -301,6 +307,58 @@ describe('Toolbar', () => {
 
     toolbar.setPaused(true)
     expect(newGameButton(toolbar).disabled).toBe(false)
+  })
+
+  it('toggles Sources on and off, firing onSourcesToggle with the new state', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onSourcesToggle((visible) => toggles.push(visible))
+
+    sourcesButton(toolbar).click()
+    sourcesButton(toolbar).click()
+
+    expect(toggles).toEqual([true, false])
+  })
+
+  it('reflects the Sources button pressed state on click', () => {
+    const toolbar = new Toolbar()
+
+    sourcesButton(toolbar).click()
+
+    expect(sourcesPressed(toolbar)).toBe(true)
+  })
+
+  it('setSourcesVisible reflects the pressed state without firing onSourcesToggle', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+    toolbar.onSourcesToggle((visible) => toggles.push(visible))
+
+    toolbar.setSourcesVisible(true)
+
+    expect(sourcesPressed(toolbar)).toBe(true)
+    expect(toggles).toEqual([])
+  })
+
+  it('setSourcesVisible keeps the toggle in sync so the next click flips from it', () => {
+    const toolbar = new Toolbar()
+    const toggles: boolean[] = []
+
+    toolbar.setSourcesVisible(true)
+    toolbar.onSourcesToggle((visible) => toggles.push(visible))
+    sourcesButton(toolbar).click()
+
+    expect(toggles).toEqual([false])
+  })
+
+  // Reading where the springs are says nothing about the beach, so there is
+  // nothing to gate: the panel is as useful on a frozen game as a running one.
+  it('offers Sources whether the simulation is running or paused', () => {
+    const toolbar = new Toolbar()
+
+    expect(sourcesButton(toolbar).disabled).toBe(false)
+
+    toolbar.setPaused(true)
+    expect(sourcesButton(toolbar).disabled).toBe(false)
   })
 
   it('shows a status message', () => {

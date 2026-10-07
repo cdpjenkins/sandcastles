@@ -22,13 +22,16 @@ export class Toolbar {
   private readonly radios = new Map<ToolMode, HTMLInputElement>()
   private readonly labels = new Map<ToolMode, HTMLLabelElement>()
   private readonly lookButton: HTMLButtonElement
+  private readonly sourcesButton: HTMLButtonElement
   private readonly pauseButton: HTMLButtonElement
   private readonly readouts: HTMLSpanElement
   private readonly status: HTMLSpanElement
   private lookEnabled = false
+  private sourcesVisible = false
   private paused = false
   private toolChangeHandler: (mode: ToolMode) => void = () => {}
   private lookToggleHandler: (enabled: boolean) => void = () => {}
+  private sourcesToggleHandler: (visible: boolean) => void = () => {}
   private resetHandler: () => void = () => {}
   private pauseToggleHandler: (paused: boolean) => void = () => {}
   private exportHandler: () => void = () => {}
@@ -66,6 +69,12 @@ export class Toolbar {
       this.lookToggleHandler(this.lookEnabled)
     })
     this.reflectLook()
+
+    this.sourcesButton = this.addButton('sources', '🚰 Sources', () => {
+      this.setSourcesVisible(!this.sourcesVisible)
+      this.sourcesToggleHandler(this.sourcesVisible)
+    })
+    this.reflectSources()
 
     this.pauseButton = this.addButton('pause', PAUSE_LABELS.running, () => {
       this.setPaused(!this.paused)
@@ -107,6 +116,10 @@ export class Toolbar {
     this.lookToggleHandler = handler
   }
 
+  onSourcesToggle(handler: (visible: boolean) => void): void {
+    this.sourcesToggleHandler = handler
+  }
+
   onPauseToggle(handler: (paused: boolean) => void): void {
     this.pauseToggleHandler = handler
   }
@@ -142,6 +155,11 @@ export class Toolbar {
     this.reflectLook()
   }
 
+  setSourcesVisible(visible: boolean): void {
+    this.sourcesVisible = visible
+    this.reflectSources()
+  }
+
   setPaused(paused: boolean): void {
     this.paused = paused
     this.reflectPaused()
@@ -155,6 +173,11 @@ export class Toolbar {
   private reflectLook(): void {
     this.lookButton.setAttribute('aria-pressed', String(this.lookEnabled))
     highlight(this.lookButton, this.lookEnabled)
+  }
+
+  private reflectSources(): void {
+    this.sourcesButton.setAttribute('aria-pressed', String(this.sourcesVisible))
+    highlight(this.sourcesButton, this.sourcesVisible)
   }
 
   private reflectPaused(): void {

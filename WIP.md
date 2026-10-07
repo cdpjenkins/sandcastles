@@ -11,11 +11,11 @@ and the help overlay.
 
 ## Current Step
 
-Step 3: a Sources toggle button on the toolbar.
+Step 4: the panel itself, wired up in `Game`.
 
 ## Status
 
-🟢 GREEN - suite green (381), tsc clean.
+🟢 GREEN - suite green (386), tsc clean.
 
 ## Completed
 
@@ -25,6 +25,8 @@ Step 3: a Sources toggle button on the toolbar.
       so a cached list would have five places to drift.
 - [x] Step 2: `formatSourceList` renders it, capped at 20 listed cells with
       the rest counted, and the empty case saying how to dig a source.
+- [x] Step 3: a Sources toggle on the toolbar, beside Look and built the
+      same way, ungated on pause.
 
 ## Shipped before this
 
