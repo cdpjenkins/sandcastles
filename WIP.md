@@ -15,7 +15,7 @@ None - work complete.
 
 ## Status
 
-⏸️ WAITING - suite green (386), tsc clean, production build clean.
+⏸️ WAITING - suite green (387), tsc clean, production build clean. - suite green (386), tsc clean, production build clean.
 
 ## Completed
 
@@ -37,6 +37,9 @@ None - work complete.
       exported file carries `paused: true` - untrue since `9af657f` removed
       the export gate. Checked for siblings; CLAUDE.md's mentions are
       deliberate past tense and already right.
+- [x] Follow-up: `F` toggles the Sources panel, via `setSourcesVisible` so the
+      button stays in step. `keyBindings.test.ts` now guards every key `Game`
+      binds inline against a tool claiming it; verified by mutation.
 
 ## Shipped before this
 

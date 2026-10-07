@@ -104,6 +104,7 @@ export class Game {
       'D        Dump (pour sand)',
       'W        Water stream',
       'L        Toggle Look (independent of the tool)',
+      'F        Toggle the Sources list (find the springs)',
       'R        Reset water (or the Reset button)',
       'N        New game (asks first)',
       'P        Pause / resume the simulation',
@@ -344,6 +345,11 @@ export class Game {
     }
     if (e.key === 'l' || e.key === 'L') {
       this.setLook(!this.lookEnabled)
+    }
+    // Not S, which the Spade has, and toolForKey lower-cases so Shift+S is
+    // taken too. F is for finding the springs.
+    if (e.key === 'f' || e.key === 'F') {
+      this.setSourcesVisible(!this.sourcesVisible)
     }
   }
 

@@ -23,13 +23,14 @@ Then open the local URL Vite prints. No build step needed for development.
 | `R` | Reset all water and stream sources |
 | `P` | Pause / resume the simulation |
 | `L` | Toggle the Look tool (per-cell readout) |
+| `F` | Toggle the Sources list (find the springs) |
 | `?` | Toggle controls overlay |
 | Pinch | Zoom |
 | Two-finger drag | Pan |
 
 Click any cell to apply the active tool.
 
-**Sources** is a toolbar toggle that lists every water source on the beach -
+**Sources** is a toolbar toggle, also on the `F` key, that lists every water source on the beach -
 its cell and its rate - in a panel, bottom-right. A source is any cell with a
 non-zero inflow rate, so this is the one place to find a spring you dug and
 lost track of. Long lists are capped at twenty, with the rest counted.

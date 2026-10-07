@@ -22,12 +22,18 @@ describe('toolForKey', () => {
   })
 
   it('selects nothing for a key with no tool bound', () => {
-    // 'Shift' earns its place: holding shift to type 'D' fires its own keydown,
-    // and 'p' and 'l' are live keys that must stay out of the tool bar.
+    // 'Shift' earns its place: holding shift to type 'D' fires its own keydown.
     expect(toolForKey('Shift')).toBeNull()
-    expect(toolForKey('p')).toBeNull()
-    expect(toolForKey('l')).toBeNull()
     expect(toolForKey('')).toBeNull()
+  })
+
+  // Game binds these inline and cannot be built under jsdom, so nothing else
+  // can catch a tool quietly claiming one of them - the tool would win, since
+  // selectTool and the panel toggle would both fire on the same press.
+  it('leaves the keys Game binds itself free of tools', () => {
+    for (const key of ['l', 'f', 'r', 'n', 'p', '?']) {
+      expect(toolForKey(key)).toBeNull()
+    }
   })
 
   it('makes every tool reachable from the keyboard', () => {
