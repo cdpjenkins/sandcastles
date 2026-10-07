@@ -33,6 +33,10 @@ None - work complete.
 - [x] Step 5: docs. README's controls section and tree, and CLAUDE.md on why
       the list is scanned rather than cached and why the panel's visibility
       stays out of the snapshot.
+- [x] Follow-up: corrected `importBeach`'s comment, which still claimed every
+      exported file carries `paused: true` - untrue since `9af657f` removed
+      the export gate. Checked for siblings; CLAUDE.md's mentions are
+      deliberate past tense and already right.
 
 ## Shipped before this
 

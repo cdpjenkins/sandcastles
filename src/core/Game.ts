@@ -237,8 +237,11 @@ export class Game {
     this.toolbar.setStatus(exportStatus(filename, savedAt))
   }
 
-  // An imported beach always arrives paused, because Export is only offered on
-  // a paused game, so every file carries paused: true.
+  // An imported beach arrives in whichever state it was saved in: adoptUiState
+  // takes `paused` from the file along with everything else, so a file saved
+  // while paused stops a running sim. That is faithful rather than a bug. It
+  // used to be every file, because Export was reachable only while paused;
+  // 9af657f dropped that gate, so the state is no longer a constant here.
   private importBeach(text: string): void {
     const { imported, refusal } = confirmImport(
       this.snapshotComponents, text, GRID_WIDTH, GRID_DEPTH,
