@@ -26,12 +26,16 @@ Two traps this has to clear: the trigger moves from `click` to `mousedown`
 
 ## Current Step
 
-Step 2: `Picker` hears press and release; `Game.loop` spends what the
-repeater owes.
+Step 3: docs - README controls, CLAUDE.md on what was expensive to learn.
 
 ## Status
 
-⏸️ WAITING - step 1 committed, suite green (404), tsc clean.
+⏸️ WAITING - step 2 committed, suite green (407), tsc clean, production
+build clean.
+
+Browser check still outstanding: nothing in the suite can press a mouse
+button, so the feel of the hold and the off-canvas release want trying by
+hand.
 
 ## Completed
 
@@ -39,6 +43,9 @@ repeater owes.
       repeats at `REPEAT_HZ`, carries a part-interval across frames, clamps a
       stalled frame so it cannot burst, and forgets both cell and accumulator
       on a release. 13 tests; the clamp one mutation-verified.
+- [x] Step 2: `Picker` fires on `mousedown` and hears `mouseup`/`blur` on the
+      window; `Game.loop` spends what the repeater owes. `repeatsOnHold` keeps
+      the which-tools-repeat branch out of untestable `Game`.
 
 ## Shipped before this
 

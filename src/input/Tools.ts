@@ -31,3 +31,11 @@ export function dump(grid: Grid, x: number, z: number, bucket: Bucket): boolean 
   grid.setSandHeight(x, z, sand + removed)
   return true
 }
+
+// Whether holding the button down should keep applying this tool. Spade and
+// Dump repeat; Stream places one source per click, since a repeat on the
+// pressed cell achieves nothing and the tool is the one that can flood the
+// beach by accident.
+export function repeatsOnHold(mode: ToolMode): boolean {
+  return mode === ToolMode.Spade || mode === ToolMode.Dump
+}

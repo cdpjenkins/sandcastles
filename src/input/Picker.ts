@@ -3,12 +3,14 @@ import type { GridCoord } from '../types.ts'
 
 export type CellPickHandler = (coord: GridCoord) => void
 export type CellHoverHandler = (coord: GridCoord | null) => void
+export type ReleaseHandler = () => void
 
 export class Picker {
   private readonly raycaster = new THREE.Raycaster()
   private readonly ndc = new THREE.Vector2()
   private readonly handlers: CellPickHandler[] = []
   private readonly hoverHandlers: CellHoverHandler[] = []
+  private readonly releaseHandlers: ReleaseHandler[] = []
   private readonly camera: THREE.Camera
   private readonly terrain: THREE.Mesh
   private readonly gridWidth: number
@@ -25,12 +27,25 @@ export class Picker {
     this.terrain = terrain
     this.gridWidth = gridWidth
     this.gridDepth = gridDepth
-    canvas.addEventListener('click', this.onClick)
+    // mousedown rather than click: a held button has to start acting on the
+    // way down, and keeping both would apply the tool twice per press.
+    canvas.addEventListener('mousedown', this.onMouseDown)
     canvas.addEventListener('mousemove', this.onMouseMove)
+    // On the window, not the canvas. A button released after the cursor has
+    // wandered off the canvas - or off the page, or while another window took
+    // focus - would otherwise never be seen let go, and the tool would keep
+    // repeating forever.
+    window.addEventListener('mouseup', this.onMouseUp)
+    window.addEventListener('blur', this.onMouseUp)
   }
 
+  // Fired on a press, by the button going down.
   onCellPick(handler: CellPickHandler): void {
     this.handlers.push(handler)
+  }
+
+  onRelease(handler: ReleaseHandler): void {
+    this.releaseHandlers.push(handler)
   }
 
   onHover(handler: CellHoverHandler): void {
@@ -55,10 +70,14 @@ export class Picker {
     return { x, z }
   }
 
-  private onClick = (e: MouseEvent): void => {
+  private onMouseDown = (e: MouseEvent): void => {
     const coord = this.pickAt(e.clientX, e.clientY, e.target as HTMLCanvasElement)
     if (coord === null) return
     for (const h of this.handlers) h(coord)
+  }
+
+  private onMouseUp = (): void => {
+    for (const h of this.releaseHandlers) h()
   }
 
   private onMouseMove = (e: MouseEvent): void => {

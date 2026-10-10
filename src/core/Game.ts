@@ -13,7 +13,8 @@ import { Renderer } from '../render/Renderer.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
-import { ToolMode, dig, dump } from '../input/Tools.ts'
+import { ToolMode, dig, dump, repeatsOnHold } from '../input/Tools.ts'
+import { ToolRepeater, REPEAT_HZ } from '../input/ToolRepeater.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { Hud } from '../input/Hud.ts'
@@ -57,6 +58,7 @@ export class Game {
   private readonly isoCamera: IsoCamera
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
+  private readonly repeater: ToolRepeater
   private readonly toolbar: Toolbar
   private readonly hud: Hud
   private readonly autoSaver: AutoSaver
@@ -174,7 +176,12 @@ export class Game {
       this.grid.width,
       this.grid.depth,
     )
-    this.picker.onCellPick(({ x, z }) => this.onCellPick(x, z))
+    // The press applies the tool straight away through the repeater, which
+    // owes its first application immediately; loop() spends the rest for as
+    // long as the button is down.
+    this.repeater = new ToolRepeater(REPEAT_HZ, MAX_FRAME)
+    this.picker.onCellPick(({ x, z }) => this.onCellPress(x, z))
+    this.picker.onRelease(() => this.repeater.release())
     this.picker.onHover((coord) => {
       this.hoverCell = coord
     })
@@ -291,7 +298,18 @@ export class Game {
     })
   }
 
-  private onCellPick(x: number, z: number): void {
+  private onCellPress(x: number, z: number): void {
+    if (!repeatsOnHold(this.toolMode)) {
+      this.applyTool(x, z)
+      return
+    }
+    // Pinned to the cell the button went down on, so a hold drills one hole
+    // rather than painting wherever the cursor wanders. press() owes the first
+    // application, which loop() spends on the very next frame.
+    this.repeater.press({ x, z })
+  }
+
+  private applyTool(x: number, z: number): void {
     if (this.toolMode === ToolMode.Stream) {
       this.grid.setSourceRate(x, z, STREAM_RATE)
       this.updateHud()
@@ -308,6 +326,16 @@ export class Game {
       this.terrain.updateDirtyRegion(x, z, x, z)
       this.updateHud()
     }
+  }
+
+  // What a held button owes this frame. Driven by the frame clock rather than
+  // the sim clock, so a hold keeps digging while the game is paused - which it
+  // always has.
+  private spendHeldTool(frameSeconds: number): void {
+    const cell = this.repeater.cell
+    if (cell === null) return
+    const applications = this.repeater.due(frameSeconds)
+    for (let i = 0; i < applications; i++) this.applyTool(cell.x, cell.z)
   }
 
   private selectTool(mode: ToolMode): void {
@@ -410,6 +438,7 @@ export class Game {
     this.lastTime = timestamp
 
     this.autoSaver.tick(Math.min(frameSeconds, MAX_FRAME))
+    this.spendHeldTool(frameSeconds)
 
     const steps = this.simClock.advance(frameSeconds, this.paused)
     for (let i = 0; i < steps; i++) this.simStep(SIM_STEP)

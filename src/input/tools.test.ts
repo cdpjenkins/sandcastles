@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dig, dump, DIG_AMOUNT, DUMP_AMOUNT } from './Tools.ts'
+import { dig, dump, repeatsOnHold, ToolMode, DIG_AMOUNT, DUMP_AMOUNT } from './Tools.ts'
 import { Grid } from '../core/Grid.ts'
 import { Bucket } from '../core/Bucket.ts'
 
@@ -126,5 +126,24 @@ describe('dump', () => {
     const result = dump(grid, 5, 5, bucket)
     expect(result).toBe(false)
     expect(grid.getSandHeight(5, 5)).toBe(0)
+  })
+})
+
+describe('repeatsOnHold', () => {
+  // Game cannot be built under jsdom, so a branch left inline there is one
+  // nothing catches if it is ever inverted - and inverting this one paints a
+  // run of springs across the beach on a single drag.
+  it('repeats the spade', () => {
+    expect(repeatsOnHold(ToolMode.Spade)).toBe(true)
+  })
+
+  it('repeats the dump', () => {
+    expect(repeatsOnHold(ToolMode.Dump)).toBe(true)
+  })
+
+  it('does not repeat the stream', () => {
+    // One click, one source. A repeat on the pressed cell would be a no-op
+    // anyway, and the tool is the one that can flood the beach by accident.
+    expect(repeatsOnHold(ToolMode.Stream)).toBe(false)
   })
 })
