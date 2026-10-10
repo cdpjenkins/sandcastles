@@ -26,11 +26,24 @@ Two traps this has to clear: the trigger moves from `click` to `mousedown`
 
 ## Current Step
 
-None - work complete.
+Step 4: a tap must cost exactly one application.
+
+`press()` primed the accumulator with a full interval, so the repeat began
+the instant the button went down and a tap paid for however many intervals
+it happened to span. Measured at 60fps: a 50ms tap digs once, **100ms digs
+twice**, 200ms three times, 300ms four. An ordinary click was digging twice.
+
+So the repeat needs a threshold, the way keyboard auto-repeat does:
+`HOLD_DELAY` of 0.3s before the first repeat, then `REPEAT_HZ`. A tap
+shorter than the delay earns exactly one application however many frames it
+spans.
 
 ## Status
 
-⏸️ WAITING - suite green (407), tsc clean, production build clean.
+🟢 GREEN - 22 repeater tests, suite green (416), tsc clean, build clean.
+
+Measured end to end with a real Grid and Bucket, digs per hold: 0ms 1,
+16ms 1, 50ms 1, 100ms 1, 200ms 1, 250ms 1, 300ms 2, 500ms 4, 1s 9, 2s 19.
 
 Browser check still outstanding: nothing in the suite can press a mouse
 button, so the feel of the hold and the off-canvas release want trying by

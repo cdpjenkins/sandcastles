@@ -14,7 +14,7 @@ import { IsoCamera } from '../render/IsoCamera.ts'
 import { TerrainMesh } from '../render/TerrainMesh.ts'
 import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump, repeatsOnHold } from '../input/Tools.ts'
-import { ToolRepeater, REPEAT_HZ } from '../input/ToolRepeater.ts'
+import { ToolRepeater, REPEAT_HZ, HOLD_DELAY } from '../input/ToolRepeater.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { Hud } from '../input/Hud.ts'
@@ -178,10 +178,9 @@ export class Game {
       this.grid.width,
       this.grid.depth,
     )
-    // The press applies the tool straight away through the repeater, which
-    // owes its first application immediately; loop() spends the rest for as
-    // long as the button is down.
-    this.repeater = new ToolRepeater(REPEAT_HZ, MAX_FRAME)
+    // onCellPress applies the press itself; the repeater owes only the repeats
+    // that a hold past HOLD_DELAY earns, and loop() spends those.
+    this.repeater = new ToolRepeater(REPEAT_HZ, HOLD_DELAY, MAX_FRAME)
     this.picker.onCellPick(({ x, z }) => this.onCellPress(x, z))
     this.picker.onRelease(() => this.repeater.release())
     this.picker.onHover((coord) => {
@@ -301,13 +300,15 @@ export class Game {
   }
 
   private onCellPress(x: number, z: number): void {
-    if (!repeatsOnHold(this.toolMode)) {
-      this.applyTool(x, z)
-      return
-    }
+    // Every press applies the tool once, here and now. Unconditionally, and
+    // before the repeater is told anything: a single tap must cost exactly one
+    // application, and routing that through the frame loop is what made it cost
+    // two - an ordinary 100ms click spanned an interval and was paid twice.
+    this.applyTool(x, z)
+    if (!repeatsOnHold(this.toolMode)) return
     // Pinned to the cell the button went down on, so a hold drills one hole
-    // rather than painting wherever the cursor wanders. press() owes the first
-    // application, which loop() spends on the very next frame.
+    // rather than painting wherever the cursor wanders. Nothing more happens
+    // unless the button stays down past HOLD_DELAY.
     this.repeater.press({ x, z })
   }
 
@@ -330,9 +331,10 @@ export class Game {
     }
   }
 
-  // What a held button owes this frame. Driven by the frame clock rather than
-  // the sim clock, so a hold keeps digging while the game is paused - which it
-  // always has.
+  // The repeats a held button owes this frame - never the press's own
+  // application, which onCellPress has already applied. Driven by the frame
+  // clock rather than the sim clock, so a hold keeps digging while the game is
+  // paused - which it always has.
   private spendHeldTool(frameSeconds: number): void {
     const cell = this.repeater.cell
     if (cell === null) return
