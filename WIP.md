@@ -1,48 +1,36 @@
-# WIP: List the beach's water sources
+# WIP: A toolbar that fits the screen
 
-A source is a cell with a non-zero `grid.source` rate, and nothing in the game
-says where they are. Finding them meant reaching into the running game from
-the DevTools console (`game.grid.snapshot().source`, since `e449f4c`), which
-is a dev-server-only affordance and no use to a player who has lost track of
-a spring they dug.
+The bar is one unwrapped flex row, `position:fixed` inside a `body` with
+`overflow:hidden`, so anything past the right edge is not merely ugly - it is
+unclickable. Estimated intrinsic width ~2123px with a status message showing,
+~1600px at rest, against 46% of that being the ten controls and **49% being
+the `readouts` and `status` spans**.
 
-A toolbar button toggling a panel that lists them, alongside the Look panel
-and the help overlay.
+So two changes, in that order of value:
+
+- **D**: move `readouts` and `status` out of the bar into their own HUD,
+  bottom-left. Removes ~1042px, the single biggest win, and is the only part
+  aimed at what actually drives the width.
+- **C**: `flex-wrap:wrap` and a `max-width` on the bar, so nothing can ever be
+  unreachable again regardless of screen size, label changes or future
+  buttons.
+
+A submenu was considered and rejected: it addresses the 46%, not the 49%, and
+would still overflow at 1280.
 
 ## Current Step
 
-None - work complete.
+Step 2: the toolbar gives them up, and `Game` places the HUD.
 
 ## Status
 
-⏸️ WAITING - suite green (387), tsc clean, production build clean. - suite green (386), tsc clean, production build clean.
+🟢 GREEN - suite green (392), tsc clean.
 
 ## Completed
 
-- [x] Step 1: `getSources` scans the grid for every non-zero source cell,
-      reporting the rate rather than assuming `STREAM_RATE`. Scanned rather
-      than tracked alongside the layer: five separate paths write `source`,
-      so a cached list would have five places to drift.
-- [x] Step 2: `formatSourceList` renders it, capped at 20 listed cells with
-      the rest counted, and the empty case saying how to dig a source.
-- [x] Step 3: a Sources toggle on the toolbar, beside Look and built the
-      same way, ungated on pause.
-- [x] Step 4: the panel, bottom-right so it misses the Look panel, rescanned
-      per frame while open (measured 0.151 ms, 0.9% of a 60fps frame) rather
-      than refreshed at the five places that write `source`.
-- [x] Step 5: docs. README's controls section and tree, and CLAUDE.md on why
-      the list is scanned rather than cached and why the panel's visibility
-      stays out of the snapshot.
-- [x] Follow-up: corrected `importBeach`'s comment, which still claimed every
-      exported file carries `paused: true` - untrue since `9af657f` removed
-      the export gate. Checked for siblings; CLAUDE.md's mentions are
-      deliberate past tense and already right.
-- [x] Follow-up: `F` toggles the Sources panel, via `setSourcesVisible` so the
-      button stays in step. `keyBindings.test.ts` now guards every key `Game`
-      binds inline against a tool claiming it; verified by mutation.
+- [x] Step 1: `Hud` owns the readouts and the status, bottom-left. Status
+      hidden while empty so the HUD gains no blank line.
 
 ## Shipped before this
 
-- A console handle on the running game under `npm run dev` (`e449f4c`).
-- Export offered on a running game, naming the moment captured
-  (`9af657f`..`abf1621`).
+- A Sources panel and its `F` key (`bd12438`..`b989a7b`).
