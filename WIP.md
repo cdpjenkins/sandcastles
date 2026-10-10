@@ -23,9 +23,9 @@ None - work complete.
 
 ⏸️ WAITING - suite green (420), tsc clean.
 
-Browser check outstanding: jsdom has no layout, so that the HUD really sits
-under a wrapped two-row toolbar, and that clicks beside it reach the beach,
-want trying by hand at a narrow window.
+Browser-checked by hand: at a narrow window the toolbar wraps to two rows and
+the HUD moves down with it. Still untried: that a click on the beach right
+beside the HUD reaches it (the column's `pointer-events:none`).
 
 ## Completed
 
