@@ -27,20 +27,22 @@ Then open the local URL Vite prints. No build step needed for development.
 | `?` | Toggle controls overlay |
 | Pinch | Zoom |
 | Two-finger drag | Pan |
-| Click | Apply the active tool to a cell |
-| Press and hold | Repeat Spade or Dump, ten times a second |
+| Click | Apply the active tool to a cell, once |
+| Press and hold | After 0.3s, repeat Spade or Dump ten times a second |
 
-Click any cell to apply the active tool. **Spade and Dump also repeat while
-you hold the button down**, ten times a second, so a trench or a pile does
-not have to be tapped out one spadeful at a time. The repeat stays on the
-cell the button went down on, so dragging while held drills that one hole
-rather than painting along the way, and it keeps going while the game is
-paused - digging always has. Water stream does not repeat: one click, one
+A tap always applies the tool exactly once, however quick or slow the click.
+**Hold the button past 0.3 seconds and Spade or Dump starts repeating**, ten
+times a second, so a trench or a pile does not have to be tapped out one
+spadeful at a time - the same way a held key starts repeating. The repeat
+stays on the cell the button went down on, so dragging while held drills that
+one hole rather than painting along the way, and it keeps going while the game
+is paused - digging always has. Water stream does not repeat: one click, one
 source.
 
-A spadeful is a tenth of the bucket, so a held Spade fills the bucket in
-about a second and then has nothing left to do; a held Dump takes ten
-seconds to empty it. The rate is `REPEAT_HZ` in `src/input/ToolRepeater.ts`.
+A spadeful is a tenth of the bucket, so a held Spade fills the bucket in about
+a second and then has nothing left to do; a held Dump takes ten seconds to
+empty it. The rate and the threshold are `REPEAT_HZ` and `HOLD_DELAY` in
+`src/input/ToolRepeater.ts`.
 
 **Sources** is a toolbar toggle, also on the `F` key, that lists every water source on the beach -
 its cell and its rate - in a panel, bottom-right. A source is any cell with a
@@ -138,7 +140,7 @@ src/
 │   ├── SourceList.ts       Finds and formats the beach's water sources
 │   ├── Picker.ts           Raycast → grid cell; press, release, hover
 │   ├── Toolbar.ts          Tools, pause, look, sources, reset, export, import
-│   ├── ToolRepeater.ts     Press-and-hold repeat rate for Spade and Dump
+│   ├── ToolRepeater.ts     Hold threshold and repeat rate for Spade and Dump
 │   └── Tools.ts            Dig / dump pure functions
 ├── render/
 │   ├── IsoCamera.ts        Orthographic isometric camera

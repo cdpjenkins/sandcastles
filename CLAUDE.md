@@ -554,9 +554,56 @@ got wrong rather than a measurement that has to be rechecked.
 
 ## Press and hold to dig
 
-`ToolRepeater.ts` (`REPEAT_HZ`, the accumulator), `repeatsOnHold` in `Tools.ts`,
-and `Picker`'s press/release. Holding Spade or Dump repeats it ten times a
-second, pinned to the cell the button went down on. What was expensive to learn:
+`ToolRepeater.ts` (`REPEAT_HZ`, `HOLD_DELAY`, the accumulator), `repeatsOnHold`
+in `Tools.ts`, and `Picker`'s press/release. A tap applies the tool once; a hold
+past 0.3s repeats it ten times a second, pinned to the cell the button went down
+on. What was expensive to learn:
+
+### A tap must not be paid for by the frame loop
+
+The first shape here had the repeater owe the press's own application, to be
+spent on the next frame. It reads as harmless and it is not: a tap then costs
+however many repeat intervals it happens to span. Measured at 60fps - a 50ms
+tap dug once, **100ms dug twice**, 200ms three times, 300ms four. An ordinary
+click was digging twice, and the error shows up as a doubled amount of sand
+rather than as anything resembling an input bug.
+
+A threshold alone does not fix it, it only moves it: the press's application is
+*not a repeat*, and the frame loop is the wrong place to pay anything that must
+happen exactly once. `Game.onCellPress` applies it synchronously on the way
+down, unconditionally, before the repeater is told anything. A tap then costs
+one application by construction - no frame boundary can pay it twice, and a
+press and release inside a single frame cannot drop it, which the owed-through-
+the-loop shape also did.
+
+So `ToolRepeater` owes *repeats only*. That is the whole reason the class and
+the handler divide where they do.
+
+### Then a hold needs a threshold, like a key does
+
+`HOLD_DELAY` of 0.3s before the first repeat. Keyboard auto-repeat is built
+this way for the same reason: the gap between a tap and a hold is intent, and
+intent is only legible as time. It has to clear a slow deliberate click, which
+runs to ~250ms, so this is not a free parameter to shrink - at 0.15s a
+heavy-handed click repeats.
+
+Measured end to end with a real `Grid` and `Bucket`, digs per hold: 100ms 1,
+250ms 1, 300ms 2, 500ms 4, 1s 9, 2s 19.
+
+### Count the whole hold, not a draining remainder
+
+60fps does not divide a 1/10s interval, so every repeat falls mid-frame. The
+repeater therefore asks what a hold of `heldSeconds` has *earned* in total and
+subtracts what it has already spent, rather than draining an accumulator by one
+interval at a time. A second of holding past the delay owes exactly ten
+repeats, and a test asserts that rather than trusting it.
+
+The cost is that a hold is accurate to one frame at the threshold and no
+better: the press lands wherever it lands inside a frame, so the first frame
+counts time from before the button went down, and a tap within ~16ms of 0.3s
+may earn its first repeat. A test names this rather than leaving it to be
+rediscovered. Reading `performance.now()` instead would be exact and worse - a
+backgrounded tab would come back having "held" for minutes.
 
 ### The release has to be heard on the window, or the tool never stops
 
@@ -572,9 +619,9 @@ for exactly that reason. Both are load-bearing.
 `setInterval` was the obvious shape and is wrong three ways: Chrome throttles
 it in a backgrounded tab, it needs fake timers to test, and a missed release
 leaks it. `Game.loop` already has the `frameSeconds` `SimClock` gets, so the
-repeat is `floor(accumulator / interval)` against that - nothing to leak, and
-the one piece of the whole path that a test can reach, since `Picker` and
-`Game` both need a browser.
+repeat is counted against that - nothing to leak, and the one piece of the
+whole path that a test can reach, since `Picker` and `Game` both need a
+browser.
 
 Driving it off *sim* steps instead was also considered and is worse than it
 looks: it would stop the repeat while the game is paused, and digging on a
@@ -592,19 +639,24 @@ removing the `Math.min` fails `cannot burst after a stalled frame`.
 
 Moving the trigger to `mousedown` is what lets a hold start acting on the way
 down. Keeping the old `click` listener alongside it applies the tool *twice*
-per press - which on Dump reads as a doubled amount rather than as a
-double-click, so it would not announce itself as an input bug at all.
+per press - the same doubled-sand symptom as the frame-loop bug above, from a
+different cause, and just as quiet.
 
 ### Nothing in the suite can press a mouse button
 
 jsdom can dispatch a `MouseEvent`, but `Picker` turns one into a cell by
 raycasting a Three.js mesh, so there is no test anywhere that presses, holds
-and releases. `toolRepeater.test.ts` covers the arithmetic and
-`repeatsOnHold` covers which tools repeat - that branch is a function rather
-than an inline `if` in `Game` precisely because `Game` cannot be built here,
-and inverting it paints a run of springs across the beach on one drag. The
-*feel* of the hold is browser-verified only, the same blind spot recorded for
-refraction and for the toolbar's width.
+and releases. `toolRepeater.test.ts` covers the arithmetic -
+spending a hold one 60fps frame at a time, which is the only way a timing error
+smaller than a frame shows - and `repeatsOnHold` covers which tools repeat.
+That branch is a function rather than an inline `if` in `Game` precisely
+because `Game` cannot be built here, and inverting it paints a run of springs
+across the beach on one drag.
+
+What no test reaches is the one line that makes a tap cost one application:
+`applyTool` at the top of `onCellPress`. Delete it and every tap goes dead
+while the suite stays green. The *feel* of the hold is browser-verified only
+too - the same blind spot recorded for refraction and for the toolbar's width.
 
 ### A held spade fills the bucket in one second
 
