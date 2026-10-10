@@ -20,11 +20,11 @@ would still overflow at 1280.
 
 ## Current Step
 
-Step 3: C - let the bar wrap, so nothing can be unreachable again.
+Step 4: docs.
 
 ## Status
 
-🟢 GREEN - suite green (390), tsc clean.
+🟢 GREEN - suite green (391), tsc clean, production build clean.
 
 ## Completed
 
@@ -33,6 +33,9 @@ Step 3: C - let the bar wrap, so nothing can be unreachable again.
 - [x] Step 2: the bar holds controls only (-1042px); `Game` places the HUD.
       The three text-span tests moved to `hud.test.ts` rather than being
       dropped, and `toolbar.test.ts` now fails if any text goes back in.
+- [x] Step 3: `flex-wrap` and `max-width:calc(100vw - 24px)`. The bar wants
+      ~1069px now: one row at 1280, two at 1024. The test can only assert the
+      rules are declared - jsdom has no layout - and says so.
 
 ## Shipped before this
 

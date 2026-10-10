@@ -358,4 +358,17 @@ describe('Toolbar', () => {
     expect(toolbar.element.querySelector('[data-role="readouts"]')).toBeNull()
     expect(toolbar.element.querySelector('[data-role="status"]')).toBeNull()
   })
+
+  // jsdom has no layout engine, so offsetWidth is always 0 and no test here
+  // can prove the bar fits. What it can prove is that the rules which make
+  // that impossible-to-get-wrong are still declared: a bounded width, and
+  // permission to wrap. Without both, a bar wider than the screen puts its
+  // own buttons where a fixed element inside an overflow:hidden body cannot
+  // be clicked. The width itself stays browser-verified.
+  it('is allowed to wrap, and bounded by the viewport', () => {
+    const toolbar = new Toolbar()
+
+    expect(toolbar.element.style.flexWrap).toBe('wrap')
+    expect(toolbar.element.style.maxWidth).not.toBe('')
+  })
 })

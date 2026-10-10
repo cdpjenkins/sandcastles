@@ -38,8 +38,15 @@ export class Toolbar {
 
   constructor() {
     this.element = document.createElement('div')
+    // flex-wrap and the max-width are load-bearing, not styling. The bar is
+    // fixed inside a body with overflow:hidden, so a row wider than the
+    // viewport does not scroll or spill - it puts its own buttons somewhere
+    // they cannot be clicked at all. Wrapping means that cannot happen
+    // whatever the screen size, however the labels change, and however many
+    // buttons are added later. The 24px is the 12px inset on either side.
     this.element.style.cssText =
       'position:fixed;top:12px;left:12px;display:flex;gap:6px;align-items:center;' +
+      'flex-wrap:wrap;max-width:calc(100vw - 24px);' +
       'color:#fff;font:14px/1.4 monospace;background:rgba(0,0,0,0.45);' +
       'padding:6px 10px;border-radius:6px;pointer-events:auto;user-select:none;z-index:10'
 
