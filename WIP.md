@@ -1,48 +1,45 @@
-# WIP: A toolbar that fits the screen
+# WIP: Press and hold to dig or dump
 
-The bar is one unwrapped flex row, `position:fixed` inside a `body` with
-`overflow:hidden`, so anything past the right edge is not merely ugly - it is
-unclickable. Estimated intrinsic width ~2123px with a status message showing,
-~1600px at rest, against 46% of that being the ten controls and **49% being
-the `readouts` and `status` spans**.
+Tapping repeatedly to dig is the complaint. Holding the button should repeat
+the active tool at a configurable rate, 10/s by default.
 
-So two changes, in that order of value:
+Decided, with the options that were weighed:
 
-- **D**: move `readouts` and `status` out of the bar into their own HUD,
-  bottom-left. Removes ~1042px, the single biggest win, and is the only part
-  aimed at what actually drives the width.
-- **C**: `flex-wrap:wrap` and a `max-width` on the bar, so nothing can ever be
-  unreachable again regardless of screen size, label changes or future
-  buttons.
+- **Driven from the frame loop**, by a `ToolRepeater` sibling of `SimClock`:
+  `Game.loop` already has `frameSeconds`. A pure accumulator, so it is
+  unit-testable where `Picker` and `Game` are not, it leaks no timer, and it
+  keeps repeating while the sim is paused - digging works paused today.
+  `setInterval` was rejected (throttled in a backgrounded tab, needs fake
+  timers, leaks on a missed release); counting sim steps was rejected (it
+  would stop digging while the game is paused).
+- **Pinned to the press cell**, not following the cursor: holding drills one
+  hole or builds one pile wherever the button went down.
+- **`REPEAT_HZ = 10`** as a named constant beside `DIG_AMOUNT`.
+- **Stream does not repeat.** One click, one source.
 
-A submenu was considered and rejected: it addresses the 46%, not the 49%, and
-would still overflow at 1280.
+The first application lands on the press itself, so the tool still feels
+instant; the repeats follow at 1/10 s.
+
+Two traps this has to clear: the trigger moves from `click` to `mousedown`
+(keeping both would dig twice per press), and the release must be heard on
+`window` - a mouseup off the canvas would otherwise leave it digging forever.
 
 ## Current Step
 
-None - work complete.
+Step 2: `Picker` hears press and release; `Game.loop` spends what the
+repeater owes.
 
 ## Status
 
-⏸️ WAITING - suite green (391), tsc clean, production build clean.
-
-Browser check still outstanding: the width is not testable from jsdom, so
-the wrap wants looking at in a narrow window.
+⏸️ WAITING - step 1 committed, suite green (404), tsc clean.
 
 ## Completed
 
-- [x] Step 1: `Hud` owns the readouts and the status, bottom-left. Status
-      hidden while empty so the HUD gains no blank line.
-- [x] Step 2: the bar holds controls only (-1042px); `Game` places the HUD.
-      The three text-span tests moved to `hud.test.ts` rather than being
-      dropped, and `toolbar.test.ts` now fails if any text goes back in.
-- [x] Step 3: `flex-wrap` and `max-width:calc(100vw - 24px)`. The bar wants
-      ~1069px now: one row at 1280, two at 1024. The test can only assert the
-      rules are declared - jsdom has no layout - and says so.
-- [x] Step 4: docs. README's tree and controls section; CLAUDE.md on why an
-      overflowing bar is unclickable, which half of the width was heavy, and
-      why nothing can test it.
+- [x] Step 1: `ToolRepeater` - press owes the first application at once,
+      repeats at `REPEAT_HZ`, carries a part-interval across frames, clamps a
+      stalled frame so it cannot burst, and forgets both cell and accumulator
+      on a release. 13 tests; the clamp one mutation-verified.
 
 ## Shipped before this
 
-- A Sources panel and its `F` key (`bd12438`..`b989a7b`).
+- A toolbar that fits the screen (`be91f10`..`6f3e113`).
