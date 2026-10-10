@@ -54,12 +54,6 @@ const sourcesButton = (toolbar: Toolbar): HTMLButtonElement =>
 const sourcesPressed = (toolbar: Toolbar): boolean =>
   sourcesButton(toolbar).getAttribute('aria-pressed') === 'true'
 
-const status = (toolbar: Toolbar): HTMLElement =>
-  toolbar.element.querySelector<HTMLElement>('[data-role="status"]')!
-
-const readouts = (toolbar: Toolbar): HTMLElement =>
-  toolbar.element.querySelector<HTMLElement>('[data-role="readouts"]')!
-
 describe('Toolbar', () => {
   it('renders one radio per tool mode', () => {
     const toolbar = new Toolbar()
@@ -222,14 +216,6 @@ describe('Toolbar', () => {
     expect(resets).toBe(1)
   })
 
-  it('setReadouts writes the text into the readouts span', () => {
-    const toolbar = new Toolbar()
-
-    toolbar.setReadouts('bucket: 12.0 / 100')
-
-    expect(readouts(toolbar).textContent).toBe('bucket: 12.0 / 100')
-  })
-
   // Was once paused-only, on the belief that a running game could not be
   // snapshotted coherently. It can: the whole export path is synchronous, so
   // simStep cannot interleave with it, and AutoSaver has been snapshotting a
@@ -361,23 +347,15 @@ describe('Toolbar', () => {
     expect(sourcesButton(toolbar).disabled).toBe(false)
   })
 
-  it('shows a status message', () => {
+
+  // The readouts and the status live in the Hud now. In the bar they were 49%
+  // of its ~2123px width - as much as all ten controls - which is what pushed
+  // its own buttons past the right edge of the screen, where a fixed bar
+  // inside an overflow:hidden body makes them unclickable.
+  it('holds controls only, with no text of its own to widen it', () => {
     const toolbar = new Toolbar()
 
-    toolbar.setStatus('That file is not a beach')
-
-    expect(status(toolbar).textContent).toBe('That file is not a beach')
-  })
-
-  // The reason the status is not part of the readouts: Game rewrites those on
-  // every frame, which would wipe a message before anyone could read it.
-  it('keeps a status message while the readouts are rewritten', () => {
-    const toolbar = new Toolbar()
-    toolbar.setStatus('That file is not a beach')
-
-    toolbar.setReadouts('bucket: 0.0 / 1000   wave: 2s')
-
-    expect(status(toolbar).textContent).toBe('That file is not a beach')
-    expect(readouts(toolbar).textContent).toBe('bucket: 0.0 / 1000   wave: 2s')
+    expect(toolbar.element.querySelector('[data-role="readouts"]')).toBeNull()
+    expect(toolbar.element.querySelector('[data-role="status"]')).toBeNull()
   })
 })

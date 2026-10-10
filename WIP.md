@@ -20,16 +20,19 @@ would still overflow at 1280.
 
 ## Current Step
 
-Step 2: the toolbar gives them up, and `Game` places the HUD.
+Step 3: C - let the bar wrap, so nothing can be unreachable again.
 
 ## Status
 
-🟢 GREEN - suite green (392), tsc clean.
+🟢 GREEN - suite green (390), tsc clean.
 
 ## Completed
 
 - [x] Step 1: `Hud` owns the readouts and the status, bottom-left. Status
       hidden while empty so the HUD gains no blank line.
+- [x] Step 2: the bar holds controls only (-1042px); `Game` places the HUD.
+      The three text-span tests moved to `hud.test.ts` rather than being
+      dropped, and `toolbar.test.ts` now fails if any text goes back in.
 
 ## Shipped before this
 

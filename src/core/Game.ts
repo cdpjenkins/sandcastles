@@ -16,6 +16,7 @@ import { Picker } from '../input/Picker.ts'
 import { ToolMode, dig, dump } from '../input/Tools.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
+import { Hud } from '../input/Hud.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Evaporation } from '../sim/Evaporation.ts'
 import { Erosion } from '../sim/Erosion.ts'
@@ -57,6 +58,7 @@ export class Game {
   private readonly terrain: TerrainMesh
   private readonly picker: Picker
   private readonly toolbar: Toolbar
+  private readonly hud: Hud
   private readonly autoSaver: AutoSaver
   private readonly helpOverlay: HTMLDivElement
   private readonly lookPanel: HTMLDivElement
@@ -89,6 +91,10 @@ export class Game {
     this.toolbar.onSourcesToggle((visible) => this.setSourcesVisible(visible))
     this.toolbar.onPauseToggle((paused) => this.setPaused(paused))
     document.body.appendChild(this.toolbar.element)
+
+    // Bottom-left, clear of the toolbar above and the Sources panel opposite.
+    this.hud = new Hud()
+    document.body.appendChild(this.hud.element)
 
     this.helpOverlay = document.createElement('div')
     this.helpOverlay.style.cssText =
@@ -235,7 +241,7 @@ export class Game {
     const savedAt = new Date()
     const filename = exportFilename(savedAt)
     downloadJson(filename, JSON.stringify(toGameFile(this.takeSnapshot(), savedAt)))
-    this.toolbar.setStatus(exportStatus(filename, savedAt))
+    this.hud.setStatus(exportStatus(filename, savedAt))
   }
 
   // An imported beach arrives in whichever state it was saved in: adoptUiState
@@ -249,7 +255,7 @@ export class Game {
       (message) => window.confirm(message),
     )
     if (imported === null) {
-      this.toolbar.setStatus(
+      this.hud.setStatus(
         refusal === 'cancelled' ? 'Import cancelled' : 'That file is not a Sandcastles beach',
       )
       return
@@ -258,7 +264,7 @@ export class Game {
     this.adoptUiState(imported)
     this.terrain.rebuildAll()
     this.reflectState()
-    this.toolbar.setStatus('Beach imported')
+    this.hud.setStatus('Beach imported')
   }
 
   // The beach the player built is destroyed with no undo, so they are asked
@@ -273,7 +279,7 @@ export class Game {
     this.adoptUiState(started)
     this.terrain.rebuildAll()
     this.reflectState()
-    this.toolbar.setStatus('New beach')
+    this.hud.setStatus('New beach')
   }
 
   private takeSnapshot(): GameSnapshot {
@@ -369,7 +375,7 @@ export class Game {
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
     const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset).toFixed(2)}`
     const state = this.paused ? '   ⏸ PAUSED' : ''
-    this.toolbar.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}${state}`)
+    this.hud.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}${state}`)
   }
 
   private setSourcesVisible(visible: boolean): void {

@@ -24,8 +24,6 @@ export class Toolbar {
   private readonly lookButton: HTMLButtonElement
   private readonly sourcesButton: HTMLButtonElement
   private readonly pauseButton: HTMLButtonElement
-  private readonly readouts: HTMLSpanElement
-  private readonly status: HTMLSpanElement
   private lookEnabled = false
   private sourcesVisible = false
   private paused = false
@@ -86,16 +84,6 @@ export class Toolbar {
     this.addButton('import', '⬆ Import', () => this.importHandler())
     this.addButton('new-game', '✦ New game', () => this.newGameHandler())
     this.addButton('reset', '↺ Reset water', () => this.resetHandler())
-
-    this.readouts = document.createElement('span')
-    this.readouts.dataset.role = 'readouts'
-    this.readouts.style.cssText = 'margin-left:4px;opacity:0.85'
-    this.element.appendChild(this.readouts)
-
-    this.status = document.createElement('span')
-    this.status.dataset.role = 'status'
-    this.status.style.cssText = 'margin-left:4px;color:#ffd479'
-    this.element.appendChild(this.status)
   }
 
   private addButton(action: string, label: string, onClick: () => void): HTMLButtonElement {
@@ -138,16 +126,6 @@ export class Toolbar {
 
   onReset(handler: () => void): void {
     this.resetHandler = handler
-  }
-
-  setReadouts(text: string): void {
-    this.readouts.textContent = text
-  }
-
-  // Its own element rather than part of the readouts: the readouts are
-  // rewritten every frame, which would wipe a message before it was read.
-  setStatus(text: string): void {
-    this.status.textContent = text
   }
 
   setLook(enabled: boolean): void {
