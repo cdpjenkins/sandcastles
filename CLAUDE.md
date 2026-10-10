@@ -46,8 +46,9 @@ the transport *velocity* (`flux / depth`), so `WaterSim.step` divides the flux a
 before using it. It was once the flux itself — over-scaled by the whole depth. In shallow water
 `flux ≈ velocity` and nothing showed; in a deep, enclosed lake the term ran ~20–40× too strong, fed on
 itself once any flow existed, and tore the surface into grid-scale chop. Onset was at depth ≈ 22
-(CFL `√(g·h)·dt ≈ 0.5`), which is why it surfaced only when a big `DIG_AMOUNT` let a single dig cut a
-pit that deep. Same bug class as sea level above: a value read as the wrong physical quantity.
+(CFL `√(g·h)·dt ≈ 0.5`), which is why it surfaced only when a `DIG_AMOUNT` of 100 let a single dig
+cut a pit that deep. `DIG_AMOUNT` is 10 now, so reproducing it wants a *held* spade rather than one
+click. Same bug class as sea level above: a value read as the wrong physical quantity.
 
 The divisor is `max(edgeDepth, 1)`, not `edgeDepth`. Weighting by the true velocity everywhere breaks
 the *shallow* stream instead: a thin sheet's velocity is high, so the corrected term spreads the flow
@@ -658,15 +659,23 @@ What no test reaches is the one line that makes a tap cost one application:
 while the suite stays green. The *feel* of the hold is browser-verified only
 too - the same blind spot recorded for refraction and for the toolbar's width.
 
-### A held spade fills the bucket in one second
+### A hold is bounded by the bucket, not by the repeat
 
-`DIG_AMOUNT` is 100 against a `BUCKET_CAPACITY` of 1000, so ten applications
-is the whole bucket: at `REPEAT_HZ = 10` a hold is spent in 1.0s and every
-repeat after that is a no-op. `DUMP_AMOUNT` is 10, so the same hold needs 10s
-to empty it. The feature is therefore worth ten times more to Dump than to
-Spade, and raising `REPEAT_HZ` buys Spade nothing without `DIG_AMOUNT` or the
-bucket moving too. Recorded because "the hold stops working after a second"
-is a bucket reading, not a repeat bug.
+`DIG_AMOUNT` and `DUMP_AMOUNT` are both 10 against a `BUCKET_CAPACITY` of
+1000, so either tool spends a full bucket in a hundred applications - ten
+seconds at `REPEAT_HZ = 10`, symmetrically, and every repeat after that is a
+no-op. Recorded because "the hold stopped working" is a bucket reading, not a
+repeat bug, and because the two amounts and the capacity are what set how long
+a hold is useful for: raising `REPEAT_HZ` alone just reaches the same ceiling
+sooner.
+
+`DIG_AMOUNT` was 100 until the hold existed, which made a held Spade spend
+itself in 1.0s against Dump's 10s - the feature was worth ten times more to
+Dump than to Spade. Dropping it to 10 is what made a tap a fine-grained
+instrument and the hold the way to excavate. Note what it also changed: a
+*single* dig can no longer cut a deep pit, which is how the advection
+instability recorded at the top of this file used to be reached. A hold still
+gets there, just over a second rather than instantly.
 
 ## Listing the water sources
 

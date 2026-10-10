@@ -38,6 +38,9 @@ Measured end to end with a real Grid and Bucket, digs per hold: 0ms 1,
 Browser-checked by hand and good. That was the part no test could reach:
 nothing in the suite can press a mouse button.
 
+`DIG_AMOUNT` dropped to 10 after that check. It changes how much a tap and
+a hold move, not how either behaves, so the check stands.
+
 Browser check still outstanding: nothing in the suite can press a mouse
 button, so the feel of the hold and the off-canvas release want trying by
 hand.
@@ -61,6 +64,10 @@ hand.
       synchronously - so a tap costs one by construction rather than by
       timing, and `HOLD_DELAY` of 0.3s gates the repeats. Docs corrected: the
       first three CLAUDE.md subsections are this.
+- [x] Step 5: `DIG_AMOUNT` 100 -> 10, matching `DUMP_AMOUNT`. A tap is now a
+      fine-grained instrument and the hold is how you excavate; a hold spends
+      the bucket in 10s either way rather than Spade's 1s against Dump's 10s.
+      No test changed - `tools.test.ts` is written in terms of the constant.
 
 ## Shipped before this
 

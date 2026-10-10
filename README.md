@@ -39,10 +39,11 @@ one hole rather than painting along the way, and it keeps going while the game
 is paused - digging always has. Water stream does not repeat: one click, one
 source.
 
-A spadeful is a tenth of the bucket, so a held Spade fills the bucket in about
-a second and then has nothing left to do; a held Dump takes ten seconds to
-empty it. The rate and the threshold are `REPEAT_HZ` and `HOLD_DELAY` in
-`src/input/ToolRepeater.ts`.
+A spadeful and a dumped load are both a hundredth of the bucket, so a hold
+fills or empties it in about ten seconds either way, and then has nothing left
+to do. The rate and the threshold are `REPEAT_HZ` and `HOLD_DELAY` in
+`src/input/ToolRepeater.ts`; the amounts are `DIG_AMOUNT` and `DUMP_AMOUNT` in
+`src/input/Tools.ts`.
 
 **Sources** is a toolbar toggle, also on the `F` key, that lists every water source on the beach -
 its cell and its rate - in a panel, bottom-right. A source is any cell with a
