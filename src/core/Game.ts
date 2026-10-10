@@ -18,6 +18,7 @@ import { ToolRepeater, REPEAT_HZ, HOLD_DELAY } from '../input/ToolRepeater.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { Hud } from '../input/Hud.ts'
+import { stackTopLeft } from '../input/TopLeftStack.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Evaporation } from '../sim/Evaporation.ts'
 import { Erosion } from '../sim/Erosion.ts'
@@ -92,11 +93,10 @@ export class Game {
     this.toolbar.onNewGame(() => this.newGame())
     this.toolbar.onSourcesToggle((visible) => this.setSourcesVisible(visible))
     this.toolbar.onPauseToggle((paused) => this.setPaused(paused))
-    document.body.appendChild(this.toolbar.element)
 
-    // Bottom-left, clear of the toolbar above and the Sources panel opposite.
+    // Immediately under the toolbar, whatever height its wrapping gives it.
     this.hud = new Hud()
-    document.body.appendChild(this.hud.element)
+    document.body.appendChild(stackTopLeft(this.toolbar.element, this.hud.element))
 
     this.helpOverlay = document.createElement('div')
     this.helpOverlay.style.cssText =

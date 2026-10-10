@@ -50,7 +50,7 @@ its cell and its rate - in a panel, bottom-right. A source is any cell with a
 non-zero inflow rate, so this is the one place to find a spring you dug and
 lost track of. Long lists are capped at twenty, with the rest counted.
 
-The bucket, wave timer and sea level read out bottom-left, where messages
+The bucket, wave timer and sea level read out just below the toolbar, where messages
 about an export or import appear too. They are deliberately not in the
 toolbar: there, they were half its width and pushed its own buttons off the
 screen. The bar wraps to a second row rather than overflow, so no control can
@@ -135,13 +135,14 @@ src/
 │   ├── downloadFile.ts     Blob download plumbing
 │   └── materials.ts        Material constants and properties
 ├── input/
-│   ├── Hud.ts              Readouts and status messages, bottom-left
+│   ├── Hud.ts              Readouts and status messages, under the toolbar
 │   ├── KeyBindings.ts      Key → tool
 │   ├── LookInfo.ts         Per-cell readout for the Look tool
 │   ├── SourceList.ts       Finds and formats the beach's water sources
 │   ├── Picker.ts           Raycast → grid cell; press, release, hover
 │   ├── Toolbar.ts          Tools, pause, look, sources, reset, export, import
 │   ├── ToolRepeater.ts     Hold threshold and repeat rate for Spade and Dump
+│   ├── TopLeftStack.ts     Keeps the HUD in flow under the wrapping toolbar
 │   └── Tools.ts            Dig / dump pure functions
 ├── render/
 │   ├── IsoCamera.ts        Orthographic isometric camera

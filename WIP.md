@@ -1,28 +1,19 @@
-# WIP: Press and hold to dig or dump
+# WIP: The HUD sits immediately below the toolbar
 
-Tapping repeatedly to dig is the complaint. Holding the button should repeat
-the active tool at a configurable rate, 10/s by default.
+The HUD (bucket, wave, sea level, status) moves from the bottom-left corner
+to directly under the toolbar.
 
-Decided, with the options that were weighed:
+Decided:
 
-- **Driven from the frame loop**, by a `ToolRepeater` sibling of `SimClock`:
-  `Game.loop` already has `frameSeconds`. A pure accumulator, so it is
-  unit-testable where `Picker` and `Game` are not, it leaks no timer, and it
-  keeps repeating while the sim is paused - digging works paused today.
-  `setInterval` was rejected (throttled in a backgrounded tab, needs fake
-  timers, leaks on a missed release); counting sim steps was rejected (it
-  would stop digging while the game is paused).
-- **Pinned to the press cell**, not following the cursor: holding drills one
-  hole or builds one pile wherever the button went down.
-- **`REPEAT_HZ = 10`** as a named constant beside `DIG_AMOUNT`.
-- **Stream does not repeat.** One click, one source.
-
-The first application lands on the press itself, so the tool still feels
-instant; the repeats follow at 1/10 s.
-
-Two traps this has to clear: the trigger moves from `click` to `mousedown`
-(keeping both would dig twice per press), and the release must be heard on
-`window` - a mouseup off the canvas would otherwise leave it digging forever.
+- **A shared fixed column, not a fixed `top` offset.** The toolbar wraps, so
+  its height is not a constant - a HUD at `top: <n>px` would sit under a
+  one-row bar and on top of a two-row one. `stackTopLeft` puts both in one
+  `position:fixed` flex column, so the HUD follows the bar's real height.
+- **The column is `pointer-events:none`.** It is as wide as the toolbar, so
+  the empty space beside the HUD would otherwise swallow clicks meant for
+  the beach. The toolbar re-enables them for itself.
+- Neither the toolbar nor the HUD is fixed itself any more: a fixed child
+  escapes the column and the two overlap again.
 
 ## Current Step
 
@@ -30,45 +21,18 @@ None - work complete.
 
 ## Status
 
-⏸️ WAITING - suite green (416), tsc clean, production build clean.
+⏸️ WAITING - suite green (420), tsc clean.
 
-Measured end to end with a real Grid and Bucket, digs per hold: 0ms 1,
-16ms 1, 50ms 1, 100ms 1, 200ms 1, 250ms 1, 300ms 2, 500ms 4, 1s 9, 2s 19.
-
-Browser-checked by hand and good. That was the part no test could reach:
-nothing in the suite can press a mouse button.
-
-`DIG_AMOUNT` dropped to 10 after that check. It changes how much a tap and
-a hold move, not how either behaves, so the check stands.
-
-Browser check still outstanding: nothing in the suite can press a mouse
-button, so the feel of the hold and the off-canvas release want trying by
-hand.
+Browser check outstanding: jsdom has no layout, so that the HUD really sits
+under a wrapped two-row toolbar, and that clicks beside it reach the beach,
+want trying by hand at a narrow window.
 
 ## Completed
 
-- [x] Step 1: `ToolRepeater` - press owes the first application at once,
-      repeats at `REPEAT_HZ`, carries a part-interval across frames, clamps a
-      stalled frame so it cannot burst, and forgets both cell and accumulator
-      on a release. 13 tests; the clamp one mutation-verified.
-- [x] Step 2: `Picker` fires on `mousedown` and hears `mouseup`/`blur` on the
-      window; `Game.loop` spends what the repeater owes. `repeatsOnHold` keeps
-      the which-tools-repeat branch out of untestable `Game`.
-- [x] Step 3: docs. README's controls and tree, the `?` overlay, and
-      CLAUDE.md on the window-release trap, why an accumulator beats a timer,
-      the stalled-frame clamp, why `click` and `mousedown` cannot both fire,
-      the untestable feel, and the bucket arithmetic that caps a held Spade
-      at a second.
-- [x] Step 4: a tap digs once, and only a hold repeats. The press's own
-      application left the frame loop - `onCellPress` applies it
-      synchronously - so a tap costs one by construction rather than by
-      timing, and `HOLD_DELAY` of 0.3s gates the repeats. Docs corrected: the
-      first three CLAUDE.md subsections are this.
-- [x] Step 5: `DIG_AMOUNT` 100 -> 10, matching `DUMP_AMOUNT`. A tap is now a
-      fine-grained instrument and the hold is how you excavate; a hold spends
-      the bucket in 10s either way rather than Spade's 1s against Dump's 10s.
-      No test changed - `tools.test.ts` is written in terms of the constant.
+- [x] Step 1: `stackTopLeft` puts the toolbar and HUD in one fixed,
+      click-through column; neither places itself any more. README updated.
 
 ## Shipped before this
 
+- Press and hold to dig or dump (`7cbba62`..`0c72f4c`).
 - A toolbar that fits the screen (`be91f10`..`6f3e113`).

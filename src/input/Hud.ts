@@ -2,11 +2,12 @@
 // wide enough to push its own buttons off a 1440px screen - and a button past
 // the right edge is unclickable, not merely ugly, since the bar is fixed
 // inside a body with overflow:hidden. The two text spans were 49% of that
-// width, as much as all ten controls, so they moved here.
+// width, as much as all ten controls, so they moved here. Placed under the
+// toolbar by `stackTopLeft`, so it places nothing itself.
 const HUD_STYLE =
-  'position:fixed;bottom:12px;left:12px;color:#fff;font:14px/1.5 monospace;' +
+  'color:#fff;font:14px/1.5 monospace;' +
   'background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:6px;' +
-  'pointer-events:none;user-select:none;z-index:10;white-space:pre'
+  'pointer-events:none;user-select:none;white-space:pre'
 
 export class Hud {
   readonly element: HTMLDivElement

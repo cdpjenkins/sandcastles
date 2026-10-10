@@ -44,11 +44,12 @@ export class Toolbar {
     // they cannot be clicked at all. Wrapping means that cannot happen
     // whatever the screen size, however the labels change, and however many
     // buttons are added later. The 24px is the 12px inset on either side.
+    // Placed by `stackTopLeft`, so the HUD can follow it in flow.
     this.element.style.cssText =
-      'position:fixed;top:12px;left:12px;display:flex;gap:6px;align-items:center;' +
+      'display:flex;gap:6px;align-items:center;' +
       'flex-wrap:wrap;max-width:calc(100vw - 24px);' +
       'color:#fff;font:14px/1.4 monospace;background:rgba(0,0,0,0.45);' +
-      'padding:6px 10px;border-radius:6px;pointer-events:auto;user-select:none;z-index:10'
+      'padding:6px 10px;border-radius:6px;pointer-events:auto;user-select:none'
 
     for (const mode of Object.values(ToolMode)) {
       const label = document.createElement('label')
