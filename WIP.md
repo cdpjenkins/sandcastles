@@ -26,12 +26,11 @@ Two traps this has to clear: the trigger moves from `click` to `mousedown`
 
 ## Current Step
 
-Step 3: docs - README controls, CLAUDE.md on what was expensive to learn.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - step 2 committed, suite green (407), tsc clean, production
-build clean.
+⏸️ WAITING - suite green (407), tsc clean, production build clean.
 
 Browser check still outstanding: nothing in the suite can press a mouse
 button, so the feel of the hold and the off-canvas release want trying by
@@ -46,6 +45,11 @@ hand.
 - [x] Step 2: `Picker` fires on `mousedown` and hears `mouseup`/`blur` on the
       window; `Game.loop` spends what the repeater owes. `repeatsOnHold` keeps
       the which-tools-repeat branch out of untestable `Game`.
+- [x] Step 3: docs. README's controls and tree, the `?` overlay, and
+      CLAUDE.md on the window-release trap, why an accumulator beats a timer,
+      the stalled-frame clamp, why `click` and `mousedown` cannot both fire,
+      the untestable feel, and the bucket arithmetic that caps a held Spade
+      at a second.
 
 ## Shipped before this
 

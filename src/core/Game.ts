@@ -107,6 +107,8 @@ export class Game {
       'Controls',
       '────────',
       'Pick a tool from the bar, top-left, or use the keys below.',
+      'Click a cell to use it. Hold the button to dig or dump',
+      'repeatedly, on the cell you pressed.',
       '',
       'S        Spade (dig)',
       'D        Dump (pour sand)',

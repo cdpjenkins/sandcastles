@@ -552,6 +552,70 @@ from here. The fit itself is browser-verified only - the same blind spot
 recorded for refraction above, and the reason the fix is a rule that cannot be
 got wrong rather than a measurement that has to be rechecked.
 
+## Press and hold to dig
+
+`ToolRepeater.ts` (`REPEAT_HZ`, the accumulator), `repeatsOnHold` in `Tools.ts`,
+and `Picker`'s press/release. Holding Spade or Dump repeats it ten times a
+second, pinned to the cell the button went down on. What was expensive to learn:
+
+### The release has to be heard on the window, or the tool never stops
+
+A `mouseup` listener on the canvas misses every release that happens anywhere
+else - cursor dragged off the canvas, off the page, or another window taking
+focus mid-hold - and a missed release does not merely drop one event: the
+repeat runs forever, at ten spadefuls a second, on a cell the player has
+stopped looking at. `Picker` listens on `window` for `mouseup` *and* `blur`
+for exactly that reason. Both are load-bearing.
+
+### A repeat is an accumulator, not a timer
+
+`setInterval` was the obvious shape and is wrong three ways: Chrome throttles
+it in a backgrounded tab, it needs fake timers to test, and a missed release
+leaks it. `Game.loop` already has the `frameSeconds` `SimClock` gets, so the
+repeat is `floor(accumulator / interval)` against that - nothing to leak, and
+the one piece of the whole path that a test can reach, since `Picker` and
+`Game` both need a browser.
+
+Driving it off *sim* steps instead was also considered and is worse than it
+looks: it would stop the repeat while the game is paused, and digging on a
+paused beach has always worked.
+
+### The stalled-frame clamp is the same clamp, for a different reason
+
+`ToolRepeater` clamps its frame the way `SimClock` does, and here the
+consequence is not a slow sim but the bucket emptying into a single cell: a
+tab coming back from the background hands the loop one enormous frame, which
+unclamped is a hundred applications on one pinned cell. Mutation-verified -
+removing the `Math.min` fails `cannot burst after a stalled frame`.
+
+### `click` and `mousedown` cannot both fire the tool
+
+Moving the trigger to `mousedown` is what lets a hold start acting on the way
+down. Keeping the old `click` listener alongside it applies the tool *twice*
+per press - which on Dump reads as a doubled amount rather than as a
+double-click, so it would not announce itself as an input bug at all.
+
+### Nothing in the suite can press a mouse button
+
+jsdom can dispatch a `MouseEvent`, but `Picker` turns one into a cell by
+raycasting a Three.js mesh, so there is no test anywhere that presses, holds
+and releases. `toolRepeater.test.ts` covers the arithmetic and
+`repeatsOnHold` covers which tools repeat - that branch is a function rather
+than an inline `if` in `Game` precisely because `Game` cannot be built here,
+and inverting it paints a run of springs across the beach on one drag. The
+*feel* of the hold is browser-verified only, the same blind spot recorded for
+refraction and for the toolbar's width.
+
+### A held spade fills the bucket in one second
+
+`DIG_AMOUNT` is 100 against a `BUCKET_CAPACITY` of 1000, so ten applications
+is the whole bucket: at `REPEAT_HZ = 10` a hold is spent in 1.0s and every
+repeat after that is a no-op. `DUMP_AMOUNT` is 10, so the same hold needs 10s
+to empty it. The feature is therefore worth ten times more to Dump than to
+Spade, and raising `REPEAT_HZ` buys Spade nothing without `DIG_AMOUNT` or the
+bucket moving too. Recorded because "the hold stops working after a second"
+is a bucket reading, not a repeat bug.
+
 ## Listing the water sources
 
 `SourceList.ts` (`getSources`, `formatSourceList`), a Sources toggle on the
