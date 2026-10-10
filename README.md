@@ -35,6 +35,12 @@ its cell and its rate - in a panel, bottom-right. A source is any cell with a
 non-zero inflow rate, so this is the one place to find a spring you dug and
 lost track of. Long lists are capped at twenty, with the rest counted.
 
+The bucket, wave timer and sea level read out bottom-left, where messages
+about an export or import appear too. They are deliberately not in the
+toolbar: there, they were half its width and pushed its own buttons off the
+screen. The bar wraps to a second row rather than overflow, so no control can
+end up somewhere unclickable.
+
 **Export** and **Import** are buttons in the toolbar. Export writes the whole
 beach to a JSON file, running or paused, and tells you the moment it captured.
 Import asks before replacing what you have.
@@ -114,11 +120,12 @@ src/
 │   ├── downloadFile.ts     Blob download plumbing
 │   └── materials.ts        Material constants and properties
 ├── input/
+│   ├── Hud.ts              Readouts and status messages, bottom-left
 │   ├── KeyBindings.ts      Key → tool
 │   ├── LookInfo.ts         Per-cell readout for the Look tool
 │   ├── SourceList.ts       Finds and formats the beach's water sources
 │   ├── Picker.ts           Raycast → grid cell
-│   ├── Toolbar.ts          Tools, pause, look, sources, reset, export, import, readouts
+│   ├── Toolbar.ts          Tools, pause, look, sources, reset, export, import
 │   └── Tools.ts            Dig / dump pure functions
 ├── render/
 │   ├── IsoCamera.ts        Orthographic isometric camera

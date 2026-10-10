@@ -514,6 +514,44 @@ A file that will not parse is refused *before* the player is asked. Asking
 first would have them agree to lose their beach only to be told the file was
 no good.
 
+## An overflowing toolbar is unclickable, not untidy
+
+The bar is `position:fixed` inside a `body` with `overflow:hidden`. A flex row
+wider than the viewport therefore neither scrolls nor spills: it puts its own
+buttons where nothing can reach them. At 1280px that was Reset water, New game
+and Import simply gone. So `flex-wrap:wrap` and `max-width:calc(100vw - 24px)`
+on `Toolbar`'s element are load-bearing, not styling - with them, no screen
+size, label change or future button can reproduce it.
+
+### The text was half the width, and the buttons were the other half
+
+Estimated intrinsic width before the fix: ~2123px with a status message
+showing, ~1600px at rest. Of that, the ten controls were ~983px (46%) and the
+`readouts` and `status` spans were ~1042px (49%) - the two pieces of *text*
+cost as much as every control put together.
+
+This is why the obvious fix is the wrong one. Moving the less-used buttons
+behind a submenu addresses the 46% and leaves ~1445px, which still overflows
+1280. `Hud` moving the text out removes more than a submenu could, and needs
+no popup, no dismiss behaviour and no new state. Measure which half is heavy
+before reaching for the menu.
+
+A submenu would also have quietly broken the toolbar's own guarantees:
+`toolbar.test.ts` asserts reachability as `expect(button.disabled).toBe(false)`
+in five places, and a button inside a *closed* menu passes that while being
+unclickable. Same bug class as the readings listed under the water sim - the
+wrong reading agrees with the right one in today's layout and parts company in
+the new one.
+
+### Nothing can test the width
+
+jsdom has no layout engine, so `offsetWidth` is always 0 and no test in the
+suite can tell whether the bar fits. `toolbar.test.ts` asserts only that
+`flex-wrap` and a `max-width` are *declared*, which is all that is visible
+from here. The fit itself is browser-verified only - the same blind spot
+recorded for refraction above, and the reason the fix is a rule that cannot be
+got wrong rather than a measurement that has to be rechecked.
+
 ## Listing the water sources
 
 `SourceList.ts` (`getSources`, `formatSourceList`), a Sources toggle on the

@@ -20,11 +20,14 @@ would still overflow at 1280.
 
 ## Current Step
 
-Step 4: docs.
+None - work complete.
 
 ## Status
 
-🟢 GREEN - suite green (391), tsc clean, production build clean.
+⏸️ WAITING - suite green (391), tsc clean, production build clean.
+
+Browser check still outstanding: the width is not testable from jsdom, so
+the wrap wants looking at in a narrow window.
 
 ## Completed
 
@@ -36,6 +39,9 @@ Step 4: docs.
 - [x] Step 3: `flex-wrap` and `max-width:calc(100vw - 24px)`. The bar wants
       ~1069px now: one row at 1280, two at 1024. The test can only assert the
       rules are declared - jsdom has no layout - and says so.
+- [x] Step 4: docs. README's tree and controls section; CLAUDE.md on why an
+      overflowing bar is unclickable, which half of the width was heavy, and
+      why nothing can test it.
 
 ## Shipped before this
 
