@@ -1,4 +1,24 @@
-# WIP: Wetting dry sand consumes water
+# WIP: Evaporation back to 0.00002
+
+`EVAPORATION_RATE` 0.00128 -> 0.00002, undoing the 64x speed-up of
+`e9113ee`. The 1s test runs from that commit stay: they hold at either rate.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - tsc clean; 427/428, the one failure the swell test's known 5s
+timeout under full-suite load.
+
+## Shipped before this
+
+- Wetting dry sand consumes water (`9f5e9d7`).
+
+---
+
+# Previous: Wetting dry sand consumes water
 
 Moisture is water held in the sand. Taking a cell from moisture 0 to 1 costs
 `SATURATION_DEPTH` of the water column above it; damp sand costs pro rata. A

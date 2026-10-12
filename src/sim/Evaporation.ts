@@ -5,7 +5,7 @@ import { settleSediment } from './settleSediment.ts'
 // much water is stacked beneath it, so every wet cell loses the same depth per
 // second. Time to dry is therefore h/k, and the volume ratio alone is what
 // makes a film vanish while a puddle persists.
-const EVAPORATION_RATE = 0.00128
+const EVAPORATION_RATE = 0.00002
 
 export class Evaporation {
   private readonly dirty: Uint8Array
