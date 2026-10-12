@@ -1,4 +1,32 @@
-# WIP: Evaporation runs 64x faster
+# WIP: Wetting dry sand consumes water
+
+Moisture is water held in the sand. Taking a cell from moisture 0 to 1 costs
+`SATURATION_DEPTH` of the water column above it; damp sand costs pro rata. A
+film thinner than the shortfall is soaked up whole and the cell goes dry,
+settling its sediment just as `Evaporation` does.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - tsc clean; 427/428, the one failure the swell test's known 5s
+timeout under full-suite load.
+
+## Completed
+
+- [x] Step 1: absorption in `Moisture.step`; sediment settling shared with
+      `Evaporation` via `settleSediment`. Front-advance probe: slows a sheet
+      ~10%, does not stall it.
+
+## Shipped before this
+
+- Evaporation runs 64x faster (`e9113ee`).
+
+---
+
+# Previous: Evaporation runs 64x faster
 
 `EVAPORATION_RATE` 0.00002 -> 0.00128. `evaporation.test.ts` runs two of its
 checks for 1s rather than 60s, so they no longer assume a slow rate.

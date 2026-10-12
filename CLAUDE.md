@@ -287,6 +287,22 @@ instead.
 step that takes the last of the water to zero is a change of about that size, and it is the one
 transition that must reach the mesh.
 
+### Wetting sand is paid for out of the water column
+
+Moisture is water held in the sand. `Moisture.step` charges `SATURATION_DEPTH` (0.01) of a cell's
+water to take it from dry to saturated, pro rata for sand that is already damp, and a film thinner
+than the shortfall is soaked up whole — the cell goes dry and its sediment settles, through the same
+`settleSediment` `Evaporation` uses. Water absorbed is never returned: moisture drying out at
+`EVAPORATE_RATE` is the sand losing it to the air. The cost is once per wetting, not per second, so it
+cannot strangle a front the way the gated `Drying` did — measured on a dry slope fed a steady sheet,
+front after 60s: 28 -> 25 cells at a 0.05 source, 68 -> 62 at 0.2. A front still advances, just
+slower, which is what soaking in should look like. Check that scene again before raising
+`SATURATION_DEPTH`.
+
+The sea is not exempt, unlike `Evaporation`: a sea cell is saturated after its first step and is
+never charged again, so the whole beach pays ~285 once, at boot. The tide re-wetting sand it left to
+dry is charged, and is small next to its swing.
+
 ### Screen-space directions go through `isoProjection`
 
 The camera is a fixed isometric (45° yaw, ~35.26° pitch), so a world `+x` flow moves down-right on

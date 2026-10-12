@@ -1,5 +1,10 @@
 import type { Grid } from '../core/Grid.ts'
+import { settleSediment } from './settleSediment.ts'
 
+// Moisture is water held in the sand: taking a cell from bone dry to
+// saturated costs this depth of the water above it, and damp sand costs only
+// what it is short of. What dries out of the sand afterwards is not returned.
+export const SATURATION_DEPTH = 0.01
 const DIFFUSE_RATE = 0.1
 const EVAPORATE_RATE = 0.02
 const DIRTY_EPSILON = 1e-4
@@ -24,8 +29,16 @@ export class Moisture {
         const m = grid.getMoisture(x, z) ?? 0
 
         if (water > 0) {
-          grid.setMoisture(x, z, 1.0)
-          if (Math.abs(1.0 - m) > DIRTY_EPSILON) this.dirty[i] = 1
+          const absorbed = Math.min(water, (1 - m) * SATURATION_DEPTH)
+          if (absorbed > 0) {
+            const remaining = water - absorbed
+            grid.setWaterHeight(x, z, remaining)
+            grid.setMoisture(x, z, m + absorbed / SATURATION_DEPTH)
+            // A film soaked up whole leaves a dry cell, and a change of this
+            // size is the one transition that must reach the mesh.
+            if (remaining === 0) settleSediment(grid, x, z)
+            this.dirty[i] = 1
+          }
           continue
         }
 

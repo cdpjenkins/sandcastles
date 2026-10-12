@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Moisture } from './Moisture.ts'
+import { Moisture, SATURATION_DEPTH } from './Moisture.ts'
 import { Grid } from '../core/Grid.ts'
 
 const DT = 1 / 30
@@ -64,6 +64,106 @@ describe('Moisture', () => {
     for (let i = 0; i < 10; i++) moisture.step(grid, DT)
 
     expect(grid.getMoisture(0, 0)).toBe(0)
+  })
+})
+
+describe('Moisture absorbs water', () => {
+  it('dry sand takes SATURATION_DEPTH from the water above it to saturate', () => {
+    const grid = makeGrid()
+    const depth = SATURATION_DEPTH * 10
+    grid.setWaterHeight(0, 0, depth)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(depth - SATURATION_DEPTH, 6)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
+  })
+
+  it('damp sand takes only what it is short of', () => {
+    const grid = makeGrid()
+    const depth = SATURATION_DEPTH * 10
+    grid.setWaterHeight(0, 0, depth)
+    grid.setMoisture(0, 0, 0.75)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(depth - SATURATION_DEPTH * 0.25, 6)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
+  })
+
+  it('saturated sand takes nothing', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, 0.5)
+    grid.setMoisture(0, 0, 1)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)).toBe(0.5)
+  })
+
+  it('soaks up a film thinner than the shortfall entirely, and is only part wet', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)).toBe(0)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(0.25)
+  })
+
+  it('creates no water: what the column loses the sand holds', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, SATURATION_DEPTH * 0.6)
+    grid.setMoisture(0, 0, 0.1)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    const waterLost = SATURATION_DEPTH * 0.6 - grid.getWaterHeight(0, 0)!
+    const moistureGained = grid.getMoisture(0, 0)! - 0.1
+    expect(waterLost).toBeCloseTo(moistureGained * SATURATION_DEPTH, 6)
+  })
+
+  it('saturates exactly, so a wet cell is charged once and not every step', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, 0.5)
+    grid.setMoisture(0, 0, 0.3)
+    const moisture = new Moisture(4, 1)
+    moisture.step(grid, DT)
+    const afterFirst = grid.getWaterHeight(0, 0)
+
+    const dirty = moisture.step(grid, DT)
+
+    expect(grid.getMoisture(0, 0)).toBe(1)
+    expect(grid.getWaterHeight(0, 0)).toBe(afterFirst)
+    expect(dirty[0]).toBe(0)
+  })
+
+  it('settles the sediment of water it soaks up entirely', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 2)
+    grid.setSediment(0, 0, 0.003)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getSediment(0, 0)).toBe(0)
+    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(0.003, 6)
+  })
+
+  it('flags a cell whose water it soaked up entirely', () => {
+    const grid = makeGrid()
+    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 2)
+    grid.setMoisture(0, 0, 0.5)
+    const moisture = new Moisture(4, 1)
+
+    const dirty = moisture.step(grid, DT)
+
+    expect(dirty[0]).toBe(1)
   })
 })
 
