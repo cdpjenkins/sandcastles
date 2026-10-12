@@ -252,10 +252,12 @@ original value and the sink silently does nothing. At `0.00002` the per-step del
 loss over a minute measures ~2% short at depth 1, ~29% at depth 5, and **exactly zero** at depth 20.
 0.0001 was the lowest rate that survived every depth tested.
 
-The current 0.00002 is a deliberate choice accepting that: films and shallow puddles, which are the
-point of the feature, are unaffected, and deep standing water is normally sea and exempt anyway. It
-is recorded so it is not rediscovered as a bug. If exact evaporation at depth is ever wanted, the fix
-is accumulating the per-cell deficit until it is large enough to register — not raising the rate.
+0.00002 was once the chosen rate, accepting that: films and shallow puddles, which are the point of
+the feature, were unaffected, and deep standing water is normally sea and exempt anyway. The rate is
+now 0.00128 (64× that), a per-step delta of 4.3e-5, which sits above that floor at every depth
+tested, so the shortfall no longer applies at today's setting. It is recorded because lowering the
+rate again brings it back. If exact evaporation at very low rates is ever wanted, the fix is
+accumulating the per-cell deficit until it is large enough to register.
 
 This is why `evaporation.test.ts` asserts a *ratio* between a shallow and a deep cell's loss rather
 than `toBeCloseTo` at 6 dp: the tight assertion fails on float noise, not on behaviour.

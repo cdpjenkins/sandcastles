@@ -37,10 +37,11 @@ describe('Evaporation', () => {
     grid.setWaterHeight(1, 0, 0.2)
     const evaporation = new Evaporation(grid.width, grid.depth)
 
-    runFor(grid, evaporation, 60)
+    // Short enough that neither cell runs dry, whatever the rate is tuned to.
+    runFor(grid, evaporation, 1)
 
     // Not toBeCloseTo to 6 dp: `water` is a Float32Array and the per-step
-    // subtraction is 6.7e-7, so quantisation costs a deep column a few percent
+    // subtraction is tiny, so quantisation can cost a deep column a few percent
     // of its loss. The behaviour under test is that depth does not set the
     // rate, which a ratio states without pinning the noise.
     const shallowLoss = 0.02 - grid.getWaterHeight(0, 0)!
@@ -64,7 +65,7 @@ describe('Evaporation', () => {
     grid.setWaterHeight(0, 0, 0.01)
     const evaporation = new Evaporation(grid.width, grid.depth)
 
-    runFor(grid, evaporation, 60)
+    runFor(grid, evaporation, 1)
     expect(grid.getWaterHeight(0, 0)!).toBeGreaterThan(0)
 
     runFor(grid, evaporation, 600)

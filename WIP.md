@@ -1,4 +1,24 @@
-# WIP: The HUD sits immediately below the toolbar
+# WIP: Evaporation runs 64x faster
+
+`EVAPORATION_RATE` 0.00002 -> 0.00128. `evaporation.test.ts` runs two of its
+checks for 1s rather than 60s, so they no longer assume a slow rate.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - tsc clean; 419/420, the one failure being the swell test's 5s
+timeout under full-suite load (passes alone, and flakes on main too).
+
+## Shipped before this
+
+- The HUD sits immediately below the toolbar (`f715663`).
+
+---
+
+# Previous: The HUD sits immediately below the toolbar
 
 The HUD (bucket, wave, sea level, status) moves from the bottom-left corner
 to directly under the toolbar.
