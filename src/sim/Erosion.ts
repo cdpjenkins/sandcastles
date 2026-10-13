@@ -84,6 +84,15 @@ export class Erosion {
           newSand = sand - erode
           grid.setSandHeight(x, z, newSand)
           grid.setSediment(x, z, sediment + erode)
+          // The sand's water is spread evenly through it, and sand swept
+          // into suspension gives its share up to the stream. Deposited sand
+          // arrives dry and soaks from the column like any other.
+          const moisture = grid.getMoisture(x, z) ?? 0
+          if (moisture > 0) {
+            const released = (moisture * erode) / sand
+            grid.setMoisture(x, z, Math.max(0, moisture - released))
+            grid.setWaterHeight(x, z, water + released)
+          }
         } else if (sediment > capacity) {
           const deposit = Math.min((sediment - capacity) * DEPOSITION_K * dt, sediment, MAX_BED_RATE * dt)
           newSand = sand + deposit

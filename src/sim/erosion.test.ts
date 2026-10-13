@@ -241,6 +241,52 @@ describe('Erosion', () => {
   })
 })
 
+describe('Erosion and the water held in the sand', () => {
+  const erodingScene = () => {
+    const scene = makeScene()
+    scene.grid.setSandHeight(0, 0, 5)
+    scene.grid.setMoisture(0, 0, 0.05)
+    scene.grid.setWaterHeight(0, 0, 3)
+    scene.waterSim.step(scene.grid, DT)
+    return scene
+  }
+
+  it('eroded sand gives its water up to the stream', () => {
+    const { grid, waterSim, erosion } = erodingScene()
+    const sandBefore = grid.getSandHeight(0, 0)!
+    const waterBefore = grid.getWaterHeight(0, 0)!
+
+    erosion.step(grid, waterSim, DT)
+
+    const eroded = sandBefore - grid.getSandHeight(0, 0)!
+    expect(eroded).toBeGreaterThan(0)
+    const released = 0.05 * (eroded / sandBefore)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(0.05 - released, 7)
+    expect(grid.getWaterHeight(0, 0)! - waterBefore).toBeCloseTo(released, 6)
+  })
+
+  it('leaves what stays behind exactly as damp as it was', () => {
+    const { grid, waterSim, erosion } = erodingScene()
+
+    erosion.step(grid, waterSim, DT)
+
+    expect(grid.getMoisture(0, 0)! / grid.getSandHeight(0, 0)!).toBeCloseTo(0.01, 6)
+  })
+
+  it('deposited sand arrives dry, holding no water of its own', () => {
+    const { grid, waterSim, erosion } = makeScene()
+    grid.setSandHeight(0, 0, 2)
+    grid.setMoisture(0, 0, 0.02)
+    grid.setWaterHeight(0, 0, 0.01)
+    grid.setSediment(0, 0, 10)
+
+    erosion.step(grid, waterSim, DT)
+
+    expect(grid.getSandHeight(0, 0)!).toBeGreaterThan(2)
+    expect(grid.getMoisture(0, 0)).toBeCloseTo(0.02, 6)
+  })
+})
+
 describe('Erosion sediment transport', () => {
   it('eroded sediment moves downstream instead of redepositing in place', () => {
     const w = 10
