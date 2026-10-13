@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   SNAPSHOT_VERSION, isValidSnapshot, loadSnapshot, createSnapshot, applySnapshot,
-  newGameSnapshot, startNewGame,
+  newGameSnapshot, startNewGame, migrateSnapshot,
 } from './GameSnapshot.ts'
+import { POROSITY } from '../sim/Moisture.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { Grid } from './Grid.ts'
@@ -28,7 +29,7 @@ function aSnapshot(overrides: Record<string, unknown> = {}): GameSnapshot {
     water: { flowX: cells(), flowZ: cells() },
     waves: { elapsed: 1.5, timeUntilWave: 0.5 },
     tide: { elapsed: 12 },
-    bucket: { amount: 250 },
+    bucket: { amount: 250, water: 0.5 },
     camera: { zoom: 80, panX: 128, panZ: 128 },
     toolMode: ToolMode.Spade,
     paused: false,
@@ -84,6 +85,10 @@ describe('isValidSnapshot', () => {
   it('rejects a scalar that is not a finite number', () => {
     expect(isValidSnapshot(aSnapshot({ tide: { elapsed: NaN } }), WIDTH, DEPTH)).toBe(false)
     expect(isValidSnapshot(aSnapshot({ bucket: { amount: Infinity } }), WIDTH, DEPTH)).toBe(false)
+  })
+
+  it('rejects a bucket that does not say how much water it holds', () => {
+    expect(isValidSnapshot(aSnapshot({ bucket: { amount: 250 } }), WIDTH, DEPTH)).toBe(false)
   })
 
   it('rejects a tool mode the game does not have', () => {
@@ -254,7 +259,7 @@ function aLiveBeach() {
   components.waterSim.setFlowZ(1, 1, -0.5)
   components.waves.step(components.grid, 0.5, 2)
   components.tide.step(9)
-  components.bucket.fill(120)
+  components.bucket.fill(120, 0.005)
   components.camera.restore({ zoom: 55, panX: 10, panZ: 20 })
   return components
 }
@@ -284,6 +289,72 @@ describe('applySnapshot', () => {
     applySnapshot(restored, snapshot)
 
     expect(restored.bucket.amount).toBe(120)
+    expect(restored.bucket.water).toBeCloseTo(0.6)
+  })
+})
+
+// Version 1 stored moisture as a 0-1 fraction; version 2 stores the water
+// itself. Same layer, same shape, so nothing structural tells them apart: a v1
+// save read as v2 would load cleanly and be wrong, and one refused would cost
+// the player their beach.
+describe('migrateSnapshot', () => {
+  const aVersion1 = () => {
+    const snapshot = aSnapshot({ version: 1, bucket: { amount: 250 } }) as unknown as {
+      grid: { sand: Float32Array; moisture: Float32Array }
+    }
+    snapshot.grid.sand[0] = 3
+    snapshot.grid.moisture[0] = 0.5
+    snapshot.grid.sand[1] = 0
+    snapshot.grid.moisture[1] = 1
+    return snapshot
+  }
+
+  it('turns a v1 save into one this version loads', () => {
+    expect(isValidSnapshot(migrateSnapshot(aVersion1()), WIDTH, DEPTH)).toBe(true)
+  })
+
+  it('keeps each cell as wet as it looked, now as water held', () => {
+    const migrated = migrateSnapshot(aVersion1()) as GameSnapshot
+
+    expect(migrated.grid.moisture[0]).toBeCloseTo(0.5 * POROSITY * 3, 6)
+  })
+
+  it('wet rock holds no water: it read wet from the water above it', () => {
+    const migrated = migrateSnapshot(aVersion1()) as GameSnapshot
+
+    expect(migrated.grid.moisture[1]).toBe(0)
+  })
+
+  it('gives the old bucket dry sand', () => {
+    const migrated = migrateSnapshot(aVersion1()) as GameSnapshot
+
+    expect(migrated.bucket).toEqual({ amount: 250, water: 0 })
+  })
+
+  it('leaves the save it was handed alone', () => {
+    const v1 = aVersion1()
+
+    migrateSnapshot(v1)
+
+    expect(v1.grid.moisture[0]).toBe(0.5)
+  })
+
+  it('passes a current save through untouched', () => {
+    const current = aSnapshot()
+
+    expect(migrateSnapshot(current)).toBe(current)
+  })
+
+  it('passes garbage through for the guard to refuse', () => {
+    expect(migrateSnapshot('a beach')).toBe('a beach')
+    expect(isValidSnapshot(migrateSnapshot({ version: 1 }), WIDTH, DEPTH)).toBe(false)
+  })
+
+  it('is what loadSnapshot does to a v1 autosave', async () => {
+    const loaded = await loadSnapshot(aStoreHolding(aVersion1()), WIDTH, DEPTH)
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.grid.moisture[0]).toBeCloseTo(0.5 * POROSITY * 3, 6)
   })
 })
 

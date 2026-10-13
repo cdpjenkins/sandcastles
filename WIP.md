@@ -1,4 +1,47 @@
-# WIP: Dumped sand is dry
+# WIP: Moisture is an absolute amount of water
+
+`grid.moisture` holds water, spread evenly through the cell's sand, rather
+than a 0-1 fraction. Capacity is `POROSITY * sand` with no wetting-depth cap.
+Saturation (`moisture / capacity`) is derived for the colours and Look panel.
+
+Decided (with the user):
+
+- No cap: water is spread through the whole sand depth.
+- The bucket carries damp sand, so a dump returns the water a dig took.
+- Dry sand dumped in mixes evenly (replaces the dry-layer-on-top model).
+- Drying is an absolute rate, so deep sand dries slower.
+- Damp spreads by moving water between cells; wet cells top up from the
+  water column.
+- Sand moved by slumping or erosion carries its water.
+- v1 saves migrate, preserving each cell's saturation.
+
+## Current Step
+
+Step 2: dig/dump carry water in the bucket.
+
+## Status
+
+⏸️ WAITING - step 1 committed; suite green (450), tsc clean.
+
+Step 1 notes: `Moisture.step` reads each cell once into working arrays -
+1.40 ms/step on the full beach against 1.49 before (a getter-per-pass first
+draft was 4.1). Boot absorbs 50 of 189,702 water into the sea bed's sand.
+
+## Steps
+
+- [x] Step 1: absolute moisture, display, snapshot v2 + migration
+- [ ] Step 2: dig/dump carry water in the bucket
+- [ ] Step 3: `Slope` moves water with sand
+- [ ] Step 4: `Erosion` releases eroded sand's water to the column
+- [ ] Step 5: CLAUDE.md
+
+## Shipped before this
+
+- Dumped sand is dry (`a59e88d`).
+
+---
+
+# Previous: Dumped sand is dry
 
 Dry sand dumped on a cell lies on top. The wetting layer is the top
 `WET_DEPTH`, so after a dump it holds the new dry sand plus whatever of the

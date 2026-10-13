@@ -5,6 +5,7 @@ import { rockColour } from './rockColour.ts'
 import { groundColour } from './groundColour.ts'
 import { waterColour } from './waterColour.ts'
 import { cellNoise } from './cellNoise.ts'
+import { saturation } from '../sim/Moisture.ts'
 
 const JITTER = 0.06
 
@@ -75,8 +76,8 @@ export class TerrainMesh {
     this.positions[vi + 1] = surface + water
     this.positions[vi + 2] = z
 
-    const moisture = this.grid.getMoisture(x, z) ?? 0
     const sandDepth = this.grid.getSandHeight(x, z) ?? 0
+    const moisture = saturation(this.grid.getMoisture(x, z) ?? 0, sandDepth, water)
     const dryCol = groundColour(sandColour(moisture), rockColour(moisture), sandDepth)
     const col = water > 0 ? waterColour(dryCol, water) : dryCol
     const jitter = water > 0 ? 0 : cellNoise(x, z) * JITTER

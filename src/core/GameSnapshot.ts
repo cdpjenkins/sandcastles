@@ -9,9 +9,12 @@ import type { TideSnapshot } from '../sim/Tide.ts'
 import { DEFAULT_CAMERA } from '../render/IsoCamera.ts'
 import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
+import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 
-export const SNAPSHOT_VERSION = 1
+// 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
+// water. migrateSnapshot reads a 1.
+export const SNAPSHOT_VERSION = 2
 
 export const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
 export const FLOW_LAYERS = ['flowX', 'flowZ'] as const
@@ -24,7 +27,7 @@ export interface GameSnapshot {
   water: WaterSimSnapshot
   waves: WavesSnapshot
   tide: TideSnapshot
-  bucket: { amount: number }
+  bucket: { amount: number; water: number }
   camera: CameraSnapshot
   toolMode: ToolMode
   paused: boolean
@@ -38,9 +41,12 @@ const TOOL_MODES: readonly string[] = Object.values(ToolMode)
 // `instanceof` against this realm's Float32Array while being a perfectly good
 // Float32Array. The tag is realm-independent and still rejects plain arrays
 // and other typed arrays.
+function isFloat32Array(value: unknown): value is Float32Array {
+  return Object.prototype.toString.call(value) === '[object Float32Array]'
+}
+
 function isCellArray(value: unknown, cells: number): boolean {
-  if (Object.prototype.toString.call(value) !== '[object Float32Array]') return false
-  return (value as Float32Array).length === cells
+  return isFloat32Array(value) && value.length === cells
 }
 
 function isScalar(value: unknown): boolean {
@@ -76,13 +82,44 @@ export function isValidSnapshot(
 
   if (!hasScalars(s['waves'], ['elapsed', 'timeUntilWave'])) return false
   if (!hasScalars(s['tide'], ['elapsed'])) return false
-  if (!hasScalars(s['bucket'], ['amount'])) return false
+  if (!hasScalars(s['bucket'], ['amount', 'water'])) return false
   if (!hasScalars(s['camera'], ['zoom', 'panX', 'panZ'])) return false
 
   if (typeof s['toolMode'] !== 'string' || !TOOL_MODES.includes(s['toolMode'])) return false
   if (typeof s['paused'] !== 'boolean' || typeof s['lookEnabled'] !== 'boolean') return false
 
   return true
+}
+
+// Brings an older save up to this version, or hands back anything else as it
+// came for isValidSnapshot to judge. Never mutates what it is given.
+//
+// v1 -> v2: moisture was a fraction of what the sand could hold, and becomes
+// the water itself. Each cell keeps the saturation it had, so the beach looks
+// as it did; bare rock holds nothing, since wet rock reads wet from the water
+// above it. The v1 bucket carried no water, so its sand is dry.
+export function migrateSnapshot(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  const s = value as Record<string, unknown>
+  if (s['version'] !== 1) return value
+
+  const grid = s['grid'] as Record<string, unknown> | null | undefined
+  const bucket = s['bucket'] as Record<string, unknown> | null | undefined
+  if (typeof grid !== 'object' || grid === null) return value
+  if (typeof bucket !== 'object' || bucket === null) return value
+  const sand = grid['sand']
+  const fraction = grid['moisture']
+  if (!isFloat32Array(sand) || !isFloat32Array(fraction) || fraction.length !== sand.length) return value
+
+  const held = new Float32Array(fraction.length)
+  for (let i = 0; i < held.length; i++) held[i] = fraction[i]! * POROSITY * sand[i]!
+
+  return {
+    ...s,
+    version: 2,
+    grid: { ...grid, moisture: held },
+    bucket: { ...bucket, water: 0 },
+  }
 }
 
 // Storage is treated as hostile and never allowed to stop the game booting:
@@ -94,7 +131,7 @@ export async function loadSnapshot(
   depth: number,
 ): Promise<GameSnapshot | null> {
   try {
-    const stored = await store.load()
+    const stored = migrateSnapshot(await store.load())
     return isValidSnapshot(stored, width, depth) ? stored : null
   } catch {
     return null
@@ -109,7 +146,7 @@ export interface SnapshotSources {
   waterSim: { snapshot(): WaterSimSnapshot }
   waves: { snapshot(): WavesSnapshot }
   tide: { snapshot(): TideSnapshot }
-  bucket: { amount: number }
+  bucket: { amount: number; water: number }
   camera: { snapshot(): CameraSnapshot }
   toolMode: ToolMode
   paused: boolean
@@ -125,7 +162,7 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
     water: sources.waterSim.snapshot(),
     waves: sources.waves.snapshot(),
     tide: sources.tide.snapshot(),
-    bucket: { amount: sources.bucket.amount },
+    bucket: { amount: sources.bucket.amount, water: sources.bucket.water },
     camera: sources.camera.snapshot(),
     toolMode: sources.toolMode,
     paused: sources.paused,
@@ -138,7 +175,7 @@ export interface SnapshotTargets {
   waterSim: { restore(snapshot: WaterSimSnapshot): void }
   waves: { restore(snapshot: WavesSnapshot): void }
   tide: { restore(snapshot: TideSnapshot): void }
-  bucket: { setAmount(amount: number): void }
+  bucket: { setAmount(amount: number): void; setWater(water: number): void }
   camera: { restore(snapshot: CameraSnapshot): void }
 }
 
@@ -148,6 +185,7 @@ export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot):
   targets.waves.restore(snapshot.waves)
   targets.tide.restore(snapshot.tide)
   targets.bucket.setAmount(snapshot.bucket.amount)
+  targets.bucket.setWater(snapshot.bucket.water)
   targets.camera.restore(snapshot.camera)
 }
 
@@ -174,7 +212,7 @@ export function newGameSnapshot(width: number, depth: number): GameSnapshot {
     water: new WaterSim(width, depth).snapshot(),
     waves: new Waves(width, depth).snapshot(),
     tide: new Tide().snapshot(),
-    bucket: { amount: 0 },
+    bucket: { amount: 0, water: 0 },
     camera: DEFAULT_CAMERA,
     toolMode: ToolMode.Spade,
     paused: false,

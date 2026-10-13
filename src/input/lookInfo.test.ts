@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { getLookInfo, formatLookInfo, type LookInfo } from './LookInfo.ts'
 import { Grid } from '../core/Grid.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
+import { POROSITY } from '../sim/Moisture.ts'
 
 const makeInfo = (overrides: Partial<LookInfo> = {}): LookInfo => ({
   x: 5,
@@ -12,6 +13,7 @@ const makeInfo = (overrides: Partial<LookInfo> = {}): LookInfo => ({
   waterDepth: 0.75,
   waterSurfaceHeight: 4.75,
   moisture: 0.6,
+  heldWater: 0.018,
   sediment: 0.2,
   sourceRate: 0,
   flowX: 0,
@@ -26,7 +28,7 @@ describe('getLookInfo', () => {
     grid.setRockHeight(2, 1, 1.5)
     grid.setSandHeight(2, 1, 3.0)
     grid.setWaterHeight(2, 1, 0.75)
-    grid.setMoisture(2, 1, 0.6)
+    grid.setMoisture(2, 1, POROSITY * 3.0 * 0.6)
     grid.setSediment(2, 1, 0.2)
     grid.setSourceRate(2, 1, 3.0)
 
@@ -43,6 +45,7 @@ describe('getLookInfo', () => {
     expect(info.bedHeight).toBeCloseTo(4.5)
     expect(info.waterDepth).toBeCloseTo(0.75)
     expect(info.moisture).toBeCloseTo(0.6)
+    expect(info.heldWater).toBeCloseTo(POROSITY * 3.0 * 0.6, 6)
     expect(info.sediment).toBeCloseTo(0.2)
     expect(info.sourceRate).toBeCloseTo(3.0)
     expect(info.flowX).toBeCloseTo(1.2)
@@ -63,6 +66,7 @@ describe('formatLookInfo', () => {
         bedHeight: 4,
         waterDepth: 0.75,
         moisture: 0.6,
+        heldWater: 0.018,
         sediment: 0.2,
         sourceRate: 2.5,
       }),
@@ -73,7 +77,7 @@ describe('formatLookInfo', () => {
     expect(text).toContain('Rock 1.00')
     expect(text).toContain('Bed 4.00')
     expect(text).toContain('Depth 0.75')
-    expect(text).toContain('Moisture 60%')
+    expect(text).toContain('Moisture 60% (0.0180 held)')
     expect(text).toContain('Sediment 0.20')
     expect(text).toContain('Source 2.50')
   })

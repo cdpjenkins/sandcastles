@@ -15,7 +15,7 @@ function snap(): GameSnapshot {
     water: { flowX: c(), flowZ: c() },
     waves: { elapsed: 3.25, timeUntilWave: 1.5 },
     tide: { elapsed: 47.5 },
-    bucket: { amount: 321 },
+    bucket: { amount: 321, water: 0 },
     camera: { zoom: 120, panX: 30, panZ: 60 },
     toolMode: ToolMode.Dump, paused: true, lookEnabled: true,
   }

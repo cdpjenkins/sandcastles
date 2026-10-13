@@ -11,6 +11,7 @@ import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
+import { POROSITY } from '../sim/Moisture.ts'
 
 const SIZE = 4
 const SAVED_AT = new Date('2026-08-21T17:40:00.000Z')
@@ -24,7 +25,7 @@ function aSnapshot() {
   const waterSim = new WaterSim(SIZE, SIZE)
   waterSim.setFlowX(2, 2, 0.75)
   const bucket = new Bucket(1000)
-  bucket.fill(120)
+  bucket.fill(120, 0.005)
   const tide = new Tide()
   tide.step(9)
 
@@ -134,6 +135,22 @@ describe('parseGameFile', () => {
     const text = aFileWith({ version: SNAPSHOT_VERSION + 1 })
 
     expect(parseGameFile(text, SIZE, SIZE)).toBeNull()
+  })
+
+  it('loads a v1 file, migrated to water held', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT) as unknown as Record<string, unknown>
+    const sand = new Float32Array(SIZE * SIZE).fill(2)
+    const moisture = new Float32Array(SIZE * SIZE).fill(0.5)
+    const grid = file['grid'] as Record<string, string>
+    grid['sand'] = encodeCells(sand)
+    grid['moisture'] = encodeCells(moisture)
+    file['version'] = 1
+    file['bucket'] = { amount: 120 }
+
+    const loaded = parseGameFile(JSON.stringify(file), SIZE, SIZE)
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.grid.moisture[0]).toBeCloseTo(0.5 * POROSITY * 2, 6)
   })
 
   it('refuses a file with a layer missing', () => {

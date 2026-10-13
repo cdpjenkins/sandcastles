@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { dig, dump, repeatsOnHold, ToolMode, DIG_AMOUNT, DUMP_AMOUNT } from './Tools.ts'
 import { Grid } from '../core/Grid.ts'
 import { Bucket } from '../core/Bucket.ts'
-import { moistureAfterDrySand, WET_DEPTH } from '../sim/Moisture.ts'
 
 // Deeper than a spadeful, and a bucket roomier than one, both stated in terms of
 // DIG_AMOUNT rather than as bare numbers. A scene holding less than the tool
@@ -120,39 +119,23 @@ describe('dump', () => {
     expect(dump(grid, 5, 5, bucket)).toBe(true)
   })
 
-  it('dumped sand is dry: a full load leaves damp sand dry on top', () => {
+  it('dry sand dumped in mixes through the damp: the water held is unchanged', () => {
     const grid = new Grid(16, 16)
     grid.setSandHeight(5, 5, 5)
-    grid.setMoisture(5, 5, 1)
+    grid.setMoisture(5, 5, 0.05)
     const bucket = new Bucket(100)
     bucket.fill(50)
 
     dump(grid, 5, 5, bucket)
 
-    expect(grid.getMoisture(5, 5)).toBe(moistureAfterDrySand(1, 5, DUMP_AMOUNT))
-    expect(grid.getMoisture(5, 5)).toBeLessThan(1)
-  })
-
-  it('a last scrap of sand only partly dries the cell', () => {
-    const grid = new Grid(16, 16)
-    grid.setSandHeight(5, 5, 5)
-    grid.setMoisture(5, 5, 1)
-    const bucket = new Bucket(100)
-    bucket.fill(WET_DEPTH / 4)
-
-    dump(grid, 5, 5, bucket)
-
-    expect(grid.getMoisture(5, 5)!).toBeCloseTo(moistureAfterDrySand(1, 5, WET_DEPTH / 4))
-    expect(grid.getMoisture(5, 5)!).toBeGreaterThan(0)
+    expect(grid.getMoisture(5, 5)).toBeCloseTo(0.05)
   })
 
   it('does nothing when bucket is empty and returns false', () => {
     const grid = new Grid(16, 16)
     grid.setRockHeight(5, 5, 1)
-    grid.setMoisture(5, 5, 0.7)
     const bucket = new Bucket(100)
     const result = dump(grid, 5, 5, bucket)
-    expect(grid.getMoisture(5, 5)).toBeCloseTo(0.7)
     expect(result).toBe(false)
     expect(grid.getSandHeight(5, 5)).toBe(0)
   })

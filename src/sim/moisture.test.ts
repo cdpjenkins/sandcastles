@@ -1,258 +1,246 @@
 import { describe, it, expect } from 'vitest'
-import { Moisture, SATURATION_DEPTH, WET_DEPTH, moistureAfterDrySand } from './Moisture.ts'
+import { Moisture, POROSITY, saturation } from './Moisture.ts'
 import { Grid } from '../core/Grid.ts'
 
 const DT = 1 / 30
+const SAND = 4
+const CAPACITY = POROSITY * SAND
 
-// Sand deeper than WET_DEPTH, so a cell holds its full capacity.
-const makeGrid = (w = 4, d = 1) => {
+const makeGrid = (w = 4, d = 1, sand = SAND) => {
   const g = new Grid(w, d)
   for (let z = 0; z < d; z++)
     for (let x = 0; x < w; x++) {
       g.setRockHeight(x, z, 1)
-      g.setSandHeight(x, z, WET_DEPTH * 4)
+      g.setSandHeight(x, z, sand)
     }
   return g
 }
 
-describe('Moisture', () => {
-  it('cell with water gets moisture 1.0', () => {
-    const grid = makeGrid()
-    grid.setWaterHeight(0, 0, 1)
-    const moisture = new Moisture(4, 1)
+const held = (grid: Grid) => {
+  let total = 0
+  for (let z = 0; z < grid.depth; z++)
+    for (let x = 0; x < grid.width; x++) total += grid.getMoisture(x, z) ?? 0
+  return total
+}
 
-    moisture.step(grid, DT)
-
-    expect(grid.getMoisture(0, 0)).toBeCloseTo(1.0)
+describe('saturation', () => {
+  it('is the water held as a share of what the sand can hold', () => {
+    expect(saturation(CAPACITY / 4, SAND, 0)).toBeCloseTo(0.25)
+    expect(saturation(CAPACITY, SAND, 0)).toBeCloseTo(1)
   })
 
-  it('dry adjacent cell gains moisture from wet neighbour', () => {
-    const grid = makeGrid()
-    grid.setWaterHeight(0, 0, 1)
-    const moisture = new Moisture(4, 1)
-
-    for (let i = 0; i < 10; i++) moisture.step(grid, DT)
-
-    expect(grid.getMoisture(1, 0)!).toBeGreaterThan(0)
+  it('reads the same at the same concentration, whatever the depth of sand', () => {
+    expect(saturation(POROSITY * 2 * 0.5, 2, 0)).toBeCloseTo(saturation(POROSITY * 20 * 0.5, 20, 0))
   })
 
-  it('cell dries out when water is removed', () => {
-    const grid = makeGrid()
-    grid.setWaterHeight(0, 0, 1)
-    const moisture = new Moisture(4, 1)
-
-    for (let i = 0; i < 10; i++) moisture.step(grid, DT)
-    grid.setWaterHeight(0, 0, 0)
-    for (let i = 0; i < 100; i++) moisture.step(grid, DT)
-
-    expect(grid.getMoisture(0, 0)!).toBeLessThan(0.8)
-  })
-
-  it('moisture stays within [0, 1]', () => {
-    const grid = makeGrid(4, 4)
-    for (let z = 0; z < 4; z++)
-      for (let x = 0; x < 4; x++)
-        grid.setWaterHeight(x, z, 2)
-    const moisture = new Moisture(4, 4)
-
-    for (let i = 0; i < 30; i++) moisture.step(grid, DT)
-
-    for (let z = 0; z < 4; z++)
-      for (let x = 0; x < 4; x++)
-        expect(grid.getMoisture(x, z)!).toBeLessThanOrEqual(1.0)
-  })
-
-  it('fully dry grid stays at zero moisture', () => {
-    const grid = makeGrid()
-    const moisture = new Moisture(4, 1)
-
-    for (let i = 0; i < 10; i++) moisture.step(grid, DT)
-
-    expect(grid.getMoisture(0, 0)).toBe(0)
+  it('bare rock holds nothing, but reads wet under water and dry out of it', () => {
+    expect(saturation(0, 0, 0.5)).toBe(1)
+    expect(saturation(0, 0, 0)).toBe(0)
   })
 })
 
 describe('Moisture absorbs water', () => {
-  it('dry sand takes SATURATION_DEPTH from the water above it to saturate', () => {
-    const grid = makeGrid()
-    const depth = SATURATION_DEPTH * 10
-    grid.setWaterHeight(0, 0, depth)
-    const moisture = new Moisture(4, 1)
+  it('dry sand under water takes its whole capacity from the column', () => {
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, 1)
+    const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
-    expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(depth - SATURATION_DEPTH, 6)
-    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
+    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(CAPACITY, 6)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(CAPACITY, 6)
+  })
+
+  it('deeper sand holds more water: capacity is the whole depth, uncapped', () => {
+    const shallow = makeGrid(1, 1, 1)
+    const deep = makeGrid(1, 1, 10)
+    shallow.setWaterHeight(0, 0, 1)
+    deep.setWaterHeight(0, 0, 1)
+    const moisture = new Moisture(1, 1)
+
+    moisture.step(shallow, DT)
+    moisture.step(deep, DT)
+
+    expect(deep.getMoisture(0, 0)!).toBeCloseTo(shallow.getMoisture(0, 0)! * 10, 6)
   })
 
   it('damp sand takes only what it is short of', () => {
-    const grid = makeGrid()
-    const depth = SATURATION_DEPTH * 10
-    grid.setWaterHeight(0, 0, depth)
-    grid.setMoisture(0, 0, 0.75)
-    const moisture = new Moisture(4, 1)
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, 1)
+    grid.setMoisture(0, 0, CAPACITY * 0.75)
+    const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
-    expect(grid.getWaterHeight(0, 0)!).toBeCloseTo(depth - SATURATION_DEPTH * 0.25, 6)
-    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
+    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(CAPACITY * 0.25, 6)
   })
 
   it('saturated sand takes nothing', () => {
-    const grid = makeGrid()
+    const grid = makeGrid(1, 1)
     grid.setWaterHeight(0, 0, 0.5)
-    grid.setMoisture(0, 0, 1)
-    const moisture = new Moisture(4, 1)
+    grid.setMoisture(0, 0, CAPACITY)
+    const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
     expect(grid.getWaterHeight(0, 0)).toBe(0.5)
   })
 
-  it('soaks up a film thinner than the shortfall entirely, and is only part wet', () => {
-    const grid = makeGrid()
-    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
-    const moisture = new Moisture(4, 1)
+  it('bare rock takes nothing', () => {
+    const grid = makeGrid(1, 1, 0)
+    grid.setWaterHeight(0, 0, 0.5)
+    const moisture = new Moisture(1, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)).toBe(0.5)
+    expect(grid.getMoisture(0, 0)).toBe(0)
+  })
+
+  it('soaks up a film thinner than the shortfall entirely', () => {
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, CAPACITY / 4)
+    const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
     expect(grid.getWaterHeight(0, 0)).toBe(0)
-    expect(grid.getMoisture(0, 0)!).toBeCloseTo(0.25)
+    // Dry above once the film is gone, so it starts drying the same step.
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(CAPACITY / 4, 4)
   })
 
-  it('creates no water: what the column loses the sand holds', () => {
-    const grid = makeGrid()
-    grid.setWaterHeight(0, 0, SATURATION_DEPTH * 0.6)
-    grid.setMoisture(0, 0, 0.1)
-    const moisture = new Moisture(4, 1)
+  it('settles the sediment of water it soaks up entirely', () => {
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, CAPACITY / 2)
+    grid.setSediment(0, 0, 0.003)
+    const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
-    const waterLost = SATURATION_DEPTH * 0.6 - grid.getWaterHeight(0, 0)!
-    const moistureGained = grid.getMoisture(0, 0)! - 0.1
-    expect(waterLost).toBeCloseTo(moistureGained * SATURATION_DEPTH, 6)
+    expect(grid.getSediment(0, 0)).toBe(0)
+    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(SAND + 0.003, 6)
   })
 
-  it('saturates exactly, so a wet cell is charged once and not every step', () => {
-    const grid = makeGrid()
+  it('a wet cell is charged once, not every step', () => {
+    const grid = makeGrid(1, 1)
     grid.setWaterHeight(0, 0, 0.5)
-    grid.setMoisture(0, 0, 0.3)
-    const moisture = new Moisture(4, 1)
+    const moisture = new Moisture(1, 1)
     moisture.step(grid, DT)
     const afterFirst = grid.getWaterHeight(0, 0)
 
     const dirty = moisture.step(grid, DT)
 
-    expect(grid.getMoisture(0, 0)).toBe(1)
     expect(grid.getWaterHeight(0, 0)).toBe(afterFirst)
     expect(dirty[0]).toBe(0)
   })
+})
 
-  it('settles the sediment of water it soaks up entirely', () => {
+describe('Moisture spreads', () => {
+  it('moves water from damp sand into dry, and creates none', () => {
     const grid = makeGrid()
-    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 2)
-    grid.setSediment(0, 0, 0.003)
+    grid.setMoisture(1, 0, CAPACITY)
     const moisture = new Moisture(4, 1)
+    // Without evaporation, by measuring before any is due: one step's worth.
+    const before = held(grid)
 
     moisture.step(grid, DT)
 
-    expect(grid.getSediment(0, 0)).toBe(0)
-    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(WET_DEPTH * 4 + 0.003, 6)
+    expect(grid.getMoisture(0, 0)!).toBeGreaterThan(0)
+    expect(grid.getMoisture(2, 0)!).toBeGreaterThan(0)
+    expect(grid.getMoisture(1, 0)!).toBeLessThan(CAPACITY)
+    expect(held(grid)).toBeLessThanOrEqual(before)
   })
 
-  it('flags a cell whose water it soaked up entirely', () => {
+  it('a wet cell feeds its neighbours and tops itself up from the column', () => {
     const grid = makeGrid()
-    grid.setWaterHeight(0, 0, SATURATION_DEPTH / 2)
-    grid.setMoisture(0, 0, 0.5)
-    const moisture = new Moisture(4, 1)
-
-    const dirty = moisture.step(grid, DT)
-
-    expect(dirty[0]).toBe(1)
-  })
-})
-
-describe('Moisture capacity follows the sand', () => {
-  const wetCellOver = (sand: number) => {
-    const grid = makeGrid()
-    grid.setSandHeight(0, 0, sand)
     grid.setWaterHeight(0, 0, 1)
-    return grid
-  }
-
-  it('bare rock absorbs nothing, though it still reads as wet', () => {
-    const grid = wetCellOver(0)
     const moisture = new Moisture(4, 1)
+    moisture.step(grid, DT)
+    const columnAfterSoaking = grid.getWaterHeight(0, 0)!
+
+    for (let i = 0; i < 30; i++) moisture.step(grid, DT)
+
+    expect(grid.getMoisture(1, 0)!).toBeGreaterThan(0)
+    expect(grid.getWaterHeight(0, 0)!).toBeLessThan(columnAfterSoaking)
+  })
+
+  it('flows between cells by saturation, not by amount', () => {
+    // A shallow cell, saturated, beside a deep one holding more water but
+    // less than half full: water moves from shallow to deep.
+    const grid = makeGrid(2, 1)
+    grid.setSandHeight(0, 0, 1)
+    grid.setMoisture(0, 0, POROSITY * 1)
+    grid.setSandHeight(1, 0, 10)
+    grid.setMoisture(1, 0, POROSITY * 10 * 0.4)
+    const moisture = new Moisture(2, 1)
 
     moisture.step(grid, DT)
 
-    expect(grid.getWaterHeight(0, 0)).toBe(1)
-    expect(grid.getMoisture(0, 0)).toBe(1)
+    expect(grid.getMoisture(0, 0)!).toBeLessThan(POROSITY * 1)
   })
 
-  it('thin sand holds in proportion to its depth', () => {
-    const grid = wetCellOver(WET_DEPTH / 4)
-    const moisture = new Moisture(4, 1)
+  it('nothing spreads across bare rock', () => {
+    const grid = makeGrid(3, 1)
+    grid.setSandHeight(1, 0, 0)
+    grid.setMoisture(0, 0, CAPACITY)
+    const moisture = new Moisture(3, 1)
 
-    moisture.step(grid, DT)
+    for (let i = 0; i < 30; i++) moisture.step(grid, DT)
 
-    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(SATURATION_DEPTH / 4, 6)
-    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
-  })
-
-  it('sand deeper than WET_DEPTH holds no more than WET_DEPTH does', () => {
-    const atDepth = wetCellOver(WET_DEPTH)
-    const deeper = wetCellOver(WET_DEPTH * 10)
-    const moisture = new Moisture(4, 1)
-
-    moisture.step(atDepth, DT)
-    moisture.step(deeper, DT)
-
-    expect(1 - atDepth.getWaterHeight(0, 0)!).toBeCloseTo(SATURATION_DEPTH, 6)
-    expect(deeper.getWaterHeight(0, 0)).toBe(atDepth.getWaterHeight(0, 0))
-  })
-
-  it('a film over thin sand wets it further than over deep sand', () => {
-    const thin = makeGrid()
-    thin.setSandHeight(0, 0, WET_DEPTH / 2)
-    thin.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
-    const deep = makeGrid()
-    deep.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
-    const moisture = new Moisture(4, 1)
-
-    moisture.step(thin, DT)
-    moisture.step(deep, DT)
-
-    expect(thin.getMoisture(0, 0)!).toBeCloseTo(0.5)
-    expect(deep.getMoisture(0, 0)!).toBeCloseTo(0.25)
+    expect(grid.getMoisture(2, 0)).toBe(0)
   })
 })
 
-describe('moistureAfterDrySand', () => {
-  it('a full wetting layer of dry sand leaves the surface dry', () => {
-    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH)).toBe(0)
-    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH * 10)).toBe(0)
+describe('Moisture dries', () => {
+  it('loses the same water per second from deep sand as from shallow', () => {
+    // Both saturated, single cells so nothing spreads: only depth differs.
+    const shallow = makeGrid(1, 1, 1)
+    const deep = makeGrid(1, 1, 10)
+    shallow.setMoisture(0, 0, POROSITY * 1)
+    deep.setMoisture(0, 0, POROSITY * 10)
+    const moisture = new Moisture(1, 1)
+
+    for (let i = 0; i < 30; i++) {
+      moisture.step(shallow, DT)
+      moisture.step(deep, DT)
+    }
+
+    const shallowLoss = POROSITY * 1 - shallow.getMoisture(0, 0)!
+    const deepLoss = POROSITY * 10 - deep.getMoisture(0, 0)!
+    expect(shallowLoss).toBeGreaterThan(0)
+    expect(shallowLoss / deepLoss).toBeGreaterThan(0.9)
+    expect(shallowLoss / deepLoss).toBeLessThan(1.1)
   })
 
-  it('a thin dry layer mixes with the damp sand still within the wetting depth', () => {
-    // A quarter-layer of dry sand on deep, saturated sand: the top WET_DEPTH
-    // is now a quarter dry and three quarters the old damp sand.
-    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH / 4)).toBeCloseTo(0.75)
-    expect(moistureAfterDrySand(0.4, WET_DEPTH * 5, WET_DEPTH / 4)).toBeCloseTo(0.3)
+  it('dries out completely, to exactly zero', () => {
+    const grid = makeGrid(1, 1, 1)
+    grid.setMoisture(0, 0, POROSITY)
+    const moisture = new Moisture(1, 1)
+
+    for (let i = 0; i < 30 * 600; i++) moisture.step(grid, DT)
+
+    expect(grid.getMoisture(0, 0)).toBe(0)
   })
 
-  it('on thin damp sand the layer mixes in proportion to both amounts', () => {
-    // A quarter-layer of damp sand under a quarter-layer of dry: half and half.
-    expect(moistureAfterDrySand(0.8, WET_DEPTH / 4, WET_DEPTH / 4)).toBeCloseTo(0.4)
+  it('sand under water does not dry', () => {
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, 1)
+    const moisture = new Moisture(1, 1)
+    moisture.step(grid, DT)
+    const soaked = grid.getMoisture(0, 0)
+
+    for (let i = 0; i < 30; i++) moisture.step(grid, DT)
+
+    expect(grid.getMoisture(0, 0)).toBe(soaked)
   })
 
-  it('dry sand on bare rock is dry, however wet the rock was', () => {
-    expect(moistureAfterDrySand(1, 0, WET_DEPTH / 4)).toBe(0)
-  })
+  it('a fully dry grid stays dry', () => {
+    const grid = makeGrid()
+    const moisture = new Moisture(4, 1)
 
-  it('adding nothing changes nothing', () => {
-    expect(moistureAfterDrySand(0.6, WET_DEPTH * 5, 0)).toBe(0.6)
-    expect(moistureAfterDrySand(0.6, 0, 0)).toBe(0.6)
+    for (let i = 0; i < 10; i++) moisture.step(grid, DT)
+
+    expect(held(grid)).toBe(0)
   })
 })
 
@@ -275,18 +263,18 @@ describe('Moisture dirty mask', () => {
     expect(dirty[0]).toBe(1)
   })
 
-  it('a wet cell already at moisture 1.0 is not re-flagged dirty', () => {
+  it('a cell whose water was soaked up entirely is flagged dirty', () => {
     const grid = makeGrid()
-    grid.setWaterHeight(0, 0, 1)
+    grid.setWaterHeight(0, 0, CAPACITY / 2)
+    grid.setMoisture(0, 0, CAPACITY / 2)
     const moisture = new Moisture(4, 1)
-    moisture.step(grid, DT)
 
     const dirty = moisture.step(grid, DT)
 
-    expect(dirty[0]).toBe(0)
+    expect(dirty[0]).toBe(1)
   })
 
-  it('an isolated dry cell that stays at zero moisture is not dirty', () => {
+  it('an isolated dry cell that stays dry is not dirty', () => {
     const grid = makeGrid()
     const moisture = new Moisture(4, 1)
 
@@ -295,17 +283,13 @@ describe('Moisture dirty mask', () => {
     expect(dirty[3]).toBe(0)
   })
 
-  it('a dry neighbour that actually gains moisture is flagged on the tick it changes', () => {
+  it('a dry neighbour that visibly gains moisture is flagged', () => {
     const grid = makeGrid()
     grid.setWaterHeight(0, 0, 1)
     const moisture = new Moisture(4, 1)
 
     let dirty = moisture.step(grid, DT)
-    // Cell 1 sits adjacent to the wet source; it should pick up moisture
-    // well before it converges, and be flagged on that tick.
-    for (let i = 0; i < 20 && dirty[1] === 0; i++) {
-      dirty = moisture.step(grid, DT)
-    }
+    for (let i = 0; i < 60 && dirty[1] === 0; i++) dirty = moisture.step(grid, DT)
 
     expect(dirty[1]).toBe(1)
   })

@@ -1,4 +1,4 @@
-import { SNAPSHOT_VERSION, GRID_LAYERS, FLOW_LAYERS, isValidSnapshot } from './GameSnapshot.ts'
+import { SNAPSHOT_VERSION, GRID_LAYERS, FLOW_LAYERS, isValidSnapshot, migrateSnapshot } from './GameSnapshot.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import type { GridSnapshot } from './Grid.ts'
 import type { WaterSimSnapshot } from '../sim/WaterSim.ts'
@@ -25,7 +25,7 @@ export interface GameFile {
   water: FlowLayerFile
   waves: WavesSnapshot
   tide: TideSnapshot
-  bucket: { amount: number }
+  bucket: GameSnapshot['bucket']
   camera: CameraSnapshot
   toolMode: ToolMode
   paused: boolean
@@ -103,7 +103,7 @@ export function parseGameFile(
   if (file['encoding'] !== FILE_ENCODING) return null
 
   const cells = width * depth
-  const candidate: unknown = {
+  const candidate: unknown = migrateSnapshot({
     version: file['version'],
     width: file['width'],
     depth: file['depth'],
@@ -116,7 +116,7 @@ export function parseGameFile(
     toolMode: file['toolMode'],
     paused: file['paused'],
     lookEnabled: file['lookEnabled'],
-  }
+  })
 
   return isValidSnapshot(candidate, width, depth) ? candidate : null
 }
