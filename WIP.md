@@ -17,11 +17,12 @@ Decided (with the user):
 
 ## Current Step
 
-Step 5: CLAUDE.md.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - step 4 committed; suite green (459), tsc clean.
+⏸️ WAITING - suite green (459), tsc clean. Not yet browser-checked: the
+colours on a damp dune and the Look panel's held-water reading.
 
 Step 1 notes: `Moisture.step` reads each cell once into working arrays -
 1.40 ms/step on the full beach against 1.49 before (a getter-per-pass first
@@ -33,7 +34,7 @@ draft was 4.1). Boot absorbs 50 of 189,702 water into the sea bed's sand.
 - [x] Step 2: dig/dump carry water in the bucket
 - [x] Step 3: `Slope` moves water with sand
 - [x] Step 4: `Erosion` releases eroded sand's water to the column
-- [ ] Step 5: CLAUDE.md
+- [x] Step 5: CLAUDE.md, with the front re-measured under the uncapped model
 
 ## Shipped before this
 

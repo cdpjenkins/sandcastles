@@ -271,8 +271,8 @@ on a draining slope: the wetted area did not shrink by a single cell in 600s, an
 decayed like `1/t` — 1.24e-4 at 600s, extrapolating to roughly 20 hours to reach `DRY_DEPTH` and
 never reaching exactly zero.
 
-And `grid.water` had no sink at all. `Moisture` evaporates, but that is the sand's dampness, not the
-water column — two separate things whose rate constants were both 0.02, which invites confusion.
+And `grid.water` had no sink at all. `Moisture` evaporates, but that is the water held in the sand,
+not the water column — two separate things with separate rate constants, which invites confusion.
 
 A *linear* sink is the whole point: a constant rate reaches zero in finite time where the drainage
 law cannot.
@@ -286,36 +286,51 @@ instead.
 step that takes the last of the water to zero is a change of about that size, and it is the one
 transition that must reach the mesh.
 
-### Wetting sand is paid for out of the water column
+### Moisture is water, spread evenly through the sand
 
-Moisture is water held in the sand, as a fraction of the cell's capacity. Capacity is
-`SATURATION_DEPTH * min(sand / WET_DEPTH, 1)`: only the top `WET_DEPTH` of sand soaks up water in the
-time a game covers, so a deep pile holds no more than a unit of sand, thinner sand holds pro rata, and
-bare rock holds nothing — though wet rock is still set to moisture 1, because `rockColour` draws it
-darker. `Moisture.step` charges a cell's capacity in water to take it from dry to saturated, pro rata
-for sand that is already damp, and a film thinner
-than the shortfall is soaked up whole — the cell goes dry and its sediment settles, through the same
-`settleSediment` `Evaporation` uses. Water absorbed is never returned: moisture drying out at
-`EVAPORATE_RATE` is the sand losing it to the air. The cost is once per wetting, not per second, so it
-cannot strangle a front the way the gated `Drying` did — measured on a dry slope fed a steady sheet,
-front after 60s over deep sand: 28 -> 25 cells at a 0.05 source, 68 -> 62 at 0.2. Thinner sand only
-absorbs less. A front still advances, just
-slower, which is what soaking in should look like. Check that scene again before raising
-`SATURATION_DEPTH`.
+`grid.moisture` is an absolute amount of water held in the cell's sand, spread evenly through its
+whole depth — not a 0-1 fraction. Capacity is `POROSITY * sand`, uncapped, so a deep dune holds more
+than a thin skin and bare rock holds none. Anything that wants "how wet does it look" — `TerrainMesh`'s
+colours, the Look panel's % — reads `saturation()`, which is `moisture / capacity`, and 1 for bare rock
+under water so wet rock still draws dark.
 
-Dumped sand is dry and lies on top: `moistureAfterDrySand` takes the new top `WET_DEPTH` as the dry
-sand plus whatever old damp sand is still within it, so a full `DUMP_AMOUNT` (10, against a
-`WET_DEPTH` of 1) leaves the surface bone dry and only a bucket's last scrap blends. Damp sand pushed
-below the layer is buried, uncounted. A dump into standing water is re-wetted — and charged — on the
-next step, which is right.
+Every sand mover therefore moves water too, and each one has to say where it goes:
 
-Digging and erosion still leave moisture's *fraction* alone, so changing the sand under a cell
-quietly changes how much water it notionally holds. Harmless while absorbed water is never returned;
-it stops being harmless the moment it is.
+- **Dig** takes its share into the bucket, and **dump** pours the bucket's share back. `Bucket` holds
+  `water` alongside its sand and gives it up in proportion.
+- **`Slope`** slides it with the sand.
+- **`Erosion`** releases eroded sand's share into the water column — it is already underwater.
+  Deposited sand, and sediment settling out of an evaporated film, arrive dry and soak from the
+  column like any other sand.
 
-The sea is not exempt, unlike `Evaporation`: a sea cell is saturated after its first step and is
-never charged again, so the whole beach pays at most ~285 once, at boot. The tide re-wetting sand it left to
-dry is charged, and is small next to its swing.
+If a new path writes `grid.sand` without moving moisture with it, it silently changes the cell's
+saturation. That is the one thing to check when adding one.
+
+`Moisture.step` soaks a wet cell's sand from the column above (only what it is short of, so a cell is
+charged once per wetting); spreads water across each edge by *saturation* difference, scaled by the
+smaller capacity, accumulated before applying so it conserves; and dries anything not under water at
+`EVAPORATE_RATE` — water per second, so deep sand takes longer to dry. A film thinner than the
+shortfall is soaked up whole, and its sediment settles through `settleSediment`.
+
+It reads each cell once into working arrays. A first draft that went through the grid's
+bounds-checked getters in each of its passes ran 4.1 ms a step on the full beach; the cached version
+runs 1.4, a touch under the old fraction model's 1.5.
+
+**Soaking slows an advancing front, and deep sand slows it a lot.** Dry slope fed a steady sheet,
+front after 60s, without soaking -> with:
+
+| sand depth | 0.05 source | 0.2 source |
+|---|---|---|
+| 1  | 39 -> 32 | 73 -> 67 |
+| 5  | 39 -> 22 | 73 -> 53 |
+| 10 | 39 -> 15 | 73 -> 44 |
+
+That is soaking in, not the gated-`Drying` strangling recorded above: the cost is once per cell, so the
+front keeps going. But the beach's dunes run to ~15 deep, so `POROSITY` is the knob to reach for if
+water feels like it vanishes into dry sand. Re-run that scene before changing it.
+
+The sea is not exempt, unlike `Evaporation`: its sand is saturated on the first step and never
+charged again. The sea bed's sand is thin (≤ 1.94), so boot soaks 50 of 189,702.
 
 ### Screen-space directions go through `isoProjection`
 
@@ -396,6 +411,15 @@ Every save written, every load rejected, autosave silently doing nothing while
 looking completely healthy. `Game` cannot be built under jsdom, so the assembly
 lives in `createSnapshot` and the test drives it with real components — that
 round trip is the thing keeping the feature honest.
+
+### Snapshot version 2 changed what a layer *means*, so it migrates
+
+v1 stored moisture as a 0-1 fraction; v2 stores water. Same layer, same `Float32Array(65536)`, so
+nothing structural tells them apart: unbumped, a v1 save loads cleanly with every damp cell reading
+~100x oversaturated; bumped without a migration, the guard refuses every existing autosave and file
+and the player gets a fresh beach. `migrateSnapshot` runs before `isValidSnapshot` on both
+`loadSnapshot` and `parseGameFile`, keeps each cell's saturation, and gives the v1 bucket dry sand.
+A future change of meaning wants the same: a version bump *and* a step in `migrateSnapshot`.
 
 ### What is deliberately not stored
 
