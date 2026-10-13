@@ -1,4 +1,31 @@
-# WIP: A cell holds moisture in proportion to its sand, up to a wetting depth
+# WIP: Dumped sand is dry
+
+Dry sand dumped on a cell lies on top. The wetting layer is the top
+`WET_DEPTH`, so after a dump it holds the new dry sand plus whatever of the
+old damp sand is still within `WET_DEPTH` of the surface; moisture is that
+mix. The damp sand pushed below the layer is buried, like absorbed water,
+never returned.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - suite green (439), tsc clean.
+
+## Completed
+
+- [x] Step 1: `moistureAfterDrySand` in `Moisture.ts`, used by `dump`.
+      `Game` already redraws the dumped cell, colour included.
+
+## Shipped before this
+
+- A cell holds moisture in proportion to its sand (`dbd263d`).
+
+---
+
+# Previous: A cell holds moisture in proportion to its sand, up to a wetting depth
 
 Capacity = `SATURATION_DEPTH * min(sand / WET_DEPTH, 1)`: sand at least
 `WET_DEPTH` deep holds what every cell held before, thinner sand holds pro

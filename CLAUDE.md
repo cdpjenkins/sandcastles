@@ -303,7 +303,13 @@ absorbs less. A front still advances, just
 slower, which is what soaking in should look like. Check that scene again before raising
 `SATURATION_DEPTH`.
 
-Digging, dumping and erosion leave moisture's *fraction* alone, so changing the sand under a cell
+Dumped sand is dry and lies on top: `moistureAfterDrySand` takes the new top `WET_DEPTH` as the dry
+sand plus whatever old damp sand is still within it, so a full `DUMP_AMOUNT` (10, against a
+`WET_DEPTH` of 1) leaves the surface bone dry and only a bucket's last scrap blends. Damp sand pushed
+below the layer is buried, uncounted. A dump into standing water is re-wetted — and charged — on the
+next step, which is right.
+
+Digging and erosion still leave moisture's *fraction* alone, so changing the sand under a cell
 quietly changes how much water it notionally holds. Harmless while absorbed water is never returned;
 it stops being harmless the moment it is.
 

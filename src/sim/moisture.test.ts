@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Moisture, SATURATION_DEPTH, WET_DEPTH } from './Moisture.ts'
+import { Moisture, SATURATION_DEPTH, WET_DEPTH, moistureAfterDrySand } from './Moisture.ts'
 import { Grid } from '../core/Grid.ts'
 
 const DT = 1 / 30
@@ -225,6 +225,34 @@ describe('Moisture capacity follows the sand', () => {
 
     expect(thin.getMoisture(0, 0)!).toBeCloseTo(0.5)
     expect(deep.getMoisture(0, 0)!).toBeCloseTo(0.25)
+  })
+})
+
+describe('moistureAfterDrySand', () => {
+  it('a full wetting layer of dry sand leaves the surface dry', () => {
+    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH)).toBe(0)
+    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH * 10)).toBe(0)
+  })
+
+  it('a thin dry layer mixes with the damp sand still within the wetting depth', () => {
+    // A quarter-layer of dry sand on deep, saturated sand: the top WET_DEPTH
+    // is now a quarter dry and three quarters the old damp sand.
+    expect(moistureAfterDrySand(1, WET_DEPTH * 5, WET_DEPTH / 4)).toBeCloseTo(0.75)
+    expect(moistureAfterDrySand(0.4, WET_DEPTH * 5, WET_DEPTH / 4)).toBeCloseTo(0.3)
+  })
+
+  it('on thin damp sand the layer mixes in proportion to both amounts', () => {
+    // A quarter-layer of damp sand under a quarter-layer of dry: half and half.
+    expect(moistureAfterDrySand(0.8, WET_DEPTH / 4, WET_DEPTH / 4)).toBeCloseTo(0.4)
+  })
+
+  it('dry sand on bare rock is dry, however wet the rock was', () => {
+    expect(moistureAfterDrySand(1, 0, WET_DEPTH / 4)).toBe(0)
+  })
+
+  it('adding nothing changes nothing', () => {
+    expect(moistureAfterDrySand(0.6, WET_DEPTH * 5, 0)).toBe(0.6)
+    expect(moistureAfterDrySand(0.6, 0, 0)).toBe(0.6)
   })
 })
 

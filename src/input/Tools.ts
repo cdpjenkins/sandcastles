@@ -1,5 +1,6 @@
 import type { Grid } from '../core/Grid.ts'
 import type { Bucket } from '../core/Bucket.ts'
+import { moistureAfterDrySand } from '../sim/Moisture.ts'
 
 export const ToolMode = {
   Spade: 'spade',
@@ -29,6 +30,8 @@ export function dump(grid: Grid, x: number, z: number, bucket: Bucket): boolean 
   const removed = bucket.empty(DUMP_AMOUNT)
   const sand = grid.getSandHeight(x, z) ?? 0
   grid.setSandHeight(x, z, sand + removed)
+  // Sand from the bucket is dry, and lies on top of whatever was damp.
+  grid.setMoisture(x, z, moistureAfterDrySand(grid.getMoisture(x, z) ?? 0, sand, removed))
   return true
 }
 

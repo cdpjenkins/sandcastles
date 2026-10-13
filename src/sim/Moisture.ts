@@ -11,6 +11,18 @@ import { settleSediment } from './settleSediment.ts'
 // thinner sand pro rata, and bare rock nothing.
 export const SATURATION_DEPTH = 0.01
 export const WET_DEPTH = 1
+// Moisture once `added` dry sand is laid over `sand` at moisture `m`. Only
+// the top WET_DEPTH holds moisture, so the new layer is the dry sand plus
+// whatever of the old damp sand is still within WET_DEPTH of the surface.
+// Damp sand pushed below that is buried, and like absorbed water never
+// returned.
+export const moistureAfterDrySand = (m: number, sand: number, added: number): number => {
+  const layer = Math.min(sand + added, WET_DEPTH)
+  if (layer === 0) return m
+  const dampStillInLayer = Math.min(sand, Math.max(0, WET_DEPTH - added))
+  return (m * dampStillInLayer) / layer
+}
+
 const DIFFUSE_RATE = 0.1
 const EVAPORATE_RATE = 0.02
 const DIRTY_EPSILON = 1e-4
