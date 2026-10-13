@@ -7,6 +7,10 @@ import { settleSediment } from './settleSediment.ts'
 // none. Water soaks in from the column above; what dries out is lost to the
 // air.
 export const POROSITY = 0.01
+// Water per second that can soak into a cell's sand from the column above.
+// Infiltration is a surface rate, so it is the same however deep the sand:
+// a thin skin fills in a step, a deep dune takes several.
+export const SOAK_RATE = 1.0
 // Per edge, scaled by saturation difference: matches the old fraction-based
 // diffusion, which pulled a cell towards its four neighbours' mean at 0.1/s.
 const DIFFUSE_RATE = 0.1
@@ -54,7 +58,8 @@ export class Moisture {
     dirty.fill(0)
     delta.fill(0)
 
-    // Read, and soak: a cell under water fills its sand from the column above.
+    // Read, and soak: a cell under water fills its sand from the column above,
+    // no faster than SOAK_RATE.
     for (let z = 0; z < D; z++) {
       for (let x = 0; x < W; x++) {
         const i = z * W + x
@@ -64,7 +69,7 @@ export class Moisture {
         capacity[i] = cap
         before[i] = saturationOf(m, cap, w)
 
-        const absorbed = w > 0 ? Math.min(w, cap - m) : 0
+        const absorbed = w > 0 ? Math.min(w, cap - m, SOAK_RATE * dt) : 0
         if (absorbed > 0) {
           const remaining = w - absorbed
           grid.setWaterHeight(x, z, remaining)

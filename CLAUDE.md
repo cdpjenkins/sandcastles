@@ -307,7 +307,8 @@ If a new path writes `grid.sand` without moving moisture with it, it silently ch
 saturation. That is the one thing to check when adding one.
 
 `Moisture.step` soaks a wet cell's sand from the column above (only what it is short of, so a cell is
-charged once per wetting); spreads water across each edge by *saturation* difference, scaled by the
+charged once per wetting, and no faster than `SOAK_RATE` — a surface rate, the same at any depth, so
+at 1.0/s a unit of sand fills in a step and a 15-deep dune takes five); spreads water across each edge by *saturation* difference, scaled by the
 smaller capacity, accumulated before applying so it conserves; and dries anything not under water at
 `EVAPORATE_RATE` — water per second, so deep sand takes longer to dry. A film thinner than the
 shortfall is soaked up whole, and its sediment settles through `settleSediment`.
@@ -324,6 +325,11 @@ front after 60s, without soaking -> with:
 | 1  | 39 -> 32 | 73 -> 67 |
 | 5  | 39 -> 22 | 73 -> 53 |
 | 10 | 39 -> 15 | 73 -> 44 |
+
+`SOAK_RATE` does not change that table at all — the figures are identical with and without it —
+because a front's leading cells hold less water than a step's soaking. It bites where *deep* water
+meets dry sand: a pit flooding, a channel cut into a dune, the tide coming in. Don't reach for it to
+speed a front up; that is `POROSITY`.
 
 That is soaking in, not the gated-`Drying` strangling recorded above: the cost is once per cell, so the
 front keeps going. But the beach's dunes run to ~15 deep, so `POROSITY` is the knob to reach for if

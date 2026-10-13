@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Moisture, POROSITY, saturation } from './Moisture.ts'
+import { Moisture, POROSITY, SOAK_RATE, saturation } from './Moisture.ts'
 import { Grid } from '../core/Grid.ts'
 
 const DT = 1 / 30
@@ -14,6 +14,10 @@ const makeGrid = (w = 4, d = 1, sand = SAND) => {
       g.setSandHeight(x, z, sand)
     }
   return g
+}
+
+const soakFor = (grid: Grid, moisture: Moisture, steps = 300) => {
+  for (let i = 0; i < steps; i++) moisture.step(grid, DT)
 }
 
 const held = (grid: Grid) => {
@@ -39,13 +43,47 @@ describe('saturation', () => {
   })
 })
 
-describe('Moisture absorbs water', () => {
-  it('dry sand under water takes its whole capacity from the column', () => {
-    const grid = makeGrid(1, 1)
+describe('Moisture soaks in at a rate', () => {
+  const perStep = SOAK_RATE * DT
+
+  it('takes no more than SOAK_RATE allows in a step', () => {
+    const grid = makeGrid(1, 1, (perStep * 5) / POROSITY)
     grid.setWaterHeight(0, 0, 1)
     const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
+
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(perStep, 6)
+    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(perStep, 6)
+  })
+
+  it('deep dry sand takes several steps to fill, shallow sand one', () => {
+    const stepsToFill = (sand: number) => {
+      const grid = makeGrid(1, 1, sand)
+      grid.setWaterHeight(0, 0, 1)
+      const moisture = new Moisture(1, 1)
+      let steps = 0
+      while (saturation(grid.getMoisture(0, 0)!, sand, 1) < 1 - 1e-6 && steps < 1000) {
+        moisture.step(grid, DT)
+        steps++
+      }
+      return steps
+    }
+
+    // Capacities stated against a step's soaking, not as bare depths, so the
+    // rate can be tuned without this test moving.
+    expect(stepsToFill((perStep * 0.5) / POROSITY)).toBe(1)
+    expect(stepsToFill((perStep * 3.5) / POROSITY)).toBe(4)
+  })
+})
+
+describe('Moisture absorbs water', () => {
+  it('dry sand under water fills to its whole capacity from the column', () => {
+    const grid = makeGrid(1, 1)
+    grid.setWaterHeight(0, 0, 1)
+    const moisture = new Moisture(1, 1)
+
+    soakFor(grid, moisture)
 
     expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(CAPACITY, 6)
     expect(grid.getMoisture(0, 0)!).toBeCloseTo(CAPACITY, 6)
@@ -58,8 +96,8 @@ describe('Moisture absorbs water', () => {
     deep.setWaterHeight(0, 0, 1)
     const moisture = new Moisture(1, 1)
 
-    moisture.step(shallow, DT)
-    moisture.step(deep, DT)
+    soakFor(shallow, moisture)
+    soakFor(deep, moisture)
 
     expect(deep.getMoisture(0, 0)!).toBeCloseTo(shallow.getMoisture(0, 0)! * 10, 6)
   })
@@ -121,11 +159,11 @@ describe('Moisture absorbs water', () => {
     expect(grid.getSandHeight(0, 0)!).toBeCloseTo(SAND + 0.003, 6)
   })
 
-  it('a wet cell is charged once, not every step', () => {
+  it('a wet cell stops being charged once it is full', () => {
     const grid = makeGrid(1, 1)
     grid.setWaterHeight(0, 0, 0.5)
     const moisture = new Moisture(1, 1)
-    moisture.step(grid, DT)
+    soakFor(grid, moisture)
     const afterFirst = grid.getWaterHeight(0, 0)
 
     const dirty = moisture.step(grid, DT)
@@ -226,7 +264,7 @@ describe('Moisture dries', () => {
     const grid = makeGrid(1, 1)
     grid.setWaterHeight(0, 0, 1)
     const moisture = new Moisture(1, 1)
-    moisture.step(grid, DT)
+    soakFor(grid, moisture)
     const soaked = grid.getMoisture(0, 0)
 
     for (let i = 0; i < 30; i++) moisture.step(grid, DT)

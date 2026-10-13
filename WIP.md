@@ -1,4 +1,29 @@
-# WIP: Moisture is an absolute amount of water
+# WIP: Water soaks into sand at a rate
+
+A wet cell absorbs at most `SOAK_RATE * dt` a step: infiltration is a
+surface rate, so deep sand, which holds more, takes more steps to fill. At
+1.0/s a unit of sand fills in one step and a 15-deep dune in five.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - suite green (461), tsc clean. Front-advance probe unchanged by
+the rate (fronts are thinner than a step's soaking).
+
+## Completed
+
+- [x] Step 1: `SOAK_RATE` in `Moisture.step`.
+
+## Shipped before this
+
+- Moisture is water held in the sand (`d6e1ea3`..`736eeeb`).
+
+---
+
+# Previous: Moisture is an absolute amount of water
 
 `grid.moisture` holds water, spread evenly through the cell's sand, rather
 than a 0-1 fraction. Capacity is `POROSITY * sand` with no wetting-depth cap.
