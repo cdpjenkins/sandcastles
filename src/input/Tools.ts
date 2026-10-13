@@ -18,17 +18,25 @@ export function dig(grid: Grid, x: number, z: number, bucket: Bucket): boolean {
   const sand = grid.getSandHeight(x, z) ?? 0
   if (sand <= 0) return false
 
-  const added = bucket.fill(Math.min(DIG_AMOUNT, sand))
+  // The water is spread evenly through the sand, so a spadeful takes its
+  // share of it into the bucket.
+  const moisture = grid.getMoisture(x, z) ?? 0
+  const waterPerSand = moisture / sand
+  const added = bucket.fill(Math.min(DIG_AMOUNT, sand), waterPerSand)
   grid.setSandHeight(x, z, sand - added)
+  grid.setMoisture(x, z, Math.max(0, moisture - added * waterPerSand))
   return true
 }
 
 export function dump(grid: Grid, x: number, z: number, bucket: Bucket): boolean {
   if (bucket.isEmpty) return false
 
+  const waterBefore = bucket.water
   const removed = bucket.empty(DUMP_AMOUNT)
   const sand = grid.getSandHeight(x, z) ?? 0
   grid.setSandHeight(x, z, sand + removed)
+  // The poured sand brings its water, which mixes evenly through the cell.
+  grid.setMoisture(x, z, (grid.getMoisture(x, z) ?? 0) + waterBefore - bucket.water)
   return true
 }
 

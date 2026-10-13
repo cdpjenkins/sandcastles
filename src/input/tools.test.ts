@@ -141,6 +141,56 @@ describe('dump', () => {
   })
 })
 
+describe('the bucket carries damp sand', () => {
+  it('a dig takes the water of the sand it takes', () => {
+    const grid = makeGrid()
+    grid.setMoisture(8, 0, 0.1)
+    const bucket = roomyBucket()
+
+    dig(grid, 8, 0, bucket)
+
+    // Half the cell's sand, so half its water.
+    expect(grid.getMoisture(8, 0)!).toBeCloseTo(0.05, 6)
+    expect(bucket.water).toBeCloseTo(0.05, 6)
+  })
+
+  it('a dig into a nearly full bucket takes only the water of the sand that fits', () => {
+    const grid = makeGrid()
+    grid.setMoisture(8, 0, 0.2)
+    const bucket = new Bucket(DIG_AMOUNT * 2)
+    bucket.fill(DIG_AMOUNT * 2 - DIG_AMOUNT / 2)
+
+    dig(grid, 8, 0, bucket)
+
+    // A quarter of the cell's sand made it in.
+    expect(bucket.water).toBeCloseTo(0.05, 6)
+    expect(grid.getMoisture(8, 0)!).toBeCloseTo(0.15, 6)
+  })
+
+  it('a dump returns the water of the sand it pours', () => {
+    const grid = new Grid(16, 16)
+    const bucket = new Bucket(100)
+    bucket.fill(DUMP_AMOUNT * 4, 0.001)
+
+    dump(grid, 5, 5, bucket)
+
+    expect(grid.getMoisture(5, 5)!).toBeCloseTo(DUMP_AMOUNT * 0.001, 6)
+    expect(bucket.water).toBeCloseTo(DUMP_AMOUNT * 3 * 0.001, 6)
+  })
+
+  it('moving sand by bucket moves its water, and loses none', () => {
+    const grid = makeGrid()
+    grid.setMoisture(8, 0, 0.1)
+    const bucket = new Bucket(DIG_AMOUNT)
+
+    dig(grid, 8, 0, bucket)
+    dump(grid, 3, 3, bucket)
+
+    expect(grid.getMoisture(8, 0)! + grid.getMoisture(3, 3)!).toBeCloseTo(0.1, 6)
+    expect(bucket.water).toBe(0)
+  })
+})
+
 describe('repeatsOnHold', () => {
   // Game cannot be built under jsdom, so a branch left inline there is one
   // nothing catches if it is ever inverted - and inverting this one paints a
