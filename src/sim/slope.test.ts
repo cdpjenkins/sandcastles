@@ -116,3 +116,33 @@ describe('Slope dirty mask', () => {
     expect(Array.from(dirty).every(v => v === 0)).toBe(true)
   })
 })
+
+describe('Slope carries water with the sand', () => {
+  const total = (grid: Grid) =>
+    [0, 1, 2, 3].reduce((sum, x) => sum + (grid.getMoisture(x, 0) ?? 0), 0)
+
+  it('slumping damp sand takes its water with it', () => {
+    const grid = makeGrid()
+    grid.setSandHeight(0, 0, 20)
+    grid.setMoisture(0, 0, 0.2)
+    const slope = new Slope(4, 1)
+
+    slope.step(grid)
+
+    expect(grid.getMoisture(1, 0)!).toBeGreaterThan(0)
+    // At the concentration it left: water per sand is unchanged on both sides.
+    expect(grid.getMoisture(0, 0)! / grid.getSandHeight(0, 0)!).toBeCloseTo(0.01, 6)
+    expect(grid.getMoisture(1, 0)! / grid.getSandHeight(1, 0)!).toBeCloseTo(0.01, 6)
+  })
+
+  it('creates and destroys no water', () => {
+    const grid = makeGrid()
+    grid.setSandHeight(0, 0, 20)
+    grid.setMoisture(0, 0, 0.2)
+    const slope = new Slope(4, 1)
+
+    for (let i = 0; i < 50; i++) slope.step(grid)
+
+    expect(total(grid)).toBeCloseTo(0.2, 6)
+  })
+})

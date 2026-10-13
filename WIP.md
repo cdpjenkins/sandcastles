@@ -17,11 +17,11 @@ Decided (with the user):
 
 ## Current Step
 
-Step 3: `Slope` moves water with sand.
+Step 4: `Erosion` releases eroded sand's water to the column.
 
 ## Status
 
-⏸️ WAITING - step 2 committed; suite green (454), tsc clean.
+⏸️ WAITING - step 3 committed; suite green (456), tsc clean.
 
 Step 1 notes: `Moisture.step` reads each cell once into working arrays -
 1.40 ms/step on the full beach against 1.49 before (a getter-per-pass first
@@ -31,7 +31,7 @@ draft was 4.1). Boot absorbs 50 of 189,702 water into the sea bed's sand.
 
 - [x] Step 1: absolute moisture, display, snapshot v2 + migration
 - [x] Step 2: dig/dump carry water in the bucket
-- [ ] Step 3: `Slope` moves water with sand
+- [x] Step 3: `Slope` moves water with sand
 - [ ] Step 4: `Erosion` releases eroded sand's water to the column
 - [ ] Step 5: CLAUDE.md
 

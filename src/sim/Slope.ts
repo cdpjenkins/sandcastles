@@ -45,6 +45,13 @@ export class Slope {
 
           grid.setSandHeight(x, z, sand - transfer)
           grid.setSandHeight(nx, nz, nSand + transfer)
+
+          // Moisture is spread evenly through the sand, so what slides
+          // carries its share.
+          const moisture = grid.getMoisture(x, z) ?? 0
+          const carried = (moisture * transfer) / sand
+          grid.setMoisture(x, z, Math.max(0, moisture - carried))
+          grid.setMoisture(nx, nz, (grid.getMoisture(nx, nz) ?? 0) + carried)
           if (transfer > DIRTY_EPSILON) {
             this.dirty[z * this.width + x] = 1
             this.dirty[nz * this.width + nx] = 1
