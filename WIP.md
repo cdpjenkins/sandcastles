@@ -1,4 +1,30 @@
-# WIP: Evaporation back to 0.00002
+# WIP: A cell holds moisture in proportion to its sand, up to a wetting depth
+
+Capacity = `SATURATION_DEPTH * min(sand / WET_DEPTH, 1)`: sand at least
+`WET_DEPTH` deep holds what every cell held before, thinner sand holds pro
+rata, bare rock holds nothing. Moisture stays a 0-1 fraction of capacity.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - suite green (432), tsc clean.
+
+## Completed
+
+- [x] Step 1: capacity from sand depth in `Moisture.step`. Checked that
+      saturation lands on exactly 1 across 200 sand depths x 1000 starting
+      moistures, so no wet cell is charged twice.
+
+## Shipped before this
+
+- Evaporation back to 0.00002 (`2e835f0`).
+
+---
+
+# Previous: Evaporation back to 0.00002
 
 `EVAPORATION_RATE` 0.00128 -> 0.00002, undoing the 64x speed-up of
 `e9113ee`. The 1s test runs from that commit stay: they hold at either rate.

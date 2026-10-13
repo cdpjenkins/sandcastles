@@ -288,18 +288,27 @@ transition that must reach the mesh.
 
 ### Wetting sand is paid for out of the water column
 
-Moisture is water held in the sand. `Moisture.step` charges `SATURATION_DEPTH` (0.01) of a cell's
-water to take it from dry to saturated, pro rata for sand that is already damp, and a film thinner
+Moisture is water held in the sand, as a fraction of the cell's capacity. Capacity is
+`SATURATION_DEPTH * min(sand / WET_DEPTH, 1)`: only the top `WET_DEPTH` of sand soaks up water in the
+time a game covers, so a deep pile holds no more than a unit of sand, thinner sand holds pro rata, and
+bare rock holds nothing — though wet rock is still set to moisture 1, because `rockColour` draws it
+darker. `Moisture.step` charges a cell's capacity in water to take it from dry to saturated, pro rata
+for sand that is already damp, and a film thinner
 than the shortfall is soaked up whole — the cell goes dry and its sediment settles, through the same
 `settleSediment` `Evaporation` uses. Water absorbed is never returned: moisture drying out at
 `EVAPORATE_RATE` is the sand losing it to the air. The cost is once per wetting, not per second, so it
 cannot strangle a front the way the gated `Drying` did — measured on a dry slope fed a steady sheet,
-front after 60s: 28 -> 25 cells at a 0.05 source, 68 -> 62 at 0.2. A front still advances, just
+front after 60s over deep sand: 28 -> 25 cells at a 0.05 source, 68 -> 62 at 0.2. Thinner sand only
+absorbs less. A front still advances, just
 slower, which is what soaking in should look like. Check that scene again before raising
 `SATURATION_DEPTH`.
 
+Digging, dumping and erosion leave moisture's *fraction* alone, so changing the sand under a cell
+quietly changes how much water it notionally holds. Harmless while absorbed water is never returned;
+it stops being harmless the moment it is.
+
 The sea is not exempt, unlike `Evaporation`: a sea cell is saturated after its first step and is
-never charged again, so the whole beach pays ~285 once, at boot. The tide re-wetting sand it left to
+never charged again, so the whole beach pays at most ~285 once, at boot. The tide re-wetting sand it left to
 dry is charged, and is small next to its swing.
 
 ### Screen-space directions go through `isoProjection`

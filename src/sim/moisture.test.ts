@@ -1,12 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { Moisture, SATURATION_DEPTH } from './Moisture.ts'
+import { Moisture, SATURATION_DEPTH, WET_DEPTH } from './Moisture.ts'
 import { Grid } from '../core/Grid.ts'
 
 const DT = 1 / 30
 
+// Sand deeper than WET_DEPTH, so a cell holds its full capacity.
 const makeGrid = (w = 4, d = 1) => {
   const g = new Grid(w, d)
-  for (let x = 0; x < w; x++) g.setRockHeight(x, 0, 1)
+  for (let z = 0; z < d; z++)
+    for (let x = 0; x < w; x++) {
+      g.setRockHeight(x, z, 1)
+      g.setSandHeight(x, z, WET_DEPTH * 4)
+    }
   return g
 }
 
@@ -152,7 +157,7 @@ describe('Moisture absorbs water', () => {
     moisture.step(grid, DT)
 
     expect(grid.getSediment(0, 0)).toBe(0)
-    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(0.003, 6)
+    expect(grid.getSandHeight(0, 0)!).toBeCloseTo(WET_DEPTH * 4 + 0.003, 6)
   })
 
   it('flags a cell whose water it soaked up entirely', () => {
@@ -164,6 +169,62 @@ describe('Moisture absorbs water', () => {
     const dirty = moisture.step(grid, DT)
 
     expect(dirty[0]).toBe(1)
+  })
+})
+
+describe('Moisture capacity follows the sand', () => {
+  const wetCellOver = (sand: number) => {
+    const grid = makeGrid()
+    grid.setSandHeight(0, 0, sand)
+    grid.setWaterHeight(0, 0, 1)
+    return grid
+  }
+
+  it('bare rock absorbs nothing, though it still reads as wet', () => {
+    const grid = wetCellOver(0)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(grid.getWaterHeight(0, 0)).toBe(1)
+    expect(grid.getMoisture(0, 0)).toBe(1)
+  })
+
+  it('thin sand holds in proportion to its depth', () => {
+    const grid = wetCellOver(WET_DEPTH / 4)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(grid, DT)
+
+    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(SATURATION_DEPTH / 4, 6)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(1.0)
+  })
+
+  it('sand deeper than WET_DEPTH holds no more than WET_DEPTH does', () => {
+    const atDepth = wetCellOver(WET_DEPTH)
+    const deeper = wetCellOver(WET_DEPTH * 10)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(atDepth, DT)
+    moisture.step(deeper, DT)
+
+    expect(1 - atDepth.getWaterHeight(0, 0)!).toBeCloseTo(SATURATION_DEPTH, 6)
+    expect(deeper.getWaterHeight(0, 0)).toBe(atDepth.getWaterHeight(0, 0))
+  })
+
+  it('a film over thin sand wets it further than over deep sand', () => {
+    const thin = makeGrid()
+    thin.setSandHeight(0, 0, WET_DEPTH / 2)
+    thin.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
+    const deep = makeGrid()
+    deep.setWaterHeight(0, 0, SATURATION_DEPTH / 4)
+    const moisture = new Moisture(4, 1)
+
+    moisture.step(thin, DT)
+    moisture.step(deep, DT)
+
+    expect(thin.getMoisture(0, 0)!).toBeCloseTo(0.5)
+    expect(deep.getMoisture(0, 0)!).toBeCloseTo(0.25)
   })
 })
 
