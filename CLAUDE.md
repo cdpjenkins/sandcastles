@@ -308,7 +308,7 @@ saturation. That is the one thing to check when adding one.
 
 `Moisture.step` soaks a wet cell's sand from the column above (only what it is short of, so a cell is
 charged once per wetting, and no faster than `SOAK_RATE` — a surface rate, the same at any depth, so
-at 1.0/s a unit of sand fills in a step and a 15-deep dune takes five); spreads water across each edge by *saturation* difference, scaled by the
+at 0.05/s a unit of sand fills in 0.2s and a 15-deep dune takes 3s); spreads water across each edge by *saturation* difference, scaled by the
 smaller capacity, accumulated before applying so it conserves; and dries anything not under water at
 `EVAPORATE_RATE` — water per second, so deep sand takes longer to dry. A film thinner than the
 shortfall is soaked up whole, and its sediment settles through `settleSediment`.
@@ -326,8 +326,9 @@ front after 60s, without soaking -> with:
 | 5  | 39 -> 22 | 73 -> 53 |
 | 10 | 39 -> 15 | 73 -> 44 |
 
-`SOAK_RATE` does not change that table at all — the figures are identical with and without it —
-because a front's leading cells hold less water than a step's soaking. It bites where *deep* water
+`SOAK_RATE` barely changes that table: at 1.0/s the figures were identical to no rate at all, and
+at 0.05/s every one is within a cell of them. A front is limited by the water reaching it, not by how
+fast it soaks. It bites where *deep* water
 meets dry sand: a pit flooding, a channel cut into a dune, the tide coming in. Don't reach for it to
 speed a front up; that is `POROSITY`.
 

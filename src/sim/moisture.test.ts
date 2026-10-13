@@ -5,6 +5,9 @@ import { Grid } from '../core/Grid.ts'
 const DT = 1 / 30
 const SAND = 4
 const CAPACITY = POROSITY * SAND
+// What one step can soak in. Amounts a test means to be soaked whole in a
+// single step are stated under this, so SOAK_RATE can be tuned freely.
+const STEP_SOAK = SOAK_RATE * DT
 
 const makeGrid = (w = 4, d = 1, sand = SAND) => {
   const g = new Grid(w, d)
@@ -44,7 +47,7 @@ describe('saturation', () => {
 })
 
 describe('Moisture soaks in at a rate', () => {
-  const perStep = SOAK_RATE * DT
+  const perStep = STEP_SOAK
 
   it('takes no more than SOAK_RATE allows in a step', () => {
     const grid = makeGrid(1, 1, (perStep * 5) / POROSITY)
@@ -105,12 +108,12 @@ describe('Moisture absorbs water', () => {
   it('damp sand takes only what it is short of', () => {
     const grid = makeGrid(1, 1)
     grid.setWaterHeight(0, 0, 1)
-    grid.setMoisture(0, 0, CAPACITY * 0.75)
+    grid.setMoisture(0, 0, CAPACITY - STEP_SOAK / 2)
     const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
-    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(CAPACITY * 0.25, 6)
+    expect(1 - grid.getWaterHeight(0, 0)!).toBeCloseTo(STEP_SOAK / 2, 6)
   })
 
   it('saturated sand takes nothing', () => {
@@ -137,19 +140,19 @@ describe('Moisture absorbs water', () => {
 
   it('soaks up a film thinner than the shortfall entirely', () => {
     const grid = makeGrid(1, 1)
-    grid.setWaterHeight(0, 0, CAPACITY / 4)
+    grid.setWaterHeight(0, 0, STEP_SOAK / 2)
     const moisture = new Moisture(1, 1)
 
     moisture.step(grid, DT)
 
     expect(grid.getWaterHeight(0, 0)).toBe(0)
     // Dry above once the film is gone, so it starts drying the same step.
-    expect(grid.getMoisture(0, 0)!).toBeCloseTo(CAPACITY / 4, 4)
+    expect(grid.getMoisture(0, 0)!).toBeCloseTo(STEP_SOAK / 2, 4)
   })
 
   it('settles the sediment of water it soaks up entirely', () => {
     const grid = makeGrid(1, 1)
-    grid.setWaterHeight(0, 0, CAPACITY / 2)
+    grid.setWaterHeight(0, 0, STEP_SOAK / 2)
     grid.setSediment(0, 0, 0.003)
     const moisture = new Moisture(1, 1)
 
@@ -303,7 +306,7 @@ describe('Moisture dirty mask', () => {
 
   it('a cell whose water was soaked up entirely is flagged dirty', () => {
     const grid = makeGrid()
-    grid.setWaterHeight(0, 0, CAPACITY / 2)
+    grid.setWaterHeight(0, 0, STEP_SOAK / 2)
     grid.setMoisture(0, 0, CAPACITY / 2)
     const moisture = new Moisture(4, 1)
 

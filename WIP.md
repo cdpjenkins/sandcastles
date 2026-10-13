@@ -1,4 +1,25 @@
-# WIP: Water soaks into sand at a rate
+# WIP: Deep sand takes seconds to soak
+
+`SOAK_RATE` 1.0 -> 0.05: a 15-deep dune fills in 3s rather than five steps.
+Four moisture tests restated against a step's soaking rather than amounts
+that only fitted under the old rate.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - suite green (461), tsc clean. Front-advance probe within a
+cell of before.
+
+## Shipped before this
+
+- Water soaks into sand at a rate (`e1a69fc`).
+
+---
+
+# Previous: Water soaks into sand at a rate
 
 A wet cell absorbs at most `SOAK_RATE * dt` a step: infiltration is a
 surface rate, so deep sand, which holds more, takes more steps to fill. At
