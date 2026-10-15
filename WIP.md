@@ -5,22 +5,22 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 3 done.
+None - step 4 done.
 
 ## Next Action
 
-Step 4: `randomSeed(random)` - readable `word-word-NN`, pinned source.
+Step 5: snapshot v3 carries the seed - guard, migration, GameFile.
 
 ## Status
 
-⏸️ WAITING - suite green (474), tsc clean.
+⏸️ WAITING - suite green (478), tsc clean.
 
 ## Completed
 
 - [x] Step 1: pin the classic beach
 - [x] Step 2: seeded noise
 - [x] Step 3: `seedFromText` and `noiseSeed`
-- [ ] Step 4: `randomSeed`
+- [x] Step 4: `randomSeed`
 - [ ] Step 5: snapshot v3 carries the seed
 - [ ] Step 6: `resolveSeed` and seeded new game
 - [ ] Step 7: `NewGameDialog`

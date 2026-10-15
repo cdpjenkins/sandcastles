@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { seedFromText, noiseSeed } from './BeachSeed.ts'
+import { seedFromText, noiseSeed, randomSeed, SEED_ADJECTIVES, SEED_NOUNS } from './BeachSeed.ts'
 
 describe('seedFromText', () => {
   // The hash is part of the save format: a stored seed regenerates its beach
@@ -33,5 +33,35 @@ describe('noiseSeed', () => {
 
   it('tells different seeds apart', () => {
     expect(noiseSeed('salty-gull-42')).not.toBe(noiseSeed('salty-gull-43'))
+  })
+})
+
+describe('randomSeed', () => {
+  // Hands out the given values in turn.
+  const sequence = (...values: number[]) => {
+    let i = 0
+    return () => values[i++ % values.length]!
+  }
+
+  it('is two words and a two-digit number', () => {
+    for (let i = 0; i < 200; i++) {
+      expect(randomSeed(Math.random)).toMatch(/^[a-z]+-[a-z]+-\d{2}$/)
+    }
+  })
+
+  it('takes each part from its own draw', () => {
+    expect(randomSeed(sequence(0, 0, 0))).toBe(`${SEED_ADJECTIVES[0]}-${SEED_NOUNS[0]}-10`)
+    expect(randomSeed(sequence(0.9999, 0.9999, 0.9999)))
+      .toBe(`${SEED_ADJECTIVES.at(-1)}-${SEED_NOUNS.at(-1)}-99`)
+  })
+
+  it('gives different seeds for different draws', () => {
+    expect(randomSeed(sequence(0.1, 0.5, 0.3))).not.toBe(randomSeed(sequence(0.6, 0.2, 0.8)))
+  })
+
+  // Nothing to trim, so what the player is shown is exactly what was hashed.
+  it('is already in the form noiseSeed hashes', () => {
+    const seed = randomSeed(Math.random)
+    expect(noiseSeed(seed)).toBe(seedFromText(seed))
   })
 })
