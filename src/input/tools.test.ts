@@ -178,6 +178,20 @@ describe('the bucket carries damp sand', () => {
     expect(bucket.water).toBeCloseTo(DUMP_AMOUNT * 3 * 0.001, 6)
   })
 
+  it('digging out the last of the sand leaves no water on the rock', () => {
+    // Values found by search: the share arithmetic leaves ~3e-18 behind for
+    // these, which nothing dries if the cell is under water.
+    const grid = makeGrid()
+    grid.setSandHeight(8, 0, 0.037)
+    grid.setMoisture(8, 0, 0.02147)
+    const bucket = roomyBucket()
+
+    dig(grid, 8, 0, bucket)
+
+    expect(grid.getSandHeight(8, 0)).toBe(0)
+    expect(grid.getMoisture(8, 0)).toBe(0)
+  })
+
   it('moving sand by bucket moves its water, and loses none', () => {
     const grid = makeGrid()
     grid.setMoisture(8, 0, 0.1)

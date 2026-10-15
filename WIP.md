@@ -1,4 +1,29 @@
-# WIP: Deep sand takes seconds to soak
+# WIP: Digging out all the sand leaves no water behind
+
+`dig` computed what stays as `moisture - added * waterPerSand`, which can
+leave a float remainder (~1e-18) when `added` is the whole of the sand.
+Under water nothing dries it, so rock went on holding water it cannot.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - tsc clean; 461/462, the one failure the swell test's known 5s
+timeout under full-suite load (passes alone).
+
+## Completed
+
+- [x] Step 1: zero the moisture when a dig takes the last of the sand.
+
+## Shipped before this
+
+- Deep sand takes seconds to soak (`f34d383`).
+
+---
+
+# Previous: Deep sand takes seconds to soak
 
 `SOAK_RATE` 1.0 -> 0.05: a 15-deep dune fills in 3s rather than five steps.
 Four moisture tests restated against a step's soaking rather than amounts

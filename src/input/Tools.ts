@@ -24,7 +24,10 @@ export function dig(grid: Grid, x: number, z: number, bucket: Bucket): boolean {
   const waterPerSand = moisture / sand
   const added = bucket.fill(Math.min(DIG_AMOUNT, sand), waterPerSand)
   grid.setSandHeight(x, z, sand - added)
-  grid.setMoisture(x, z, Math.max(0, moisture - added * waterPerSand))
+  // Taking all the sand takes all its water. The share arithmetic can leave a
+  // float remainder, and rock under water would hold it forever.
+  const left = added === sand ? 0 : Math.max(0, moisture - added * waterPerSand)
+  grid.setMoisture(x, z, left)
   return true
 }
 
