@@ -153,7 +153,9 @@ export class Grid {
     this.sedimentArr.set(snapshot.sediment)
   }
 
-  initBeach(): void {
+  // The seed varies only the land's noise. Seed 0 is the classic beach: it is
+  // XORed into the hash, so 0 leaves every value as it always was.
+  initBeach(seed: number = 0): void {
     for (let z = 0; z < this.depth; z++) {
       for (let x = 0; x < this.width; x++) {
         const i = this.idx(x, z)
@@ -169,12 +171,12 @@ export class Grid {
 
           const distFromSea = this.seaStart - z
           const shoreFade = Math.min(1, distFromSea / ROCK_SHORE_FADE_DISTANCE)
-          const rockNoise = Grid.fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET) * ROCK_NOISE_AMPLITUDE
+          const rockNoise = Grid.fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET, seed) * ROCK_NOISE_AMPLITUDE
           const unfadedRock = ROCK_BASE_HEIGHT + ROCK_RIDGE_AMPLITUDE * ridge + rockNoise
           this.rock[i] = shoreFade < 1 ? unfadedRock * shoreFade : Math.max(MIN_ROCK_HEIGHT, unfadedRock)
 
           const base = SAND_RIDGE_AMPLITUDE * ridge
-          const noise = Grid.fractalNoise(x, z) * SAND_NOISE_AMPLITUDE
+          const noise = Grid.fractalNoise(x, z, seed) * SAND_NOISE_AMPLITUDE
           this.sand[i] = Math.max(0, (base + noise) * shoreFade)
 
           const surface = this.rock[i] + this.sand[i]
@@ -190,36 +192,36 @@ export class Grid {
     this.setSourceRate(x, z, rate)
   }
 
-  private static hashNoise(xi: number, zi: number): number {
-    let h = (Math.imul(xi, 374761393) + Math.imul(zi, 668265263)) | 0
+  private static hashNoise(xi: number, zi: number, seed: number): number {
+    let h = ((Math.imul(xi, 374761393) + Math.imul(zi, 668265263)) | 0) ^ seed
     h = Math.imul(h ^ (h >>> 13), 1274126177)
     h = h ^ (h >>> 16)
     return (h & 0xffff) / 32767.5 - 1
   }
 
-  private static smoothNoise(x: number, z: number): number {
+  private static smoothNoise(x: number, z: number, seed: number): number {
     const xi = Math.floor(x)
     const zi = Math.floor(z)
     const fx = x - xi
     const fz = z - zi
     const ux = fx * fx * (3 - 2 * fx)
     const uz = fz * fz * (3 - 2 * fz)
-    const a = Grid.hashNoise(xi, zi)
-    const b = Grid.hashNoise(xi + 1, zi)
-    const c = Grid.hashNoise(xi, zi + 1)
-    const d = Grid.hashNoise(xi + 1, zi + 1)
+    const a = Grid.hashNoise(xi, zi, seed)
+    const b = Grid.hashNoise(xi + 1, zi, seed)
+    const c = Grid.hashNoise(xi, zi + 1, seed)
+    const d = Grid.hashNoise(xi + 1, zi + 1, seed)
     const ab = a + (b - a) * ux
     const cd = c + (d - c) * ux
     return ab + (cd - ab) * uz
   }
 
-  private static fractalNoise(x: number, z: number): number {
+  private static fractalNoise(x: number, z: number, seed: number): number {
     const freqs = [1 / 64, 1 / 32, 1 / 16, 1 / 8]
     const amps  = [1,      0.5,    0.25,   0.125]
     let value = 0
     let total = 0
     for (let o = 0; o < freqs.length; o++) {
-      value += Grid.smoothNoise(x * freqs[o], z * freqs[o]) * amps[o]
+      value += Grid.smoothNoise(x * freqs[o], z * freqs[o], seed) * amps[o]
       total += amps[o]
     }
     return value / total

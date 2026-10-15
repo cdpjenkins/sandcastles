@@ -470,3 +470,48 @@ describe('The classic beach', () => {
     expect(layerChecksum(sand)).toBe('cdf8f2eb')
   })
 })
+
+describe('A seeded beach', () => {
+  const beach = (seed?: number) => {
+    const grid = new Grid(256, 256)
+    grid.initBeach(seed)
+    return grid.snapshot()
+  }
+
+  it('is the classic beach at seed 0', () => {
+    const { rock, sand } = beach(0)
+    expect(layerChecksum(rock)).toBe('e06ca45c')
+    expect(layerChecksum(sand)).toBe('cdf8f2eb')
+  })
+
+  it('is the same beach every time for the same seed', () => {
+    const a = beach(12345)
+    const b = beach(12345)
+    expect(layerChecksum(a.rock)).toBe(layerChecksum(b.rock))
+    expect(layerChecksum(a.sand)).toBe(layerChecksum(b.sand))
+  })
+
+  it('differs from the classic beach in both rock and sand', () => {
+    const classic = beach(0)
+    const seeded = beach(12345)
+    expect(layerChecksum(seeded.rock)).not.toBe(layerChecksum(classic.rock))
+    expect(layerChecksum(seeded.sand)).not.toBe(layerChecksum(classic.sand))
+  })
+
+  it('differs between two seeds', () => {
+    expect(layerChecksum(beach(1).sand)).not.toBe(layerChecksum(beach(2).sand))
+  })
+
+  // Only the land's noise is seeded: the sea bed and the water over it are the
+  // same on every beach.
+  it('leaves the sea the same on every seed', () => {
+    const grid = new Grid(256, 256)
+    const seaFrom = grid.seaStart * 256
+    const classic = beach(0)
+    const seeded = beach(12345)
+    for (const layer of ['rock', 'sand', 'water'] as const) {
+      expect(layerChecksum(seeded[layer].subarray(seaFrom)))
+        .toBe(layerChecksum(classic[layer].subarray(seaFrom)))
+    }
+  })
+})

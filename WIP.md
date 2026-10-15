@@ -5,21 +5,21 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 1 done.
+None - step 2 done.
 
 ## Next Action
 
-Step 2: seeded noise - `initBeach(seed)`, with step 1's checksum holding.
+Step 3: `seedFromText` and `noiseSeed` in `src/core/BeachSeed.ts`.
 
 ## Status
 
-⏸️ WAITING - suite green (463), tsc clean. Checksum mutation-checked:
-sand amplitude 6 -> 6.0001 fails it.
+⏸️ WAITING - suite green (468), tsc clean. Mutation-checked: dropping the
+seed XOR fails both difference tests.
 
 ## Completed
 
 - [x] Step 1: pin the classic beach
-- [ ] Step 2: seeded noise
+- [x] Step 2: seeded noise
 - [ ] Step 3: `seedFromText` and `noiseSeed`
 - [ ] Step 4: `randomSeed`
 - [ ] Step 5: snapshot v3 carries the seed
