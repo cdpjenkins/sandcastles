@@ -66,7 +66,9 @@ const angleTangentsAt = (zs: number[], seconds: number, skip: number): number[] 
   return zs.map((_, j) => Math.sqrt(sumX[j]!) / Math.sqrt(sumZ[j]!))
 }
 
-describe('Swell', () => {
+// Each runs a full 256x256 beach for 12-20s of sim: 2-3.5s alone, past the
+// 5s default under a full parallel suite. Same allowance as castle.test.ts.
+describe('Swell', { timeout: 20000 }, () => {
   // Both floors are deliberately far below any sensible swell: SWELL_AMPLITUDE is
   // a game knob and has already moved once. These catch the driver being
   // disconnected or silent, not a particular wave size.

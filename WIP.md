@@ -1,4 +1,24 @@
-# WIP: Digging out all the sand leaves no water behind
+# WIP: The swell tests stop timing out
+
+`swell.test.ts` runs a full beach for 12-20s of sim per test: 2-3.5s alone,
+over the 5s default under a full parallel suite. A 20s timeout on the
+describe, matching `castle.test.ts`.
+
+## Current Step
+
+None - work complete.
+
+## Status
+
+⏸️ WAITING - suite green (462) three runs in a row, tsc clean.
+
+## Shipped before this
+
+- Digging out the last of the sand leaves no water behind (`da590f7`).
+
+---
+
+# Previous: Digging out all the sand leaves no water behind
 
 `dig` computed what stays as `moisture - added * waterPerSand`, which can
 leave a float remainder (~1e-18) when `added` is the whole of the sand.
