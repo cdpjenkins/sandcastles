@@ -11,10 +11,11 @@ import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
+import type { BeachSeed } from './BeachSeed.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
-// water. migrateSnapshot reads a 1.
-export const SNAPSHOT_VERSION = 2
+// water. 3: the seed the beach grew from. migrateSnapshot reads a 1 or a 2.
+export const SNAPSHOT_VERSION = 3
 
 export const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
 export const FLOW_LAYERS = ['flowX', 'flowZ'] as const
@@ -32,6 +33,7 @@ export interface GameSnapshot {
   toolMode: ToolMode
   paused: boolean
   lookEnabled: boolean
+  seed: BeachSeed
 }
 
 const TOOL_MODES: readonly string[] = Object.values(ToolMode)
@@ -87,18 +89,23 @@ export function isValidSnapshot(
 
   if (typeof s['toolMode'] !== 'string' || !TOOL_MODES.includes(s['toolMode'])) return false
   if (typeof s['paused'] !== 'boolean' || typeof s['lookEnabled'] !== 'boolean') return false
+  if (s['seed'] !== null && typeof s['seed'] !== 'string') return false
 
   return true
 }
 
 // Brings an older save up to this version, or hands back anything else as it
-// came for isValidSnapshot to judge. Never mutates what it is given.
-//
+// came for isValidSnapshot to judge. Never mutates what it is given. Each step
+// takes a save one version on, so a v1 save goes through both.
+export function migrateSnapshot(value: unknown): unknown {
+  return fromVersion2(fromVersion1(value))
+}
+
 // v1 -> v2: moisture was a fraction of what the sand could hold, and becomes
 // the water itself. Each cell keeps the saturation it had, so the beach looks
 // as it did; bare rock holds nothing, since wet rock reads wet from the water
 // above it. The v1 bucket carried no water, so its sand is dry.
-export function migrateSnapshot(value: unknown): unknown {
+function fromVersion1(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value
   const s = value as Record<string, unknown>
   if (s['version'] !== 1) return value
@@ -120,6 +127,16 @@ export function migrateSnapshot(value: unknown): unknown {
     grid: { ...grid, moisture: held },
     bucket: { ...bucket, water: 0 },
   }
+}
+
+// v2 -> v3: the seed. Every beach before seeds existed was the classic one, so
+// this is a fact about the save rather than a guess.
+function fromVersion2(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  const s = value as Record<string, unknown>
+  if (s['version'] !== 2) return value
+
+  return { ...s, version: 3, seed: null }
 }
 
 // Storage is treated as hostile and never allowed to stop the game booting:
@@ -151,6 +168,7 @@ export interface SnapshotSources {
   toolMode: ToolMode
   paused: boolean
   lookEnabled: boolean
+  seed: BeachSeed
 }
 
 export function createSnapshot(sources: SnapshotSources): GameSnapshot {
@@ -167,6 +185,7 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
     toolMode: sources.toolMode,
     paused: sources.paused,
     lookEnabled: sources.lookEnabled,
+    seed: sources.seed,
   }
 }
 
@@ -217,6 +236,7 @@ export function newGameSnapshot(width: number, depth: number): GameSnapshot {
     toolMode: ToolMode.Spade,
     paused: false,
     lookEnabled: false,
+    seed: null,
   }
 }
 

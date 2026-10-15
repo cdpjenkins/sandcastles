@@ -5,15 +5,18 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 4 done.
+None - step 5 done.
 
 ## Next Action
 
-Step 5: snapshot v3 carries the seed - guard, migration, GameFile.
+Step 6: `resolveSeed` and seeded `newGameSnapshot` / `startNewGame` /
+`confirmNewGame`.
 
 ## Status
 
-⏸️ WAITING - suite green (478), tsc clean.
+⏸️ WAITING - suite green (484), tsc clean. `Game` already holds the seed
+and adopts it on restore, import and new game; nothing sets one but classic
+yet.
 
 ## Completed
 
@@ -21,7 +24,7 @@ Step 5: snapshot v3 carries the seed - guard, migration, GameFile.
 - [x] Step 2: seeded noise
 - [x] Step 3: `seedFromText` and `noiseSeed`
 - [x] Step 4: `randomSeed`
-- [ ] Step 5: snapshot v3 carries the seed
+- [x] Step 5: snapshot v3 carries the seed
 - [ ] Step 6: `resolveSeed` and seeded new game
 - [ ] Step 7: `NewGameDialog`
 - [ ] Step 8: the Hud shows the seed

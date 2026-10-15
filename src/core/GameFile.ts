@@ -7,6 +7,7 @@ import type { TideSnapshot } from '../sim/Tide.ts'
 import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import type { ToolMode } from '../input/Tools.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
+import type { BeachSeed } from './BeachSeed.ts'
 
 export const FILE_ENCODING = 'base64-f32le'
 
@@ -30,6 +31,7 @@ export interface GameFile {
   toolMode: ToolMode
   paused: boolean
   lookEnabled: boolean
+  seed: BeachSeed
 }
 
 export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
@@ -58,6 +60,7 @@ export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
     toolMode: snapshot.toolMode,
     paused: snapshot.paused,
     lookEnabled: snapshot.lookEnabled,
+    seed: snapshot.seed,
   }
 }
 
@@ -116,6 +119,7 @@ export function parseGameFile(
     toolMode: file['toolMode'],
     paused: file['paused'],
     lookEnabled: file['lookEnabled'],
+    seed: file['seed'],
   })
 
   return isValidSnapshot(candidate, width, depth) ? candidate : null

@@ -34,6 +34,7 @@ function aSnapshot(overrides: Record<string, unknown> = {}): GameSnapshot {
     toolMode: ToolMode.Spade,
     paused: false,
     lookEnabled: false,
+    seed: null,
     ...overrides,
   } as GameSnapshot
 }
@@ -97,6 +98,17 @@ describe('isValidSnapshot', () => {
 
   it('rejects a flag that is not a boolean', () => {
     expect(isValidSnapshot(aSnapshot({ paused: 'yes' }), WIDTH, DEPTH)).toBe(false)
+  })
+
+  // null is the classic beach; anything else is the text the beach grew from.
+  it('accepts a classic beach and a seeded one', () => {
+    expect(isValidSnapshot(aSnapshot({ seed: null }), WIDTH, DEPTH)).toBe(true)
+    expect(isValidSnapshot(aSnapshot({ seed: 'salty-gull-42' }), WIDTH, DEPTH)).toBe(true)
+  })
+
+  it('rejects a save that does not say what beach it is', () => {
+    expect(isValidSnapshot(aSnapshot({ seed: undefined }), WIDTH, DEPTH)).toBe(false)
+    expect(isValidSnapshot(aSnapshot({ seed: 42 }), WIDTH, DEPTH)).toBe(false)
   })
 
   it('rejects a save whose dimensions are transposed but cell count agrees', () => {
@@ -196,7 +208,7 @@ describe('createSnapshot', () => {
 
     const snapshot = createSnapshot({
       grid, waterSim, waves, tide, bucket, camera,
-      toolMode: ToolMode.Stream, paused: true, lookEnabled: false,
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42',
     })
 
     expect(isValidSnapshot(snapshot, 64, 64)).toBe(true)
@@ -212,7 +224,7 @@ describe('createSnapshot', () => {
     const snapshot = createSnapshot({
       grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64), tide, bucket,
       camera: new IsoCamera(document.createElement('canvas')),
-      toolMode: ToolMode.Stream, paused: true, lookEnabled: false,
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42',
     })
 
     expect(snapshot.bucket.amount).toBe(120)
@@ -220,6 +232,7 @@ describe('createSnapshot', () => {
     expect(snapshot.toolMode).toBe(ToolMode.Stream)
     expect(snapshot.paused).toBe(true)
     expect(snapshot.width).toBe(64)
+    expect(snapshot.seed).toBe('salty-gull-42')
   })
 
   it('still loads back after a trip through storage', () => {
@@ -230,7 +243,7 @@ describe('createSnapshot', () => {
       grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64),
       tide: new Tide(), bucket: new Bucket(1000),
       camera: new IsoCamera(document.createElement('canvas')),
-      toolMode: ToolMode.Spade, paused: false, lookEnabled: false,
+      toolMode: ToolMode.Spade, paused: false, lookEnabled: false, seed: null,
     }))
 
     expect(isValidSnapshot(stored, 64, 64)).toBe(true)
@@ -264,7 +277,7 @@ function aLiveBeach() {
   return components
 }
 
-const UI = { toolMode: ToolMode.Stream, paused: true, lookEnabled: true }
+const UI = { toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42' }
 
 describe('applySnapshot', () => {
   // The other half of the property createSnapshot's tests protect. Game cannot
@@ -337,6 +350,31 @@ describe('migrateSnapshot', () => {
     migrateSnapshot(v1)
 
     expect(v1.grid.moisture[0]).toBe(0.5)
+  })
+
+  // Every beach before seeds existed was the classic one, so a v2 save is
+  // classic as a matter of fact, not a guess.
+  it('marks a v2 save as the classic beach', () => {
+    const v2 = aSnapshot({ version: 2, seed: undefined })
+
+    const migrated = migrateSnapshot(v2) as GameSnapshot
+
+    expect(migrated.version).toBe(SNAPSHOT_VERSION)
+    expect(migrated.seed).toBeNull()
+    expect(isValidSnapshot(migrated, WIDTH, DEPTH)).toBe(true)
+  })
+
+  it('leaves the v2 save it was handed alone', () => {
+    const v2 = aSnapshot({ version: 2, seed: undefined })
+
+    migrateSnapshot(v2)
+
+    expect(v2.version).toBe(2)
+    expect(v2.seed).toBeUndefined()
+  })
+
+  it('takes a v1 save all the way to classic', () => {
+    expect((migrateSnapshot(aVersion1()) as GameSnapshot).seed).toBeNull()
   })
 
   it('passes a current save through untouched', () => {

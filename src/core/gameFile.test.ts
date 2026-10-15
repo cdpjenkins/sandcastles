@@ -32,7 +32,7 @@ function aSnapshot() {
   return createSnapshot({
     grid, waterSim, waves: new Waves(SIZE, SIZE), tide, bucket,
     camera: new IsoCamera(document.createElement('canvas')),
-    toolMode: ToolMode.Stream, paused: true, lookEnabled: true,
+    toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42',
   })
 }
 
@@ -66,6 +66,7 @@ describe('toGameFile', () => {
     expect(file.toolMode).toBe(ToolMode.Stream)
     expect(file.paused).toBe(true)
     expect(file.lookEnabled).toBe(true)
+    expect(file.seed).toBe('salty-gull-42')
   })
 
   it('encodes every grid layer so it decodes back to the same cells', () => {
@@ -151,6 +152,17 @@ describe('parseGameFile', () => {
 
     expect(loaded).not.toBeNull()
     expect(loaded!.grid.moisture[0]).toBeCloseTo(0.5 * POROSITY * 2, 6)
+  })
+
+  it('loads a v2 file as the classic beach', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT) as unknown as Record<string, unknown>
+    file['version'] = 2
+    delete file['seed']
+
+    const loaded = parseGameFile(JSON.stringify(file), SIZE, SIZE)
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.seed).toBeNull()
   })
 
   it('refuses a file with a layer missing', () => {

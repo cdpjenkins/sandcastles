@@ -6,6 +6,7 @@ import { confirmImport } from './ImportBeach.ts'
 import { toGameFile, exportFilename, exportStatus } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
+import type { BeachSeed } from './BeachSeed.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
 import { Bucket } from './Bucket.ts'
@@ -71,6 +72,8 @@ export class Game {
   private toolMode: ToolMode = ToolMode.Spade
   private lastTime = 0
   private lookEnabled = false
+  // The seed this beach grew from; null is the classic beach.
+  private seed: BeachSeed = null
   // Deliberately not in the snapshot, unlike lookEnabled: the panel is a
   // question the player asks about the beach, not part of the beach, so it
   // does not survive a reload and does not bump the save format.
@@ -231,6 +234,7 @@ export class Game {
     this.toolMode = snapshot.toolMode
     this.paused = snapshot.paused
     this.lookEnabled = snapshot.lookEnabled
+    this.seed = snapshot.seed
   }
 
   // Puts the toolbar and the panels back in step with the game's own state,
@@ -296,6 +300,7 @@ export class Game {
       toolMode: this.toolMode,
       paused: this.paused,
       lookEnabled: this.lookEnabled,
+      seed: this.seed,
     })
   }
 

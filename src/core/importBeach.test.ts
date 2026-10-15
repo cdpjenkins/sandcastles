@@ -33,7 +33,7 @@ const aBeachFile = (): string =>
   JSON.stringify(toGameFile(
     createSnapshot({
       ...componentsHolding(9.5, 250),
-      toolMode: ToolMode.Stream, paused: true, lookEnabled: true,
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: null,
     }),
     SAVED_AT,
   ))
@@ -137,6 +137,7 @@ describe('confirmImport', () => {
       toolMode: imported!.toolMode,
       paused: imported!.paused,
       lookEnabled: imported!.lookEnabled,
+      seed: imported!.seed,
     })).toEqual(imported)
   })
 })

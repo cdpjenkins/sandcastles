@@ -100,6 +100,7 @@ describe('confirmNewGame', () => {
       toolMode: started.toolMode,
       paused: started.paused,
       lookEnabled: started.lookEnabled,
+      seed: started.seed,
     })).toEqual(started)
   })
 })
