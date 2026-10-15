@@ -5,17 +5,19 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 8 done.
+None - step 9 done.
 
 ## Next Action
 
-Step 9: wire the dialog into `Game` - button and N open it, keys ignored
-while open, choice -> resolveSeed -> confirmNewGame.
+Step 10: verify in the browser - the user's check. Each of the four
+options; a seed with r, n, s, p typed in; a random seed from the Hud typed
+back gives the same beach; reload keeps the seed; export/import carry it;
+the Hud's seed can be selected and copied.
 
 ## Status
 
-⏸️ WAITING - suite green (514), tsc clean. `reflectState` already calls
-`hud.setSeed`, so boot, import and new game all show it.
+⏸️ WAITING - suite green (514), tsc clean, build clean. Wiring only:
+`Game` cannot be built under jsdom.
 
 ## Completed
 
@@ -27,7 +29,7 @@ while open, choice -> resolveSeed -> confirmNewGame.
 - [x] Step 6: `resolveSeed` and seeded new game
 - [x] Step 7: `NewGameDialog`
 - [x] Step 8: the Hud shows the seed
-- [ ] Step 9: wire into `Game`
+- [x] Step 9: wire into `Game`
 - [ ] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md
 

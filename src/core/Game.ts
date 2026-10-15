@@ -1,7 +1,8 @@
 import { Grid, STREAM_RATE } from './Grid.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
-import { confirmNewGame } from './NewGame.ts'
+import { confirmNewGame, resolveSeed } from './NewGame.ts'
+import type { NewGameChoice } from './NewGame.ts'
 import { confirmImport } from './ImportBeach.ts'
 import { toGameFile, exportFilename, exportStatus } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
@@ -19,6 +20,7 @@ import { ToolRepeater, REPEAT_HZ, HOLD_DELAY } from '../input/ToolRepeater.ts'
 import { toolForKey } from '../input/KeyBindings.ts'
 import { Toolbar } from '../input/Toolbar.ts'
 import { Hud } from '../input/Hud.ts'
+import { NewGameDialog } from '../input/NewGameDialog.ts'
 import { stackTopLeft } from '../input/TopLeftStack.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Evaporation } from '../sim/Evaporation.ts'
@@ -63,6 +65,7 @@ export class Game {
   private readonly repeater: ToolRepeater
   private readonly toolbar: Toolbar
   private readonly hud: Hud
+  private readonly newGameDialog: NewGameDialog
   private readonly autoSaver: AutoSaver
   private readonly helpOverlay: HTMLDivElement
   private readonly lookPanel: HTMLDivElement
@@ -119,13 +122,17 @@ export class Game {
       'L        Toggle Look (independent of the tool)',
       'F        Toggle the Sources list (find the springs)',
       'R        Reset water (or the Reset button)',
-      'N        New game (asks first)',
+      'N        New game (choose the beach, then confirm)',
       'P        Pause / resume the simulation',
       'Pinch    Zoom',
       '2-finger Pan',
       '?        Toggle this help',
     ].join('\n')
     document.body.appendChild(this.helpOverlay)
+
+    this.newGameDialog = new NewGameDialog()
+    this.newGameDialog.onChoose((choice) => this.startNewGame(choice))
+    document.body.appendChild(this.newGameDialog.element)
 
     this.fileInput = document.createElement('input')
     this.fileInput.type = 'file'
@@ -280,12 +287,19 @@ export class Game {
     this.hud.setStatus('Beach imported')
   }
 
+  // Which beach comes first; the warning that this one will be lost is asked
+  // after, as a step of its own, by startNewGame.
+  private newGame(): void {
+    this.newGameDialog.open(this.seed)
+  }
+
   // The beach the player built is destroyed with no undo, so they are asked
   // first. Declining leaves the game exactly as it was, mesh and toolbar
   // included, which is why nothing here runs until a snapshot comes back.
-  private newGame(): void {
+  private startNewGame(choice: NewGameChoice): void {
+    const seed = resolveSeed(choice, this.seed, Math.random)
     const started = confirmNewGame(
-      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, null, (message) => window.confirm(message),
+      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, seed, (message) => window.confirm(message),
     )
     if (started === null) return
 
@@ -370,6 +384,10 @@ export class Game {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    // The dialog stops what is typed into it, but focus can sit outside it
+    // while it is open - on the page after a click on the backdrop - and then
+    // "r" would still reset the water behind it.
+    if (this.newGameDialog.isOpen) return
     const tool = toolForKey(e.key)
     if (tool !== null) {
       this.selectTool(tool)
