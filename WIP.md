@@ -5,19 +5,17 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 9 done.
+None - step 10 done.
 
 ## Next Action
 
-Step 10: verify in the browser - the user's check. Each of the four
-options; a seed with r, n, s, p typed in; a random seed from the Hud typed
-back gives the same beach; reload keeps the seed; export/import carry it;
-the Hud's seed can be selected and copied.
+Step 11: CLAUDE.md - the sweep's figures, why classic is `null` (and what
+that does not prevent), the hash is part of the save format, the dialog's
+key guard.
 
 ## Status
 
-⏸️ WAITING - suite green (514), tsc clean, build clean. Wiring only:
-`Game` cannot be built under jsdom.
+⏸️ WAITING - browser-checked by the user: all looks good.
 
 ## Completed
 
@@ -30,7 +28,7 @@ the Hud's seed can be selected and copied.
 - [x] Step 7: `NewGameDialog`
 - [x] Step 8: the Hud shows the seed
 - [x] Step 9: wire into `Game`
-- [ ] Step 10: verify in the browser
+- [x] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md
 
 ## Shipped before this
