@@ -1,4 +1,42 @@
-# WIP: The swell tests stop timing out
+# WIP: Choose the beach a new game starts on
+
+Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
+50-seed sweep found nothing to constrain.
+
+## Current Step
+
+None started.
+
+## Next Action
+
+Step 1: pin the classic beach with a checksum test, before touching the
+generator.
+
+## Status
+
+⏸️ WAITING - plan written, no code changed.
+
+## Completed
+
+- [ ] Step 1: pin the classic beach
+- [ ] Step 2: seeded noise
+- [ ] Step 3: `seedFromText` and `noiseSeed`
+- [ ] Step 4: `randomSeed`
+- [ ] Step 5: snapshot v3 carries the seed
+- [ ] Step 6: `resolveSeed` and seeded new game
+- [ ] Step 7: `NewGameDialog`
+- [ ] Step 8: the Hud shows the seed
+- [ ] Step 9: wire into `Game`
+- [ ] Step 10: verify in the browser
+- [ ] Step 11: CLAUDE.md
+
+## Shipped before this
+
+- The swell tests get a 20s timeout (`887934e`).
+
+---
+
+# Previous: The swell tests stop timing out
 
 `swell.test.ts` runs a full beach for 12-20s of sim per test: 2-3.5s alone,
 over the 5s default under a full parallel suite. A 20s timeout on the
