@@ -5,16 +5,16 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 6 done.
+None - step 7 done.
 
 ## Next Action
 
-Step 7: `NewGameDialog` - four choices, a seed field, keys kept inside.
+Step 8: the Hud shows the seed - `Beach: classic` / `Beach: salty-gull-42`.
 
 ## Status
 
-⏸️ WAITING - suite green (495), tsc clean. `Game.newGame` passes `null`
-(classic) until the chooser is wired in at step 9.
+⏸️ WAITING - suite green (511), tsc clean. Mutation-checked: dropping the
+dialog's stopPropagation fails the keys test.
 
 ## Completed
 
@@ -24,7 +24,7 @@ Step 7: `NewGameDialog` - four choices, a seed field, keys kept inside.
 - [x] Step 4: `randomSeed`
 - [x] Step 5: snapshot v3 carries the seed
 - [x] Step 6: `resolveSeed` and seeded new game
-- [ ] Step 7: `NewGameDialog`
+- [x] Step 7: `NewGameDialog`
 - [ ] Step 8: the Hud shows the seed
 - [ ] Step 9: wire into `Game`
 - [ ] Step 10: verify in the browser
