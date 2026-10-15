@@ -284,7 +284,7 @@ export class Game {
   // included, which is why nothing here runs until a snapshot comes back.
   private newGame(): void {
     const started = confirmNewGame(
-      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, (message) => window.confirm(message),
+      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, null, (message) => window.confirm(message),
     )
     if (started === null) return
 

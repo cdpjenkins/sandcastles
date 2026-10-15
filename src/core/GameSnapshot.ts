@@ -11,6 +11,7 @@ import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
+import { noiseSeed } from './BeachSeed.ts'
 import type { BeachSeed } from './BeachSeed.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
@@ -218,9 +219,9 @@ export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot):
 //
 // The camera it carries is the one a first boot starts at. startNewGame is
 // what a player's New game goes through, and that leaves the view alone.
-export function newGameSnapshot(width: number, depth: number): GameSnapshot {
+export function newGameSnapshot(width: number, depth: number, seed: BeachSeed): GameSnapshot {
   const grid = new Grid(width, depth)
-  grid.initBeach()
+  grid.initBeach(noiseSeed(seed))
   grid.initSpring(STREAM_RATE)
 
   return {
@@ -236,7 +237,7 @@ export function newGameSnapshot(width: number, depth: number): GameSnapshot {
     toolMode: ToolMode.Spade,
     paused: false,
     lookEnabled: false,
-    seed: null,
+    seed,
   }
 }
 
@@ -247,8 +248,9 @@ export function startNewGame(
   targets: Omit<SnapshotTargets, 'camera'>,
   width: number,
   depth: number,
+  seed: BeachSeed,
 ): GameSnapshot {
-  const snapshot = newGameSnapshot(width, depth)
+  const snapshot = newGameSnapshot(width, depth, seed)
   applySnapshot({ ...targets, camera: { restore: () => {} } }, snapshot)
   return snapshot
 }

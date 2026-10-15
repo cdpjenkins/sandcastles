@@ -5,18 +5,16 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 5 done.
+None - step 6 done.
 
 ## Next Action
 
-Step 6: `resolveSeed` and seeded `newGameSnapshot` / `startNewGame` /
-`confirmNewGame`.
+Step 7: `NewGameDialog` - four choices, a seed field, keys kept inside.
 
 ## Status
 
-⏸️ WAITING - suite green (484), tsc clean. `Game` already holds the seed
-and adopts it on restore, import and new game; nothing sets one but classic
-yet.
+⏸️ WAITING - suite green (495), tsc clean. `Game.newGame` passes `null`
+(classic) until the chooser is wired in at step 9.
 
 ## Completed
 
@@ -25,7 +23,7 @@ yet.
 - [x] Step 3: `seedFromText` and `noiseSeed`
 - [x] Step 4: `randomSeed`
 - [x] Step 5: snapshot v3 carries the seed
-- [ ] Step 6: `resolveSeed` and seeded new game
+- [x] Step 6: `resolveSeed` and seeded new game
 - [ ] Step 7: `NewGameDialog`
 - [ ] Step 8: the Hud shows the seed
 - [ ] Step 9: wire into `Game`

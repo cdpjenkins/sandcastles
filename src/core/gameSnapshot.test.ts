@@ -7,6 +7,7 @@ import { POROSITY } from '../sim/Moisture.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { Grid } from './Grid.ts'
+import { noiseSeed } from './BeachSeed.ts'
 import { Bucket } from './Bucket.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
@@ -400,12 +401,12 @@ describe('migrateSnapshot', () => {
 describe('starting a new game', () => {
   const played = () => {
     const components = aLiveBeach()
-    startNewGame(components, SIZE, SIZE)
+    startNewGame(components, SIZE, SIZE, null)
     return components
   }
 
   it('is a loadable beach', () => {
-    expect(isValidSnapshot(newGameSnapshot(SIZE, SIZE), SIZE, SIZE)).toBe(true)
+    expect(isValidSnapshot(newGameSnapshot(SIZE, SIZE, null), SIZE, SIZE)).toBe(true)
   })
 
   it('lays out the same beach a first-ever boot gets', () => {
@@ -426,7 +427,7 @@ describe('starting a new game', () => {
     beach.grid.setSourceRate(20, 21, 1.0)
     const dug = beach.grid.snapshot()
 
-    startNewGame(beach, SIZE, SIZE)
+    startNewGame(beach, SIZE, SIZE, null)
 
     expect(beach.grid.snapshot()).not.toEqual(dug)
     expect(beach.grid.getMoisture(8, 9)).toBe(0)
@@ -461,8 +462,28 @@ describe('starting a new game', () => {
     expect(started.camera.snapshot()).toEqual({ zoom: 55, panX: 10, panZ: 20 })
   })
 
+  it('is the classic beach when given no seed', () => {
+    expect(newGameSnapshot(SIZE, SIZE, null).seed).toBeNull()
+  })
+
+  it('grows the beach from the seed it is given, and records it', () => {
+    const grown = new Grid(SIZE, SIZE)
+    grown.initBeach(noiseSeed('salty-gull-42'))
+    grown.initSpring(1.0)
+
+    const snapshot = newGameSnapshot(SIZE, SIZE, 'salty-gull-42')
+
+    expect(snapshot.grid).toEqual(grown.snapshot())
+    expect(snapshot.seed).toBe('salty-gull-42')
+  })
+
+  it('lays a different beach for a seed than for classic', () => {
+    expect(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid.sand)
+      .not.toEqual(newGameSnapshot(SIZE, SIZE, null).grid.sand)
+  })
+
   it('starts unpaused, with the spade in hand and Look off', () => {
-    const snapshot = newGameSnapshot(SIZE, SIZE)
+    const snapshot = newGameSnapshot(SIZE, SIZE, null)
 
     expect(snapshot.toolMode).toBe(ToolMode.Spade)
     expect(snapshot.paused).toBe(false)

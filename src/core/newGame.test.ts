@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { confirmNewGame } from './NewGame.ts'
-import { createSnapshot } from './GameSnapshot.ts'
+import { confirmNewGame, resolveSeed } from './NewGame.ts'
+import { createSnapshot, newGameSnapshot } from './GameSnapshot.ts'
+import { randomSeed } from './BeachSeed.ts'
 import { Grid } from './Grid.ts'
 import { Bucket } from './Bucket.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
@@ -32,7 +33,7 @@ describe('confirmNewGame', () => {
   it('asks before it destroys the beach the player has been digging', () => {
     const asked: string[] = []
 
-    confirmNewGame(aBeachMidGame(), SIZE, SIZE, (message) => {
+    confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, (message) => {
       asked.push(message)
       return false
     })
@@ -45,7 +46,7 @@ describe('confirmNewGame', () => {
   it('warns that the beach is lost and cannot be brought back', () => {
     let asked = ''
 
-    confirmNewGame(aBeachMidGame(), SIZE, SIZE, (message) => {
+    confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, (message) => {
       asked = message
       return false
     })
@@ -57,7 +58,7 @@ describe('confirmNewGame', () => {
     const components = aBeachMidGame()
     const before = gridOf(components)
 
-    confirmNewGame(components, SIZE, SIZE, () => true)
+    confirmNewGame(components, SIZE, SIZE, null, () => true)
 
     expect(gridOf(components)).not.toEqual(before)
     expect(components.bucket.amount).toBe(0)
@@ -68,14 +69,14 @@ describe('confirmNewGame', () => {
     const components = aBeachMidGame()
     const before = gridOf(components)
 
-    confirmNewGame(components, SIZE, SIZE, () => false)
+    confirmNewGame(components, SIZE, SIZE, null, () => false)
 
     expect(gridOf(components)).toEqual(before)
     expect(components.bucket.amount).toBe(120)
   })
 
   it('reports back the state a new game starts in, so the caller can reflect it', () => {
-    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, () => true)
+    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, () => true)
 
     expect(started).not.toBeNull()
     expect(started?.toolMode).toBe(ToolMode.Spade)
@@ -85,7 +86,7 @@ describe('confirmNewGame', () => {
   // Distinguishable from a fresh start, so a caller that rebuilds the mesh and
   // rewrites the toolbar on the way through does neither when nothing changed.
   it('reports nothing when the player declines', () => {
-    expect(confirmNewGame(aBeachMidGame(), SIZE, SIZE, () => false)).toBeNull()
+    expect(confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, () => false)).toBeNull()
   })
 
   // The state it reports is the state the components are actually left in, so
@@ -93,7 +94,7 @@ describe('confirmNewGame', () => {
   it('starts a game the autosave can store and the next boot can load', () => {
     const components = aBeachMidGame()
 
-    const started = confirmNewGame(components, SIZE, SIZE, () => true)!
+    const started = confirmNewGame(components, SIZE, SIZE, null, () => true)!
 
     expect(createSnapshot({
       ...components,
@@ -102,5 +103,55 @@ describe('confirmNewGame', () => {
       lookEnabled: started.lookEnabled,
       seed: started.seed,
     })).toEqual(started)
+  })
+})
+
+describe('confirmNewGame on a seed', () => {
+  it('lays the beach that seed grows', () => {
+    const components = aBeachMidGame()
+
+    confirmNewGame(components, SIZE, SIZE, 'salty-gull-42', () => true)
+
+    expect(gridOf(components)).toEqual(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid)
+  })
+
+  it('reports the seed, so the game knows which beach it is on', () => {
+    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, 'salty-gull-42', () => true)
+
+    expect(started?.seed).toBe('salty-gull-42')
+  })
+
+  it('still changes nothing when the player declines', () => {
+    const components = aBeachMidGame()
+    const before = gridOf(components)
+
+    expect(confirmNewGame(components, SIZE, SIZE, 'salty-gull-42', () => false)).toBeNull()
+    expect(gridOf(components)).toEqual(before)
+  })
+})
+
+describe('resolveSeed', () => {
+  const pinned = () => 0.5
+
+  it('is null for the classic beach', () => {
+    expect(resolveSeed({ kind: 'classic' }, 'salty-gull-42', pinned)).toBeNull()
+  })
+
+  it('restarts the beach the player is on', () => {
+    expect(resolveSeed({ kind: 'restart' }, 'salty-gull-42', pinned)).toBe('salty-gull-42')
+  })
+
+  // A classic beach restarted is the classic beach, not some seed for it.
+  it('restarts a classic beach as classic', () => {
+    expect(resolveSeed({ kind: 'restart' }, null, pinned)).toBeNull()
+  })
+
+  it('rolls a random seed from the source it is given', () => {
+    expect(resolveSeed({ kind: 'random' }, null, pinned)).toBe(randomSeed(pinned))
+  })
+
+  // Stored trimmed, so the Hud shows exactly the text that was hashed.
+  it('takes the player\'s own seed, trimmed', () => {
+    expect(resolveSeed({ kind: 'chosen', text: '  my beach \n' }, null, pinned)).toBe('my beach')
   })
 })
