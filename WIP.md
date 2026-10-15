@@ -11,7 +11,7 @@ None - work complete.
 ## Status
 
 ⏸️ WAITING - suite green (461), tsc clean. Front-advance probe within a
-cell of before.
+cell of before. Browser-checked by the user: looks good.
 
 ## Shipped before this
 
@@ -67,8 +67,8 @@ None - work complete.
 
 ## Status
 
-⏸️ WAITING - suite green (459), tsc clean. Not yet browser-checked: the
-colours on a damp dune and the Look panel's held-water reading.
+⏸️ WAITING - suite green (459), tsc clean. Browser-checked by the user
+(with `SOAK_RATE` 0.05): looks good.
 
 Step 1 notes: `Moisture.step` reads each cell once into working arrays -
 1.40 ms/step on the full beach against 1.49 before (a getter-per-pass first
