@@ -5,22 +5,21 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 2 done.
+None - step 3 done.
 
 ## Next Action
 
-Step 3: `seedFromText` and `noiseSeed` in `src/core/BeachSeed.ts`.
+Step 4: `randomSeed(random)` - readable `word-word-NN`, pinned source.
 
 ## Status
 
-⏸️ WAITING - suite green (468), tsc clean. Mutation-checked: dropping the
-seed XOR fails both difference tests.
+⏸️ WAITING - suite green (474), tsc clean.
 
 ## Completed
 
 - [x] Step 1: pin the classic beach
 - [x] Step 2: seeded noise
-- [ ] Step 3: `seedFromText` and `noiseSeed`
+- [x] Step 3: `seedFromText` and `noiseSeed`
 - [ ] Step 4: `randomSeed`
 - [ ] Step 5: snapshot v3 carries the seed
 - [ ] Step 6: `resolveSeed` and seeded new game
