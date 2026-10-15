@@ -1,3 +1,5 @@
+import type { BeachSeed } from '../core/BeachSeed.ts'
+
 // The readouts and the status used to live in the toolbar, which made the bar
 // wide enough to push its own buttons off a 1440px screen - and a button past
 // the right edge is unclickable, not merely ugly, since the bar is fixed
@@ -13,6 +15,7 @@ export class Hud {
   readonly element: HTMLDivElement
 
   private readonly readouts: HTMLDivElement
+  private readonly beach: HTMLDivElement
   private readonly status: HTMLDivElement
 
   constructor() {
@@ -22,6 +25,15 @@ export class Hud {
     this.readouts = document.createElement('div')
     this.readouts.dataset.role = 'readouts'
     this.element.appendChild(this.readouts)
+
+    // A seed is for sharing, so this one line takes clicks and selection
+    // although the rest of the HUD lets them through to the beach.
+    this.beach = document.createElement('div')
+    this.beach.dataset.role = 'beach'
+    this.beach.style.pointerEvents = 'auto'
+    this.beach.style.userSelect = 'text'
+    this.element.appendChild(this.beach)
+    this.setSeed(null)
 
     this.status = document.createElement('div')
     this.status.dataset.role = 'status'
@@ -34,6 +46,12 @@ export class Hud {
 
   setReadouts(text: string): void {
     this.readouts.textContent = text
+  }
+
+  // Its own element for the same reason as the status below: the readouts are
+  // rewritten every frame, and the beach changes only on a new game or load.
+  setSeed(seed: BeachSeed): void {
+    this.beach.textContent = `Beach: ${seed ?? 'classic'}`
   }
 
   // Its own element rather than part of the readouts: Game rewrites those

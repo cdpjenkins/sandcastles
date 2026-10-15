@@ -7,6 +7,9 @@ const readouts = (hud: Hud): HTMLElement =>
 const status = (hud: Hud): HTMLElement =>
   hud.element.querySelector<HTMLElement>('[data-role="status"]')!
 
+const beach = (hud: Hud): HTMLElement =>
+  hud.element.querySelector<HTMLElement>('[data-role="beach"]')!
+
 describe('Hud', () => {
   it('writes the readouts text', () => {
     const hud = new Hud()
@@ -49,6 +52,35 @@ describe('Hud', () => {
 
     hud.setStatus('')
     expect(status(hud).hidden).toBe(true)
+  })
+
+  it('names the beach the player is on', () => {
+    const hud = new Hud()
+
+    hud.setSeed('salty-gull-42')
+    expect(beach(hud).textContent).toBe('Beach: salty-gull-42')
+
+    hud.setSeed(null)
+    expect(beach(hud).textContent).toBe('Beach: classic')
+  })
+
+  it('keeps the beach named while the readouts are rewritten', () => {
+    const hud = new Hud()
+    hud.setSeed('salty-gull-42')
+
+    hud.setReadouts('bucket: 0.0 / 1000   wave: 2s')
+
+    expect(beach(hud).textContent).toBe('Beach: salty-gull-42')
+  })
+
+  // A seed is for sharing, so the player has to be able to select and copy it,
+  // though the rest of the HUD lets clicks through to the beach. Only the
+  // declaration is visible from jsdom; whether it copies is browser-checked.
+  it('lets the player select the seed to copy it', () => {
+    const hud = new Hud()
+
+    expect(beach(hud).style.pointerEvents).toBe('auto')
+    expect(beach(hud).style.userSelect).toBe('text')
   })
 
   it('is one element the caller can place', () => {

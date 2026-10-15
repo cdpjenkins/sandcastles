@@ -244,6 +244,7 @@ export class Game {
     this.toolbar.setLook(this.lookEnabled)
     this.toolbar.setPaused(this.paused)
     this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
+    this.hud.setSeed(this.seed)
     this.updateHud()
   }
 

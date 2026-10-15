@@ -5,16 +5,17 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 7 done.
+None - step 8 done.
 
 ## Next Action
 
-Step 8: the Hud shows the seed - `Beach: classic` / `Beach: salty-gull-42`.
+Step 9: wire the dialog into `Game` - button and N open it, keys ignored
+while open, choice -> resolveSeed -> confirmNewGame.
 
 ## Status
 
-⏸️ WAITING - suite green (511), tsc clean. Mutation-checked: dropping the
-dialog's stopPropagation fails the keys test.
+⏸️ WAITING - suite green (514), tsc clean. `reflectState` already calls
+`hud.setSeed`, so boot, import and new game all show it.
 
 ## Completed
 
@@ -25,7 +26,7 @@ dialog's stopPropagation fails the keys test.
 - [x] Step 5: snapshot v3 carries the seed
 - [x] Step 6: `resolveSeed` and seeded new game
 - [x] Step 7: `NewGameDialog`
-- [ ] Step 8: the Hud shows the seed
+- [x] Step 8: the Hud shows the seed
 - [ ] Step 9: wire into `Game`
 - [ ] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md
