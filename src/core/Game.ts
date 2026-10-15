@@ -131,7 +131,7 @@ export class Game {
     document.body.appendChild(this.helpOverlay)
 
     this.newGameDialog = new NewGameDialog()
-    this.newGameDialog.onChoose((choice) => this.startNewGame(choice))
+    this.newGameDialog.onChoose((choice) => this.startChosenGame(choice))
     document.body.appendChild(this.newGameDialog.element)
 
     this.fileInput = document.createElement('input')
@@ -288,7 +288,7 @@ export class Game {
   }
 
   // Which beach comes first; the warning that this one will be lost is asked
-  // after, as a step of its own, by startNewGame.
+  // after, as a step of its own, by startChosenGame.
   private newGame(): void {
     this.newGameDialog.open(this.seed)
   }
@@ -296,7 +296,7 @@ export class Game {
   // The beach the player built is destroyed with no undo, so they are asked
   // first. Declining leaves the game exactly as it was, mesh and toolbar
   // included, which is why nothing here runs until a snapshot comes back.
-  private startNewGame(choice: NewGameChoice): void {
+  private startChosenGame(choice: NewGameChoice): void {
     const seed = resolveSeed(choice, this.seed, Math.random)
     const started = confirmNewGame(
       this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, seed, (message) => window.confirm(message),
