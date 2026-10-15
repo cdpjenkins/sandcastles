@@ -5,20 +5,20 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None started.
+None - step 1 done.
 
 ## Next Action
 
-Step 1: pin the classic beach with a checksum test, before touching the
-generator.
+Step 2: seeded noise - `initBeach(seed)`, with step 1's checksum holding.
 
 ## Status
 
-⏸️ WAITING - plan written, no code changed.
+⏸️ WAITING - suite green (463), tsc clean. Checksum mutation-checked:
+sand amplitude 6 -> 6.0001 fails it.
 
 ## Completed
 
-- [ ] Step 1: pin the classic beach
+- [x] Step 1: pin the classic beach
 - [ ] Step 2: seeded noise
 - [ ] Step 3: `seedFromText` and `noiseSeed`
 - [ ] Step 4: `randomSeed`

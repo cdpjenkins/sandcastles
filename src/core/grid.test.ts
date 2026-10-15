@@ -446,3 +446,27 @@ describe('Grid', () => {
     expect(snapshot.sand[2 * 4 + 2]).toBe(1)
   })
 })
+
+// FNV-1a over the layer's raw bytes: bit-exact, so a change in the last place of
+// one cell shows.
+const layerChecksum = (layer: Float32Array): string => {
+  const bytes = new Uint8Array(layer.buffer, layer.byteOffset, layer.byteLength)
+  let h = 0x811c9dc5
+  for (const b of bytes) h = Math.imul(h ^ b, 0x01000193)
+  return (h >>> 0).toString(16).padStart(8, '0')
+}
+
+describe('The classic beach', () => {
+  // Every game so far has started on this beach and every scene in CLAUDE.md
+  // was tuned on it, so seeding the generator must leave it bit-for-bit alone.
+  // Pinned before the generator was touched. If this fails, the classic beach
+  // has changed - not the test.
+  it('generates the same rock and sand it always has', () => {
+    const grid = new Grid(256, 256)
+    grid.initBeach()
+    const { rock, sand } = grid.snapshot()
+
+    expect(layerChecksum(rock)).toBe('e06ca45c')
+    expect(layerChecksum(sand)).toBe('cdf8f2eb')
+  })
+})
