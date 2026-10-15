@@ -578,6 +578,90 @@ A file that will not parse is refused *before* the player is asked. Asking
 first would have them agree to lose their beach only to be told the file was
 no good.
 
+## Choosing the beach
+
+`BeachSeed.ts` (`seedFromText`, `noiseSeed`, `randomSeed`), `resolveSeed` in
+`NewGame.ts`, `NewGameDialog.ts`, and the seed in `GameSnapshot` (version 3).
+New game offers classic, restart this beach, random, or a typed seed. Only the
+rock and sand noise varies; the ridge, the sea and the spring are the same on
+every seed. What was expensive to learn:
+
+### Seed 0 is the classic beach, and a checksum holds it there
+
+The seed is XORed into `hashNoise`'s `h` before the avalanche, so 0 is the
+identity and the classic beach is bit-for-bit what it always was. `grid.test.ts`
+pins a checksum of its rock and sand, written *before* the generator was
+touched. Every scene in this file was tuned on that beach; if the checksum
+fails, the beach changed, not the test.
+
+### The seed hash is part of the save format
+
+A stored seed regenerates its beach on restart, and a shared seed is only worth
+sharing if it grows the same beach for everyone. So `seedFromText` is FNV-1a
+pinned against the published test vectors, and it must never be "improved".
+It hashes UTF-16 code units, not UTF-8 bytes, so it parts company with the
+published vectors outside ASCII; a test pins that too.
+
+The noise constants in `Grid.ts` are coupled the same way: changing one changes
+what every seed grows. A restored beach is unaffected - `rock` and `sand` are
+stored - but *Restart this beach* would no longer give back the beach first
+played.
+
+### Classic is `null`, which stops a mix-up, not a collision
+
+`null` means no typed seed can ever be *labelled* classic, in the save or the
+Hud. It does not stop a typed seed from *growing* the classic beach: one whose
+hash is 0 would, about one in four billion. Harmless - it is a beach that
+happens to look classic - and recorded so the `null` is not mistaken for a
+guarantee it does not give.
+
+A v2 save migrates to `seed: null`, and that is a fact rather than a guess:
+every beach before seeds existed was classic.
+
+### Fifty seeds were swept before any of this was built
+
+Full `Game.simStep` pipeline, 300s each, seeds `s1`..`s50`:
+
+| | classic | 50 seeds: min / median / max |
+|---|---|---|
+| NaN or negative depth | none | none |
+| Open-sea mean surface vs tide | 0.17 | 0.11 / 0.15 / 0.26 |
+| Deepest closed depression on land | 3.0 | 2.0 / 3.5 / 7.0 |
+| Deepest standing water inland | 5.2 | 3.2 / 5.5 / 9.4 |
+
+Nothing needed constraining: the deep-lake advection instability above set in
+at depth ~22. Max velocity pinned at `MAX_VELOCITY` on every seed, classic
+included - the cap, not the beach, so it was discarded.
+
+The one real difference is the stream. Classic's reaches the sea at 185s; only
+17 of 50 seeds' did inside 300s (65-285s), the rest ponding in a depression or
+still soaking. That is accepted: a stream that pools is a fine beach. If seeds
+ever vary the ridge, the shoreline or the spring's position, sweep again first -
+those are what the scenes above were tuned against.
+
+### A dialog with a text field must keep its keys
+
+`Game.onKeyDown` listens on `window`, so a seed typed with an `r` in it resets
+the water, `n` reopens the chooser and `s` picks the Spade. Two guards, both
+load-bearing: the dialog stops keydown propagation at its own element, which
+holds wherever focus is inside it; and `onKeyDown` returns early while
+`newGameDialog.isOpen`, for focus that has left it - on the page after a click
+on the backdrop. Mutation-checked: dropping the dialog's `stopPropagation`
+fails `keeps the keys typed into it from reaching the game`. The `Game` guard,
+like everything in `Game`, is browser-verified only.
+
+### The chooser comes before the warning, and is not consent
+
+Choosing a beach does not agree to lose this one. `Game.startChosenGame`
+resolves the seed and *then* calls `confirmNewGame`, whose warning and injected
+`ask` are unchanged. Declining at either step changes nothing.
+
+### Random seeds are a small space, on purpose
+
+`randomSeed` draws `word-word-NN` from two 16-word lists: 23,040 seeds, chosen
+to be read aloud and typed back. Two players will sometimes roll the same one
+and get the same beach, which is harmless. Lengthen the lists if it ever is not.
+
 ## An overflowing toolbar is unclickable, not untidy
 
 The bar is `position:fixed` inside a `body` with `overflow:hidden`. A flex row

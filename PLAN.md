@@ -20,9 +20,9 @@ plan lets the player pick what a new game starts on:
   the moment it ships, so it is a fixed FNV-1a rather than anything that could be
   "improved" later.
 - **Classic is `null`, not a seed value.** Mixing seed 0 into the hash reproduces
-  today's beach exactly, but if classic were *a text* some typed string would
-  collide with it, and if it were the number 0 a hash could land on it. `null`
-  cannot be typed.
+  today's beach exactly, but if classic were *a text* some typed string would be
+  labelled classic. `null` cannot be typed. (It does not stop a seed whose hash
+  is 0 from growing the classic beach - see CLAUDE.md.)
 - **The seed is stored in the snapshot and the file** (version 3), and shown in the
   Hud. Restoring does not need it - `rock` and `sand` are stored - but showing and
   restarting do.

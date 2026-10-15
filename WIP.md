@@ -5,17 +5,11 @@ Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 
 ## Current Step
 
-None - step 10 done.
-
-## Next Action
-
-Step 11: CLAUDE.md - the sweep's figures, why classic is `null` (and what
-that does not prevent), the hash is part of the save format, the dialog's
-key guard.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - browser-checked by the user: all looks good.
+⏸️ WAITING - suite green (514), tsc clean, browser-checked by the user.
 
 ## Completed
 
@@ -29,7 +23,7 @@ key guard.
 - [x] Step 8: the Hud shows the seed
 - [x] Step 9: wire into `Game`
 - [x] Step 10: verify in the browser
-- [ ] Step 11: CLAUDE.md
+- [x] Step 11: CLAUDE.md
 
 ## Shipped before this
 
