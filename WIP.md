@@ -6,21 +6,23 @@ fill cost. Plan in `PLAN.md`.
 
 ## Current Step
 
-None - step 1 done.
+None - step 2 done.
 
 ## Next Action
 
-Step 2: `fillCost` in `src/core/SpringSite.ts`, on hand-built grids.
+Step 3: `springSite(grid, seed)` - highest cells under budget, seeded pick,
+fallback to the lowest score.
 
 ## Status
 
-⏸️ WAITING - suite green (524), tsc clean. Mutation-checked: moving the spring
-one cell right fails the pin, and only the pin.
+⏸️ WAITING - suite green (534), tsc clean. Matches the scratch probe exactly
+on all 51 sweep beaches, 29 ms at worst. Mutation-checked: inland water as
+sea, and a hollow charged per cell, each fail their test.
 
 ## Completed
 
 - [x] Step 1: pin the classic spring
-- [ ] Step 2: `fillCost`
+- [x] Step 2: `fillCost`
 - [ ] Step 3: `springSite`
 - [ ] Step 4: seeded new games use it
 - [ ] Step 5: sweep it
