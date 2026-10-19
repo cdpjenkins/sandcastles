@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  toGameFile, parseGameFile, exportFilename, exportStatus, FILE_ENCODING,
+  toGameFile, parseGameFile, exportFilename, exportStatus, seedForFilename, FILE_ENCODING,
 } from './GameFile.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
 import { SNAPSHOT_VERSION, createSnapshot } from './GameSnapshot.ts'
@@ -201,6 +201,37 @@ describe('parseGameFile', () => {
     const { savedAt: _unused, ...withoutStamp } = file
 
     expect(parseGameFile(JSON.stringify(withoutStamp), SIZE, SIZE)).toEqual(aSnapshot())
+  })
+})
+
+describe('seedForFilename', () => {
+  it('names the classic beach', () => {
+    expect(seedForFilename(null)).toBe('classic')
+  })
+
+  // Every random seed has to survive as-is, or the name stops matching the Hud.
+  it('keeps a random seed exactly', () => {
+    expect(seedForFilename('salty-gull-42')).toBe('salty-gull-42')
+  })
+
+  it('turns anything unsafe in a filename into a single dash', () => {
+    expect(seedForFilename('my/beach: v2?')).toBe('my-beach-v2')
+  })
+
+  // Deliberate rather than an accident: only ASCII is certain to survive every
+  // filesystem and every download prompt.
+  it('treats letters outside ASCII as unsafe', () => {
+    expect(seedForFilename('plage-été')).toBe('plage-t')
+  })
+
+  it('leaves nothing of a seed with nothing safe in it', () => {
+    expect(seedForFilename('🌊🌊')).toBe('')
+  })
+
+  it('caps a long seed without leaving a dash at the cut', () => {
+    const long = `${'a'.repeat(39)} ${'b'.repeat(160)}`
+
+    expect(seedForFilename(long)).toBe('a'.repeat(39))
   })
 })
 

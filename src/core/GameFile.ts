@@ -134,6 +134,18 @@ export function exportStatus(filename: string, savedAt: Date): string {
   return `Saved ${filename} (beach at ${savedAt.toLocaleTimeString()})`
 }
 
+const FILENAME_SEED_LENGTH = 40
+
+// A label for the beach, not a way back to it: import reads the seed from the
+// file, never from its name, so this is free to throw information away. A typed
+// seed is any text at all, and only these characters are certain to survive
+// every filesystem and download prompt.
+export function seedForFilename(seed: BeachSeed): string {
+  if (seed === null) return 'classic'
+  const dashed = seed.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/-+/g, '-')
+  return dashed.replace(/^-+|-+$/g, '').slice(0, FILENAME_SEED_LENGTH).replace(/-+$/, '')
+}
+
 // Colons are illegal in a Windows filename. The ISO form is kept otherwise, so
 // a directory of exports sorts by name into the order they were saved.
 export function exportFilename(savedAt: Date): string {

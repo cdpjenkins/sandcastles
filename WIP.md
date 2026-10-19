@@ -1,4 +1,32 @@
-# WIP: Choose the beach a new game starts on
+# WIP: An exported file is named for its beach
+
+`sandcastles-<seed>-<stamp>.json`. Classic is `classic`; a typed seed keeps
+letters, digits, `-` and `_`, everything else becomes `-`, capped at 40. A
+seed that cleans to nothing leaves the bare timestamp. The filename is a
+label only - import never reads it - so no format change.
+
+## Current Step
+
+Step 2: `exportFilename` takes the seed.
+
+## Status
+
+⏸️ WAITING - step 1 done, suite green (520), tsc clean.
+
+## Steps
+
+- [x] Step 1: `seedForFilename`
+- [ ] Step 2: `exportFilename` takes the seed
+- [ ] Step 3: wire into `Game.exportBeach`
+- [ ] Step 4: CLAUDE.md
+
+## Shipped before this
+
+- Choose the beach a new game starts on (`bb37d69`..`4a43512`).
+
+---
+
+# Previous: Choose the beach a new game starts on
 
 Classic, restart this beach, random, or a typed seed. Plan in `PLAN.md`; the
 50-seed sweep found nothing to constrain.
