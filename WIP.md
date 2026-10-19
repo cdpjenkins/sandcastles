@@ -6,17 +6,21 @@ fill cost. Plan in `PLAN.md`.
 
 ## Current Step
 
-None - step 4 done.
+None - step 5 done.
 
 ## Next Action
 
-Step 5: sweep `s1`..`s50` for 300s with the new placement; stop if any
-stream fails to reach the sea.
+Step 6: verify in the browser - the user's check. A few random beaches:
+spring somewhere new, its stream heads for the sea, Start does not stall.
+Classic still has its spring at top-centre.
 
 ## Status
 
-⏸️ WAITING - suite green (544), tsc clean. `springSite` now trims its seed,
-as `noiseSeed` does - found by the new test, not foreseen in the plan.
+⏸️ WAITING - sweep done, accepted by the user. 300s: 41/50 arrived (17
+before). The 9 rerun for 900s: 8 arrive late (s9 305, s47 315, s49 355, s5
+365, s14 400, s36 410, s10 695, s50 775), s31 never (score 68.7). 49/50
+within 15 minutes. No NaN, sea in range. The score predicts *whether*, not
+*when*: s10 scores 0 and took 695s.
 
 ## Completed
 
@@ -24,7 +28,7 @@ as `noiseSeed` does - found by the new test, not foreseen in the plan.
 - [x] Step 2: `fillCost`
 - [x] Step 3: `springSite`
 - [x] Step 4: seeded new games use it
-- [ ] Step 5: sweep it
+- [x] Step 5: sweep it
 - [ ] Step 6: verify in the browser
 - [ ] Step 7: CLAUDE.md
 
