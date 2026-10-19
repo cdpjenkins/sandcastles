@@ -237,7 +237,21 @@ describe('seedForFilename', () => {
 
 describe('exportFilename', () => {
   it('names the file for the beach and the moment it was saved', () => {
-    expect(exportFilename(SAVED_AT)).toBe('sandcastles-2026-08-21T17-40-00.json')
+    expect(exportFilename(SAVED_AT, 'salty-gull-42'))
+      .toBe('sandcastles-salty-gull-42-2026-08-21T17-40-00.json')
+  })
+
+  it('names the classic beach', () => {
+    expect(exportFilename(SAVED_AT, null)).toBe('sandcastles-classic-2026-08-21T17-40-00.json')
+  })
+
+  it('names a seed by what is safe in a filename', () => {
+    expect(exportFilename(SAVED_AT, 'my/beach: v2?'))
+      .toBe('sandcastles-my-beach-v2-2026-08-21T17-40-00.json')
+  })
+
+  it('leaves out a seed with nothing safe in it rather than a dangling dash', () => {
+    expect(exportFilename(SAVED_AT, '🌊🌊')).toBe('sandcastles-2026-08-21T17-40-00.json')
   })
 
   // The time is punctuated with dashes because a colon is illegal in a Windows
@@ -246,7 +260,8 @@ describe('exportFilename', () => {
   it('zero-pads a single-digit month, day and time', () => {
     const earlyInTheYear = new Date('2026-01-05T09:07:03.000Z')
 
-    expect(exportFilename(earlyInTheYear)).toBe('sandcastles-2026-01-05T09-07-03.json')
+    expect(exportFilename(earlyInTheYear, null))
+      .toBe('sandcastles-classic-2026-01-05T09-07-03.json')
   })
 })
 

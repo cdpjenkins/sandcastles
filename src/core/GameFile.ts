@@ -146,9 +146,11 @@ export function seedForFilename(seed: BeachSeed): string {
   return dashed.replace(/^-+|-+$/g, '').slice(0, FILENAME_SEED_LENGTH).replace(/-+$/, '')
 }
 
-// Colons are illegal in a Windows filename. The ISO form is kept otherwise, so
-// a directory of exports sorts by name into the order they were saved.
-export function exportFilename(savedAt: Date): string {
+// The beach comes first, so a directory of exports sorts by beach and then,
+// within each, into the order they were saved. Colons are illegal in a Windows
+// filename; the ISO form is kept otherwise, zero-padding and all, for that sort.
+export function exportFilename(savedAt: Date, seed: BeachSeed): string {
   const stamp = savedAt.toISOString().slice(0, 19).replaceAll(':', '-')
-  return `sandcastles-${stamp}.json`
+  const beach = seedForFilename(seed)
+  return beach === '' ? `sandcastles-${stamp}.json` : `sandcastles-${beach}-${stamp}.json`
 }

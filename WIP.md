@@ -7,17 +7,18 @@ label only - import never reads it - so no format change.
 
 ## Current Step
 
-Step 2: `exportFilename` takes the seed.
+Step 4: CLAUDE.md.
 
 ## Status
 
-⏸️ WAITING - step 1 done, suite green (520), tsc clean.
+⏸️ WAITING - steps 2-3 done together (tsc needs the call site), suite
+green (523), tsc clean. Not yet browser-checked.
 
 ## Steps
 
 - [x] Step 1: `seedForFilename`
-- [ ] Step 2: `exportFilename` takes the seed
-- [ ] Step 3: wire into `Game.exportBeach`
+- [x] Step 2: `exportFilename` takes the seed
+- [x] Step 3: wire into `Game.exportBeach`
 - [ ] Step 4: CLAUDE.md
 
 ## Shipped before this
