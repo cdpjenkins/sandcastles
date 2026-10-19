@@ -1,4 +1,38 @@
-# WIP: An exported file is named for its beach
+# WIP: A seeded beach places its spring where it reaches the sea
+
+Classic keeps its spring at top-centre. A seeded beach puts its spring at the
+highest spot whose water reaches the sea, scored statically by a one-pass
+fill cost. Plan in `PLAN.md`.
+
+## Current Step
+
+None started.
+
+## Next Action
+
+Step 1: pin the classic spring's cell and rate.
+
+## Status
+
+⏸️ WAITING - plan written, no code changed.
+
+## Completed
+
+- [ ] Step 1: pin the classic spring
+- [ ] Step 2: `fillCost`
+- [ ] Step 3: `springSite`
+- [ ] Step 4: seeded new games use it
+- [ ] Step 5: sweep it
+- [ ] Step 6: verify in the browser
+- [ ] Step 7: CLAUDE.md
+
+## Shipped before this
+
+- An exported file is named for its beach (`54ba6c1`).
+
+---
+
+# Previous: An exported file is named for its beach
 
 `sandcastles-<seed>-<stamp>.json`. Classic is `classic`; a typed seed keeps
 letters, digits, `-` and `_`, everything else becomes `-`, capped at 40. A
