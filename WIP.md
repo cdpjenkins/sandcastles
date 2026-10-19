@@ -6,26 +6,24 @@ fill cost. Plan in `PLAN.md`.
 
 ## Current Step
 
-None - step 3 done.
+None - step 4 done.
 
 ## Next Action
 
-Step 4: seeded `newGameSnapshot` places its spring with `springSite`.
+Step 5: sweep `s1`..`s50` for 300s with the new placement; stop if any
+stream fails to reach the sea.
 
 ## Status
 
-⏸️ WAITING - suite green (542), tsc clean. On the 50 sweep beaches: all
-within budget, median row 3, deepest row 138 (s46), 39 ms at worst.
-Mutation-checked: no top band, no budget, wet allowed - each fails its test.
-Departed from the plan: no separate fallback - the budget rises to the
-cheapest candidate when nothing is within 70, and the same rule picks.
+⏸️ WAITING - suite green (544), tsc clean. `springSite` now trims its seed,
+as `noiseSeed` does - found by the new test, not foreseen in the plan.
 
 ## Completed
 
 - [x] Step 1: pin the classic spring
 - [x] Step 2: `fillCost`
 - [x] Step 3: `springSite`
-- [ ] Step 4: seeded new games use it
+- [x] Step 4: seeded new games use it
 - [ ] Step 5: sweep it
 - [ ] Step 6: verify in the browser
 - [ ] Step 7: CLAUDE.md

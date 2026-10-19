@@ -218,7 +218,8 @@ export function springSite(grid: Grid, seed: string): GridCoord {
   const top = Math.floor(affordable[0]! / width)
   const band = affordable.filter((i) => Math.floor(i / width) <= top + SPRING_ROW_BAND)
 
-  const random = seededRandom(seedFromText(`${seed}:spring`))
+  // Trimmed as noiseSeed trims, or the same land would grow a different spring.
+  const random = seededRandom(seedFromText(`${seed.trim()}:spring`))
   const chosen = band[Math.floor(random() * band.length)]!
   return { x: chosen % width, z: Math.floor(chosen / width) }
 }

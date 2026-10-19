@@ -8,6 +8,7 @@ import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { Grid, STREAM_RATE } from './Grid.ts'
 import { noiseSeed } from './BeachSeed.ts'
+import { springSite } from './SpringSite.ts'
 import { Bucket } from './Bucket.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
@@ -483,12 +484,36 @@ describe('starting a new game', () => {
   it('grows the beach from the seed it is given, and records it', () => {
     const grown = new Grid(SIZE, SIZE)
     grown.initBeach(noiseSeed('salty-gull-42'))
-    grown.initSpring(1.0)
+    const site = springSite(grown, 'salty-gull-42')
+    grown.setSourceRate(site.x, site.z, STREAM_RATE)
 
     const snapshot = newGameSnapshot(SIZE, SIZE, 'salty-gull-42')
 
     expect(snapshot.grid).toEqual(grown.snapshot())
     expect(snapshot.seed).toBe('salty-gull-42')
+  })
+
+  // The classic spring is top-centre whatever the land around it does; a
+  // seeded beach puts its own where its water will reach the sea.
+  it('gives a seeded beach one spring, where springSite puts it', () => {
+    const grown = new Grid(256, 256)
+    grown.initBeach(noiseSeed('salty-gull-42'))
+    const site = springSite(grown, 'salty-gull-42')
+
+    const { grid } = newGameSnapshot(256, 256, 'salty-gull-42')
+    const sources: { x: number; z: number; rate: number }[] = []
+    grid.source.forEach((rate, i) => {
+      if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
+    })
+
+    expect(sources).toEqual([{ ...site, rate: STREAM_RATE }])
+  })
+
+  // noiseSeed trims, so the land ignores spaces round a seed; the spring must
+  // too, or the same land would grow a different spring.
+  it('grows the same spring for a seed with spaces round it', () => {
+    expect(newGameSnapshot(SIZE, SIZE, '  salty-gull-42 ').grid.source)
+      .toEqual(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid.source)
   })
 
   it('lays a different beach for a seed than for classic', () => {
