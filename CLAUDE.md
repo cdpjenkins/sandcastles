@@ -595,9 +595,9 @@ no good.
 
 `BeachSeed.ts` (`seedFromText`, `noiseSeed`, `randomSeed`), `resolveSeed` in
 `NewGame.ts`, `NewGameDialog.ts`, and the seed in `GameSnapshot` (version 3).
-New game offers classic, restart this beach, random, or a typed seed. Only the
-rock and sand noise varies; the ridge, the sea and the spring are the same on
-every seed. What was expensive to learn:
+New game offers classic, restart this beach, random, or a typed seed. The rock
+and sand noise varies, and a seeded beach places its own spring (below); the
+ridge and the sea are the same on every seed. What was expensive to learn:
 
 ### Seed 0 is the classic beach, and a checksum holds it there
 
@@ -646,11 +646,11 @@ Nothing needed constraining: the deep-lake advection instability above set in
 at depth ~22. Max velocity pinned at `MAX_VELOCITY` on every seed, classic
 included - the cap, not the beach, so it was discarded.
 
-The one real difference is the stream. Classic's reaches the sea at 185s; only
-17 of 50 seeds' did inside 300s (65-285s), the rest ponding in a depression or
-still soaking. That is accepted: a stream that pools is a fine beach. If seeds
-ever vary the ridge, the shoreline or the spring's position, sweep again first -
-those are what the scenes above were tuned against.
+The one real difference was the stream. Classic's reaches the sea at 185s; with
+the spring left at top-centre only 17 of 50 seeds' did inside 300s (65-285s),
+the rest ponding in a depression or still soaking. That is what moved the
+spring - see the next section. If seeds ever vary the ridge or the shoreline,
+sweep again first: those are what the scenes above were tuned against.
 
 ### A dialog with a text field must keep its keys
 
@@ -674,6 +674,96 @@ resolves the seed and *then* calls `confirmNewGame`, whose warning and injected
 `randomSeed` draws `word-word-NN` from two 16-word lists: 23,040 seeds, chosen
 to be read aloud and typed back. Two players will sometimes roll the same one
 and get the same beach, which is harmless. Lengthen the lists if it ever is not.
+
+## Where a seeded beach's spring goes
+
+`SpringSite.ts` (`fillCost`, `springSite`), called from `newGameSnapshot`.
+Classic keeps its spring at top-centre; a seeded beach puts its own on dry
+land, off the side walls, as high up the beach as it can while scoring within
+`MAX_SPRING_FILL`, and the seed picks among the top few rows of those. What was
+expensive to learn:
+
+### The score is whether, not when
+
+`fillCost` is the volume of hollows a spring's water must fill before it can
+spill to the sea, read off the terrain alone. It was validated against the
+first sweep with every spring at top-centre: all 14 scoring under 70 arrived
+inside 300s, and 33 of the 37 scoring 130 or more did not. That looked like a
+predictor of arrival. It is weaker than that.
+
+With springs placed by it, 50 seeds, 300s then 900s for the stragglers:
+
+| arrived | seeds |
+|---|---|
+| inside 300s | 41 (against 17 at top-centre) |
+| 305-775s | 8 - s9, s47, s49, s5, s14, s36, s10 695, s50 775 |
+| not inside 900s | 1 - s31, scoring 68.7 |
+
+So a low score says the water has somewhere to go, not that it gets there soon.
+s10 scores 0 and took 695s; s25 scores 0 on a route of the same length and took
+70. Nothing static measured - score, route length, drop, mean slope - separates
+the slow from the fast, so a long gentle route spreading thin is the suspect
+but unproven. Accepted as is: a stream that pools or takes minutes is a fine
+beach. Scoring the route as well is the next thing to try if it ever matters.
+
+Nine seeds whose top-centre stream used to arrive are slower from their placed
+spring - some trivially (s37 65 -> 70s), some not: s7 120 -> 260s, and s10 went
+from 225s to 695s. A placed spring is
+higher and further from the sea, and top-centre sometimes got lucky: s10's
+scored 3,793 there and still arrived, presumably by eroding through a lip. The
+score cannot see erosion.
+
+### An inland pool is not the sea
+
+The first version of the score counted any wet cell as arrival, and missed five
+seeds whose springs ran into boot water lying below sea level inland - a lake,
+which the stream fills rather than reaches the sea through. Only the sea rows
+and water joined to them are the sea. The same trap as the readings under the
+water sim: the wrong one agrees with the right one wherever the land is above
+sea level, which is nearly everywhere.
+
+### One pass, not a search
+
+Flooding outward from each candidate spot took 3s on the worst seeds, which
+would freeze the click on Start. A single priority flood inward from the sea
+gives every cell its fill level and the neighbour it drains through, and scoring
+in flood order charges each cell its drain's score plus any hollow it is the
+way into: 29ms for the whole beach. It agreed with the per-candidate search at
+all 3,162 top-row spots tested, and with the scratch probe exactly on 51
+beaches. A hollow is charged once, as a whole - charging it per cell passed
+every test until one hollow was two cells long.
+
+### `MAX_SPRING_FILL` is coupled to `STREAM_RATE`
+
+70 is roughly seventy seconds of spring at a `STREAM_RATE` of 1.0, and it sits
+in the gap the first sweep left between 67 (arrived) and 133 (did not). Change
+the rate and the budget means something else. Lowering it would not have saved
+s10, which scores 0.
+
+Where nothing is within budget - never seen in 51 beaches - the budget rises to
+the cheapest spot there is and the same rule picks; there is no separate
+fallback path.
+
+### The classic spring is pinned by its cell, not by `initSpring`
+
+The old test compared a new game's beach with a first boot's, and both go
+through `initSpring` - so moving the spring a cell moved both and stayed green,
+which mutation showed. `puts the classic spring at top-centre` names `(128, 1)`.
+
+### The spring's seed is trimmed, like the land's
+
+`noiseSeed` trims, so `'  gull '` grows gull's land; `springSite` must trim too
+or the same land grows a different spring. Stored seeds are trimmed already, so
+no player would hit it today - but the two must agree, and a test holds them.
+
+### Seeds grew a different spring before this
+
+A seed typed now grows its spring somewhere other than it did before
+2026-10-19, and *Restart this beach* on an older seeded save moves the spring.
+A saved beach still loads unchanged - `source` is stored. Accepted rather than
+versioning the generator, because seeds had only existed for four days. Before
+the next thing a seed is made to change, decide that again: a generator version
+in the snapshot is the alternative, and it gets more expensive to add later.
 
 ## An overflowing toolbar is unclickable, not untidy
 

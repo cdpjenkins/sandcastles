@@ -42,7 +42,7 @@ top-centre:
 | fill volume | reached the sea inside 300s |
 |---|---|
 | under 70 | 14 of 14 (classic, at 28, included) |
-| 130 or more | 4 of 33 |
+| 130 or more | 4 of 37 |
 
 The four that beat it had more to fill than 240s of spring could supply, so they
 found a shorter way - most likely eroding through a hollow's lip. The score is
@@ -91,7 +91,9 @@ tested.
 - **The seed picks among them**, through a small seeded generator (mulberry32)
   on the `':spring'` sub-seed. Deterministic: the same seed, the same spot.
 - **Fallback:** if no cell is under budget - it never happened across 51 beaches,
-  but the terrain is unbounded - take the lowest-scoring candidate.
+  but the terrain is unbounded - the budget rises to the lowest score there is
+  and the same rule picks among those. (Built that way rather than as the
+  separate path first planned.)
 
 `MAX_SPRING_FILL` is coupled to `STREAM_RATE` and to the world's unit scale: it
 is roughly "70 seconds of spring", and it was measured, not chosen.

@@ -6,17 +6,11 @@ fill cost. Plan in `PLAN.md`.
 
 ## Current Step
 
-None - step 6 done.
-
-## Next Action
-
-Step 7: CLAUDE.md - the score and its limits, the inland-pool trap, the
-one-pass cost map, the budget's coupling, the sweep figures, and that seeds
-grew a different spring before this.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - browser-checked by the user: looks ok.
+⏸️ WAITING - suite green (544), tsc clean, browser-checked by the user.
 
 ## Completed
 
@@ -26,7 +20,7 @@ grew a different spring before this.
 - [x] Step 4: seeded new games use it
 - [x] Step 5: sweep it
 - [x] Step 6: verify in the browser
-- [ ] Step 7: CLAUDE.md
+- [x] Step 7: CLAUDE.md
 
 ## Shipped before this
 
