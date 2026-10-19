@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { fillCost } from './SpringSite.ts'
+import {
+  fillCost, springSite, MAX_SPRING_FILL, SPRING_ROW_BAND, SPRING_SIDE_MARGIN,
+} from './SpringSite.ts'
 import { Grid } from './Grid.ts'
 
 // 5 wide, 20 deep: seaStart is 15. The land is a valley falling towards the sea
@@ -111,5 +113,117 @@ describe('fillCost', () => {
     const cost = fillCost(grid)
 
     for (let i = grid.seaStart * WIDTH; i < WIDTH * DEPTH; i++) expect(cost[i]).toBe(0)
+  })
+})
+
+// The same valley, wide enough that the side margin leaves somewhere to stand:
+// 25 wide, centre line x = 12.
+const WIDE = 25
+const CENTRE = 12
+
+function aWideValley(): Grid {
+  const grid = new Grid(WIDE, DEPTH)
+  for (let z = 0; z < DEPTH; z++) {
+    for (let x = 0; x < WIDE; x++) {
+      grid.setRockHeight(x, z, 20 - z + 5 * Math.abs(x - CENTRE))
+    }
+  }
+  return grid
+}
+
+// Sinks the centre line at row z so it holds `volume` before spilling on.
+function digWidePit(grid: Grid, z: number, volume: number): void {
+  grid.setRockHeight(CENTRE, z, grid.getRockHeight(CENTRE, z + 1)! - volume)
+}
+
+const SEEDS = Array.from({ length: 20 }, (_, i) => `s${i + 1}`)
+
+describe('springSite', () => {
+  it('puts the spring as high up the beach as it can', () => {
+    for (const seed of SEEDS) {
+      expect(springSite(aWideValley(), seed).z).toBeLessThanOrEqual(SPRING_ROW_BAND)
+    }
+  })
+
+  it('tolerates a hollow small enough to fill', () => {
+    const grid = aWideValley()
+    digWidePit(grid, 6, MAX_SPRING_FILL / 2)
+
+    expect(springSite(grid, 's1').z).toBeLessThanOrEqual(SPRING_ROW_BAND)
+  })
+
+  // The whole upper valley drains into a hollow too big to fill, so the spring
+  // goes below it rather than above it.
+  it('moves below a hollow too big to fill', () => {
+    const grid = aWideValley()
+    digWidePit(grid, 6, MAX_SPRING_FILL * 2)
+    const cost = fillCost(grid)
+
+    for (const seed of SEEDS) {
+      const site = springSite(grid, seed)
+      expect(site.z).toBeGreaterThan(6)
+      expect(cost[site.z * WIDE + site.x]).toBeLessThanOrEqual(MAX_SPRING_FILL)
+    }
+  })
+
+  it('keeps off the side walls', () => {
+    for (const seed of SEEDS) {
+      const { x } = springSite(aWideValley(), seed)
+      expect(x).toBeGreaterThanOrEqual(SPRING_SIDE_MARGIN)
+      expect(x).toBeLessThan(WIDE - SPRING_SIDE_MARGIN)
+    }
+  })
+
+  // A spring in a pool would not be a stream at all.
+  it('stands on dry land', () => {
+    const grid = aWideValley()
+    for (let z = 0; z < 3; z++) {
+      for (let x = 0; x < WIDE; x++) grid.setWaterHeight(x, z, 0.5)
+    }
+
+    for (const seed of SEEDS) {
+      const site = springSite(grid, seed)
+      expect(grid.getWaterHeight(site.x, site.z)).toBe(0)
+      expect(site.z).toBeLessThan(grid.seaStart)
+    }
+  })
+
+  it('is the same spot every time for the same seed', () => {
+    expect(springSite(aWideValley(), 'salty-gull-42'))
+      .toEqual(springSite(aWideValley(), 'salty-gull-42'))
+  })
+
+  it('lets the seed choose between equally good spots', () => {
+    const sites = new Set(SEEDS.map((seed) => {
+      const { x, z } = springSite(aWideValley(), seed)
+      return `${x},${z}`
+    }))
+
+    expect(sites.size).toBeGreaterThan(1)
+  })
+
+  // A trench along the shore holds more than any spring can fill, and every
+  // drop on the beach runs into it. Nothing is under budget, so the spring
+  // takes the cheapest ground there is - below the pit, which costs extra.
+  it('takes the cheapest ground when nothing is under budget', () => {
+    const grid = aWideValley()
+    for (let x = 0; x < WIDE; x++) {
+      grid.setRockHeight(x, 14, grid.getRockHeight(x, 15)! - MAX_SPRING_FILL)
+    }
+    digWidePit(grid, 3, 10)
+    const cost = fillCost(grid)
+    let cheapest = Infinity
+    for (let z = 0; z < grid.seaStart; z++) {
+      for (let x = SPRING_SIDE_MARGIN; x < WIDE - SPRING_SIDE_MARGIN; x++) {
+        cheapest = Math.min(cheapest, cost[z * WIDE + x]!)
+      }
+    }
+    expect(cheapest).toBeGreaterThan(MAX_SPRING_FILL)
+
+    for (const seed of SEEDS) {
+      const site = springSite(grid, seed)
+      expect(cost[site.z * WIDE + site.x]).toBe(cheapest)
+      expect(site.z).toBeGreaterThan(3)
+    }
   })
 })

@@ -1,4 +1,20 @@
 import type { Grid } from './Grid.ts'
+import type { GridCoord } from '../types.ts'
+import { seedFromText } from './BeachSeed.ts'
+
+// How much a spring may have to fill and still be sure of reaching the sea:
+// across the 50-seed sweep every spring scoring under 70 arrived inside 300s,
+// and the lowest that did not scored 133. Coupled to STREAM_RATE and the
+// world's unit scale - it is roughly "70 seconds of spring" - and measured, not
+// chosen.
+export const MAX_SPRING_FILL = 70
+
+// How many rows below the highest good spot still count as high: room for the
+// seed to choose without giving up much of the stream's length.
+export const SPRING_ROW_BAND = 4
+
+// The x-walls reflect; a spring hard against one runs down the wall.
+export const SPRING_SIDE_MARGIN = 8
 
 // Below this, a cell counts as standing at its fill level rather than under it.
 const HOLLOW_EPSILON = 1e-6
@@ -156,4 +172,53 @@ export function fillCost(grid: Grid): Float32Array {
     cost[i] = cost[drain]! + (entering ? volume[hollow[i]!]! : 0)
   }
   return cost
+}
+
+// mulberry32: a small seeded generator, so the spring's draw is deterministic.
+function seededRandom(seed: number): () => number {
+  let state = seed | 0
+  return () => {
+    state = (state + 0x6d2b79f5) | 0
+    let t = Math.imul(state ^ (state >>> 15), 1 | state)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// Where a seeded beach's spring goes: on dry land, off the side walls, scoring
+// within MAX_SPRING_FILL, and as high up the beach as that allows, so the
+// stream is as long as the beach can give it. The seed picks among the spots
+// in that top band, through a sub-seed of its own so the draw takes nothing
+// from the noise.
+//
+// Where nothing is within budget - it never happened across 51 beaches, but
+// the terrain is unbounded - the budget rises to the cheapest spot there is,
+// and the same rule picks among those.
+export function springSite(grid: Grid, seed: string): GridCoord {
+  const { width, seaStart } = grid
+  const cost = fillCost(grid)
+
+  const candidates: number[] = []
+  for (let z = 0; z < seaStart; z++) {
+    for (let x = SPRING_SIDE_MARGIN; x < width - SPRING_SIDE_MARGIN; x++) {
+      if (grid.getWaterHeight(x, z)! === 0) candidates.push(z * width + x)
+    }
+  }
+  if (candidates.length === 0) throw new Error('no dry land for a spring')
+
+  // A loop, not Math.min(...): the full beach has ~48k candidates, too many
+  // arguments to spread safely - the same trap as String.fromCharCode in
+  // base64Cells.
+  let cheapest = Infinity
+  for (const i of candidates) cheapest = Math.min(cheapest, cost[i]!)
+  const budget = Math.max(MAX_SPRING_FILL, cheapest)
+  const affordable = candidates.filter((i) => cost[i]! <= budget)
+
+  // Row-major order, so the first is on the highest row.
+  const top = Math.floor(affordable[0]! / width)
+  const band = affordable.filter((i) => Math.floor(i / width) <= top + SPRING_ROW_BAND)
+
+  const random = seededRandom(seedFromText(`${seed}:spring`))
+  const chosen = band[Math.floor(random() * band.length)]!
+  return { x: chosen % width, z: Math.floor(chosen / width) }
 }
