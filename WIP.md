@@ -12,7 +12,7 @@ None - work complete.
 ## Status
 
 ⏸️ WAITING - steps 2-3 done together (tsc needs the call site), suite
-green (523), tsc clean. Not yet browser-checked.
+green (523), tsc clean. Browser-checked by the user: filenames look right.
 
 ## Steps
 
