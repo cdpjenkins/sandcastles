@@ -6,7 +6,7 @@ import {
 import { POROSITY } from '../sim/Moisture.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
-import { Grid } from './Grid.ts'
+import { Grid, STREAM_RATE } from './Grid.ts'
 import { noiseSeed } from './BeachSeed.ts'
 import { Bucket } from './Bucket.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
@@ -460,6 +460,20 @@ describe('starting a new game', () => {
     const started = played()
 
     expect(started.camera.snapshot()).toEqual({ zoom: 55, panX: 10, panZ: 20 })
+  })
+
+  // Every scene in CLAUDE.md was tuned with the spring here, and its stream
+  // reaches the sea at 185s. A seeded beach will place its own spring; the
+  // classic one must not move. A literal cell rather than a comparison with
+  // initSpring, which would move with it.
+  it('puts the classic spring at top-centre, and nowhere else', () => {
+    const { grid } = newGameSnapshot(256, 256, null)
+    const sources: { x: number; z: number; rate: number }[] = []
+    grid.source.forEach((rate, i) => {
+      if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
+    })
+
+    expect(sources).toEqual([{ x: 128, z: 1, rate: STREAM_RATE }])
   })
 
   it('is the classic beach when given no seed', () => {

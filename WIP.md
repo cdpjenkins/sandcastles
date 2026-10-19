@@ -6,19 +6,20 @@ fill cost. Plan in `PLAN.md`.
 
 ## Current Step
 
-None started.
+None - step 1 done.
 
 ## Next Action
 
-Step 1: pin the classic spring's cell and rate.
+Step 2: `fillCost` in `src/core/SpringSite.ts`, on hand-built grids.
 
 ## Status
 
-⏸️ WAITING - plan written, no code changed.
+⏸️ WAITING - suite green (524), tsc clean. Mutation-checked: moving the spring
+one cell right fails the pin, and only the pin.
 
 ## Completed
 
-- [ ] Step 1: pin the classic spring
+- [x] Step 1: pin the classic spring
 - [ ] Step 2: `fillCost`
 - [ ] Step 3: `springSite`
 - [ ] Step 4: seeded new games use it
