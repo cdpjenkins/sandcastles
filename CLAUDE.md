@@ -520,6 +520,19 @@ An explicit null check on the decoded layer groups was written and then deleted:
 `isValidSnapshot` already rejects a null group, and removing it broke no test.
 `savedAt` is written and never read, so the guard must never require it.
 
+### The filename is a label, and it is allowed to lie a little
+
+`exportFilename` puts the seed before the timestamp, so a folder sorts by
+beach and then by save order. A typed seed is any text at all, so
+`seedForFilename` keeps only `A-Za-z0-9_-`, dashes the rest and caps it at 40:
+`plage-été` becomes `plage-t`, and a seed with nothing safe in it leaves the
+bare timestamp. That loss is deliberate and harmless *only because* import
+never reads the filename - the seed travels inside the file. Don't start
+reading it back.
+
+`classic` in a filename does not prove a classic beach: a player can type
+`classic` as a seed, and it grows a different beach under the same label.
+
 ## Starting a new game
 
 `NewGame.ts` (`confirmNewGame`) and `newGameSnapshot`/`startNewGame` in

@@ -7,7 +7,7 @@ label only - import never reads it - so no format change.
 
 ## Current Step
 
-Step 4: CLAUDE.md.
+None - work complete.
 
 ## Status
 
@@ -19,7 +19,7 @@ green (523), tsc clean. Not yet browser-checked.
 - [x] Step 1: `seedForFilename`
 - [x] Step 2: `exportFilename` takes the seed
 - [x] Step 3: wire into `Game.exportBeach`
-- [ ] Step 4: CLAUDE.md
+- [x] Step 4: CLAUDE.md
 
 ## Shipped before this
 
