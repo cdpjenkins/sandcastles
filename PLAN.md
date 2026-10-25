@@ -1,142 +1,161 @@
-# Plan: a seeded beach places its spring where it reaches the sea
+# Plan: extract the beach generator as version 1
 
 ## Context
 
-Every beach's spring is at top-centre (`Grid.initSpring`). On the classic beach
-that works: the stream reaches the sea at 185s. On seeded beaches it often does
-not, because the seed changes the land around a spring that never moves. In the
-50-seed sweep behind the beach seeds, only 17 of 50 streams reached the sea
-inside 300s; the rest filled a hollow and stayed there.
+The beach is generated in four places: the shape constants, noise and terrain
+in `Grid` (`initBeach`, `initSpring`, `hashNoise`/`smoothNoise`/`fractalNoise`),
+seed text in `BeachSeed`, spring placement in `SpringSite`, and the assembly in
+`newGameSnapshot`. A fifth, `Game`'s first boot, repeats the generation by hand.
 
-This plan places a seeded beach's spring where its water will reach the sea.
-The classic beach keeps its spring exactly where it is.
+This plan gathers all of it into a **version 1 generator**, frozen, and records
+in every save which generator built the beach. A later v2 can then change how
+beaches grow without changing any beach v1 grew: restarting a v1 beach, or
+regenerating one from its seed, gives back the same beach forever.
+
+CLAUDE.md asked for exactly this decision before the next change to what a seed
+grows. This is that decision.
 
 ### Decisions taken up front
 
-- **Classic is untouched.** `null` still calls `initSpring`. The placement rule
-  would move classic's spring too (top-centre scores 28, and plenty of
-  top-row spots score 0), and classic is the beach everything was tuned on.
-- **Where no top-row spot works, the spring moves down the ridge.** It goes to
-  the highest spot whose water reaches the sea, even when that is far down: on
-  s46 that is row 135 of 199, so a short stream. Every beach gets a stream that
-  arrives. Keeping it high and accepting a pond was the alternative, rejected.
-- **Existing seeds change, and that is accepted.** A seed now grows its spring
-  somewhere new, so *Restart this beach* on a seeded save made before this, or a
-  seed shared before this, gives a different spring. Seeds shipped on
-  2026-10-15, so only the developer's own saves are affected. A saved beach still
-  loads unchanged - `source` is stored - and there is no generator version and
-  no snapshot bump.
-- **The spring's choice among equally good spots has its own sub-seed**,
-  `seedFromText(seed + ':spring')`, so drawing a spring position consumes nothing
-  the rock and sand noise depend on.
-
-### What was measured before planning
-
-All with a scratch probe over the 50 sweep seeds `s1`..`s50` plus classic.
-
-**A static score predicts arrival.** The score is the volume of hollows a spring's
-water must fill before it can spill to the sea, read off the terrain alone with
-a priority flood - no sim. Against the sweep's 300s arrival times, spring at
-top-centre:
-
-| fill volume | reached the sea inside 300s |
-|---|---|
-| under 70 | 14 of 14 (classic, at 28, included) |
-| 130 or more | 4 of 37 |
-
-The four that beat it had more to fill than 240s of spring could supply, so they
-found a shorter way - most likely eroding through a hollow's lip. The score is
-conservative, which is the safe direction for placing a spring: a low score has
-never failed. The gap between 67 (arrived) and 133 (did not) is where the
-budget sits; 70 is its known-good edge.
-
-The first version of the score counted any wet cell as the sea, and missed five
-seeds whose springs drained into an inland pool lying below sea level - boot
-water that is a lake, not the sea. Only water joined to the sea rows counts.
-
-**Every beach has a spot under budget, but a third need it lower on the ridge.**
-34 of 51 have one on the top row; the other 17 find their highest at rows 17 to
-135 (seaStart is 199).
-
-**One pass is fast enough; a search is not.** Flooding from each candidate took
-3s on the worst seeds, which would freeze the click on Start. A single priority
-flood from the sea scores every cell at once (below), in at most 71ms, and gave
-the same under-70 verdict as the per-candidate search at all 3,162 top-row spots
-tested.
+- **Extract and version.** Saves record the generator (`generator: 1`).
+  Snapshot version 4. v1's code is frozen; changes go into a v2 beside it.
+- **v1 owns everything it calls**: the shape constants, the noise, the
+  terrain, the classic spring, and its own copy of the spring scoring and
+  placement (`SpringSite.ts` moves into v1). A later v2 copies what it wants
+  to change rather than editing v1's. Duplication is the price of freezing.
+- **Shared and frozen already:** `seedFromText`, which is part of the save
+  format and belongs to every generator.
+- **v1 has its own spring rate**, 1.0, rather than `STREAM_RATE`. That
+  constant is shared with the player's Stream tool (`Game.ts:337`); tuning the
+  tool must not change every v1 beach.
+- **The sea is a value per beach, set by the generator, held on `Grid`.**
+  `seaStart` and `seaLevel` stay on `Grid` because the sim reads them every
+  step, but the generator sets them instead of the constructor deciding. One
+  value each per beach - a straight shoreline. A shoreline that curves across
+  the beach would need a value per column and is not this.
+  - **They are stored in the snapshot.** Today they are recomputed from the
+    grid's size; once a generator can choose them, a reload must restore them.
+  - **`new Grid(w, d)` keeps today's values as defaults**, so the hundred-odd
+    grids built in tests without a generator behave as now.
+  - A v2 that moves them needs its own sweep first: the tide, the swell,
+    refraction and castle survival were all tuned against today's sea. That is
+    v2's problem, recorded here so it is not forgotten.
+- **Classic is a v1 idea.** `seed: null` is valid only for a generator that
+  has a classic beach; v1 does, and a v2 will not. The guard refuses a save
+  claiming otherwise.
+- **New seeds use the newest generator.** Random and typed seeds get
+  `LATEST_GENERATOR`; *Restart this beach* keeps the beach's own generator;
+  *Classic* is always v1. Choosing an older generator is left open, not built:
+  everything downstream of the dialog carries a generator version, so adding a
+  way to pick one later touches only the dialog and `resolveBeach`.
+- **The version is visible.** The Hud reads `Beach: salty-gull-42 (v1)` and
+  `Beach: classic (v1)`; the dialog's restart option names it too. Typing an
+  old version waits until a v2 exists.
+- **The version goes in the export filename:**
+  `sandcastles-v1-salty-gull-42-2026-10-25T10-00-00.json`. Version first, so a
+  directory of exports sorts by generator, then beach, then time. The filename
+  is still only a label; import reads the version from inside the file.
+- **Old saves are v1, as a fact.** A v3 save migrates to v4 as `generator: 1`
+  with today's `seaStart` and `seaLevel` for its depth: every beach that exists
+  was built by what is about to become v1.
 
 ## Design
 
-### `fillCost(grid)` - the score for every cell
+### The generator
 
-`src/core/SpringSite.ts`. Returns a `Float32Array` of cell scores.
+```ts
+// src/core/generators/BeachGenerator.ts
+export interface BeachGenerator {
+  readonly version: number
+  readonly hasClassic: boolean
+  // Lays out sea, rock, sand, water and the spring on a fresh grid.
+  generate(grid: Grid, seed: BeachSeed): void
+}
 
-1. **The sea:** the rows from `seaStart` down, plus any water joined to them. An
-   inland pool is not the sea, however low it lies.
-2. **Fill:** a priority flood inward from the sea over `rock + sand`. Each cell
-   records its fill level (the lowest level water there could drain at) and its
-   parent (the cell it was reached from). Following parents is a cell's route
-   to the sea.
-3. **Hollows:** 4-connected cells standing below their fill level, each with the
-   volume `fill - surface` summed over it.
-4. **Score:** in flood order, a cell's score is its parent's plus the volume of
-   any hollow it enters on the way - so a spring pays once for every hollow on
-   its route.
+export interface BeachSpec {
+  generator: number
+  seed: BeachSeed
+}
 
-### `springSite(grid, seed)` - where the spring goes
+export const LATEST_GENERATOR = 1
+export function generatorFor(version: number): BeachGenerator | null
+```
 
-- **Candidates:** land cells (`z < seaStart`), away from the side walls
-  (`SPRING_SIDE_MARGIN` cells), scoring at most `MAX_SPRING_FILL = 70`.
-- **Highest first:** of those, the ones within a few rows of the highest
-  candidate (`SPRING_ROW_BAND`), so the stream is as long as the beach allows.
-- **The seed picks among them**, through a small seeded generator (mulberry32)
-  on the `':spring'` sub-seed. Deterministic: the same seed, the same spot.
-- **Fallback:** if no cell is under budget - it never happened across 51 beaches,
-  but the terrain is unbounded - the budget rises to the lowest score there is
-  and the same rule picks among those. (Built that way rather than as the
-  separate path first planned.)
+`src/core/generators/v1/` holds `BeachGeneratorV1.ts` (constants, noise,
+terrain, classic spring, the sea) and `SpringSiteV1.ts` (today's
+`SpringSite.ts`, moved whole). v1's header says it is frozen and why, and
+points at the checksums that hold it.
 
-`MAX_SPRING_FILL` is coupled to `STREAM_RATE` and to the world's unit scale: it
-is roughly "70 seconds of spring", and it was measured, not chosen.
+### `Grid`
 
-### Where it hooks in
+Loses `initBeach`, `initSpring` and the noise. Gains `setSea(seaStart,
+seaLevel)`; `seaStart` and `seaLevel` become private-set, public-read. The
+constructor's defaults stay today's numbers.
 
-`newGameSnapshot`: classic calls `initSpring` as now; a seed calls
-`springSite` and sets that cell's source to `STREAM_RATE`. Boot, import and
-restore already carry `source` in the snapshot, so nothing else changes - no
-save-format bump.
+### The snapshot (version 4)
+
+`GameSnapshot` gains `generator: number`, `seaStart: number`, `seaLevel:
+number` beside `seed`. `isValidSnapshot`: `generator` is one `generatorFor`
+knows; `seed` is `null` only where that generator `hasClassic`; `seaStart` an
+integer inside the grid; `seaLevel` finite. `applySnapshot` calls
+`grid.setSea`. `createSnapshot` reads them from the grid and the game's
+`BeachSpec`. `GameFile` carries them as scalars, and the file's own version
+follows the snapshot's as before. `migrateSnapshot` gains v3 -> v4.
+
+### New games
+
+`newGameSnapshot(width, depth, spec: BeachSpec)` builds a `Grid`, calls
+`generatorFor(spec.generator).generate(grid, spec.seed)`, and snapshots it.
+`resolveSeed` becomes `resolveBeach(choice, current: BeachSpec, random):
+BeachSpec`. `Game` holds a `BeachSpec` where it held a seed, and its first boot
+goes through `newGameSnapshot` + `applySnapshot` like a new game, instead of
+calling `initBeach` itself.
 
 ## Steps
 
 Each step is a RED-GREEN-REFACTOR cycle, committed on its own once `npm test` and
-`tsc --noEmit` are clean.
+`tsc --noEmit` are clean. Steps 3 and 4 are pure moves: no test's expectation
+changes, only where it imports from.
 
-1. **Pin the classic spring.** A test that a classic new game has exactly one
-   source, at `(width/2, floor(seaStart * 0.01))`, at `STREAM_RATE`. Today's
-   test only compares against `initSpring`, which would move with it.
-2. **`fillCost`.** Small hand-built grids: a cell on a slope down to the sea
-   scores 0; a cell in a pit scores the pit's volume; a cell upstream of the pit
-   scores the same, since its water passes through; an inland pool below sea
-   level is a hollow, not the sea; two hollows in a row add up.
-3. **`springSite`.** Hand-built grids: prefers a cell that drains to the sea over
-   a higher one in a hollow; prefers the highest of the cells under budget; stays
-   off the side walls and the sea; same seed, same spot; falls back to the
-   lowest score when nothing is under budget.
-4. **Seeded new games use it.** A seeded `newGameSnapshot` has exactly one
-   source, at `springSite`'s cell; classic still passes step 1; the existing
-   `confirmNewGame` and round-trip tests stay green.
-5. **Sweep it.** The scratch probe over `s1`..`s50` for 300s with the new
-   placement. Expected: every stream reaches the sea. If any does not, stop and
-   look at the budget before going on. Record the arrival times.
-6. **Verify in the browser.** A few random beaches: the spring is somewhere new,
-   its stream reaches the sea, and the new game does not stall on Start.
-   Classic still has its spring at top-centre.
-7. **CLAUDE.md** - the score and why it is safe, the inland-pool trap, the
-   one-pass cost map against the 3s search, the budget's coupling to
-   `STREAM_RATE`, and that seeds grew a different spring before this.
+1. **Pin a seeded beach, whole.** Checksums of every layer `newGameSnapshot`
+   produces - rock, sand, water, source - for two seeds, and water and source
+   for classic (rock and sand are pinned already). Written before anything
+   moves; must hold unchanged through every later step.
+2. **`Grid.setSea`.** Sets both; the defaults are unchanged; `snapshot`/
+   `restore` are unaffected (the sea is restored by `applySnapshot`, step 6).
+3. **Extract v1's terrain.** Constants, noise, `initBeach`, `initSpring` move
+   into `BeachGeneratorV1`; `generate` sets the sea explicitly to today's
+   values, then the terrain, then the spring. The beach-shape tests in
+   `grid.test.ts` move to `beachGeneratorV1.test.ts`; the other test files
+   build beaches through v1. Step 1's checksums hold.
+4. **Move spring placement into v1.** `SpringSite.ts` -> `v1/SpringSiteV1.ts`,
+   with its tests; v1's spring rate becomes its own constant. Checksums hold.
+5. **The registry and `BeachSpec`.** `generatorFor`, `LATEST_GENERATOR`;
+   `newGameSnapshot` takes a `BeachSpec`; `Game`'s first boot goes through it.
+   `generatorFor` of an unknown version is `null`.
+6. **Snapshot v4.** The three fields through `createSnapshot`, the guard,
+   `applySnapshot`, `GameFile`, and the v3 -> v4 migration (and v1 -> v4
+   through every step). A guard test that a v1 classic is fine and a
+   generator without a classic beach refuses `seed: null` (a test double, since
+   v2 does not exist).
+7. **`resolveBeach`.** Classic -> `{1, null}`; random and chosen ->
+   `LATEST_GENERATOR`; restart keeps the current generator and seed. `Game`
+   holds a `BeachSpec`.
+8. **The version is shown.** Hud `Beach: <seed or classic> (v<n>)`; the
+   dialog's restart option names the version.
+9. **The export filename carries it.** `sandcastles-v<n>-<seed>-<stamp>.json`,
+   and `sandcastles-v<n>-<stamp>.json` where the seed cleans to nothing.
+10. **Verify in the browser.** Classic, random, typed and restart each look as
+    before and show `(v1)`; reload and an import keep the beach and its
+    version; the export name carries `v1`; an export from before this imports
+    as v1.
+11. **CLAUDE.md** - what v1 freezing means and what it costs, `hasClassic`, the
+    sea as per-beach state, v1's own spring rate, and the rule for v2: copy,
+    don't edit, and sweep before shipping anything that moves the sea.
 
 ## Out of scope
 
-- **More than one spring**, or a seeded `STREAM_RATE`.
-- **A generator version in the snapshot.** Decided against above; revisit
-  before the *next* thing a seed is made to change.
-- **Moving classic's spring.**
+- **A v2 generator.** This only makes room for one.
+- **Choosing a generator in the dialog, or typing `v1:seed`.** Left open by
+  `BeachSpec`; built when a v2 exists.
+- **A shoreline that varies across the beach.**

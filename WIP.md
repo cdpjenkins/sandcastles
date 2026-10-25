@@ -1,4 +1,43 @@
-# WIP: A seeded beach places its spring where it reaches the sea
+# WIP: Extract the beach generator as version 1
+
+All beach generation gathered into a frozen v1 generator; saves record which
+generator built them (snapshot v4), along with the beach's sea. Plan in
+`PLAN.md`.
+
+## Current Step
+
+None started.
+
+## Next Action
+
+Step 1: pin a seeded beach whole - every layer, two seeds - before anything
+moves.
+
+## Status
+
+⏸️ WAITING - plan written, no code changed.
+
+## Completed
+
+- [ ] Step 1: pin a seeded beach, whole
+- [ ] Step 2: `Grid.setSea`
+- [ ] Step 3: extract v1's terrain
+- [ ] Step 4: move spring placement into v1
+- [ ] Step 5: the registry and `BeachSpec`
+- [ ] Step 6: snapshot v4
+- [ ] Step 7: `resolveBeach`
+- [ ] Step 8: the version is shown
+- [ ] Step 9: the export filename carries it
+- [ ] Step 10: verify in the browser
+- [ ] Step 11: CLAUDE.md
+
+## Shipped before this
+
+- A seeded beach places its spring where it reaches the sea (`57d89fb`).
+
+---
+
+# Previous: A seeded beach places its spring where it reaches the sea
 
 Classic keeps its spring at top-centre. A seeded beach puts its spring at the
 highest spot whose water reaches the sea, scored statically by a one-pass
