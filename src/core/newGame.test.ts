@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { confirmNewGame, resolveSeed } from './NewGame.ts'
+import { confirmNewGame, resolveBeach } from './NewGame.ts'
+import { CLASSIC_BEACH, LATEST_GENERATOR } from './generators/BeachGenerator.ts'
 import { createSnapshot, newGameSnapshot } from './GameSnapshot.ts'
 import { randomSeed } from './BeachSeed.ts'
 import { Grid } from './Grid.ts'
@@ -132,28 +133,45 @@ describe('confirmNewGame on a seed', () => {
   })
 })
 
-describe('resolveSeed', () => {
+describe('resolveBeach', () => {
   const pinned = () => 0.5
+  const onSeeded = { generator: 1, seed: 'salty-gull-42' }
 
-  it('is null for the classic beach', () => {
-    expect(resolveSeed({ kind: 'classic' }, 'salty-gull-42', pinned)).toBeNull()
+  // Classic is a v1 idea, whichever generator is newest.
+  it('is v1 with no seed for the classic beach', () => {
+    expect(resolveBeach({ kind: 'classic' }, onSeeded, pinned)).toEqual({ generator: 1, seed: null })
   })
 
   it('restarts the beach the player is on', () => {
-    expect(resolveSeed({ kind: 'restart' }, 'salty-gull-42', pinned)).toBe('salty-gull-42')
+    expect(resolveBeach({ kind: 'restart' }, onSeeded, pinned)).toEqual(onSeeded)
+  })
+
+  // The reason a beach carries its generator: once a newer one exists, a
+  // restart must still regrow this beach the way it was first grown.
+  it('restarts with the generator that grew the beach, not the newest', () => {
+    const older = { generator: LATEST_GENERATOR - 1, seed: 'salty-gull-42' }
+
+    expect(resolveBeach({ kind: 'restart' }, older, pinned)).toEqual(older)
   })
 
   // A classic beach restarted is the classic beach, not some seed for it.
   it('restarts a classic beach as classic', () => {
-    expect(resolveSeed({ kind: 'restart' }, null, pinned)).toBeNull()
+    expect(resolveBeach({ kind: 'restart' }, CLASSIC_BEACH, pinned)).toEqual({ generator: 1, seed: null })
   })
 
-  it('rolls a random seed from the source it is given', () => {
-    expect(resolveSeed({ kind: 'random' }, null, pinned)).toBe(randomSeed(pinned))
+  it('rolls a random seed for the newest generator', () => {
+    expect(resolveBeach({ kind: 'random' }, CLASSIC_BEACH, pinned))
+      .toEqual({ generator: LATEST_GENERATOR, seed: randomSeed(pinned) })
   })
 
   // Stored trimmed, so the Hud shows exactly the text that was hashed.
-  it('takes the player\'s own seed, trimmed', () => {
-    expect(resolveSeed({ kind: 'chosen', text: '  my beach \n' }, null, pinned)).toBe('my beach')
+  it('takes the player\'s own seed, trimmed, for the newest generator', () => {
+    expect(resolveBeach({ kind: 'chosen', text: '  my beach \n' }, CLASSIC_BEACH, pinned))
+      .toEqual({ generator: LATEST_GENERATOR, seed: 'my beach' })
+  })
+
+  // CLASSIC_BEACH is shared; handing it out would let a caller change it.
+  it('hands back a beach of its own, not the shared classic one', () => {
+    expect(resolveBeach({ kind: 'classic' }, onSeeded, pinned)).not.toBe(CLASSIC_BEACH)
   })
 })

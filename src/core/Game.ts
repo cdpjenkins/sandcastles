@@ -1,14 +1,14 @@
 import { Grid, STREAM_RATE } from './Grid.ts'
-import { CLASSIC_BEACH, LATEST_GENERATOR } from './generators/BeachGenerator.ts'
+import { CLASSIC_BEACH } from './generators/BeachGenerator.ts'
+import type { BeachSpec } from './generators/BeachGenerator.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot, newGameSnapshot } from './GameSnapshot.ts'
-import { confirmNewGame, resolveSeed } from './NewGame.ts'
+import { confirmNewGame, resolveBeach } from './NewGame.ts'
 import type { NewGameChoice } from './NewGame.ts'
 import { confirmImport } from './ImportBeach.ts'
 import { toGameFile, exportFilename, exportStatus } from './GameFile.ts'
 import { downloadJson } from './downloadFile.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
-import type { BeachSeed } from './BeachSeed.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { SimClock } from './SimClock.ts'
 import { Bucket } from './Bucket.ts'
@@ -76,10 +76,9 @@ export class Game {
   private toolMode: ToolMode = ToolMode.Spade
   private lastTime = 0
   private lookEnabled = false
-  // The seed this beach grew from; null is the classic beach.
-  private seed: BeachSeed = null
-  // Which generator grew this beach.
-  private generator = CLASSIC_BEACH.generator
+  // What this beach grew from: the generator and the seed, so a restart
+  // regrows it the same way.
+  private beach: BeachSpec = { ...CLASSIC_BEACH }
   // Deliberately not in the snapshot, unlike lookEnabled: the panel is a
   // question the player asks about the beach, not part of the beach, so it
   // does not survive a reload and does not bump the save format.
@@ -244,8 +243,7 @@ export class Game {
     this.toolMode = snapshot.toolMode
     this.paused = snapshot.paused
     this.lookEnabled = snapshot.lookEnabled
-    this.seed = snapshot.seed
-    this.generator = snapshot.generator
+    this.beach = { generator: snapshot.generator, seed: snapshot.seed }
   }
 
   // Puts the toolbar and the panels back in step with the game's own state,
@@ -255,7 +253,7 @@ export class Game {
     this.toolbar.setLook(this.lookEnabled)
     this.toolbar.setPaused(this.paused)
     this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
-    this.hud.setSeed(this.seed)
+    this.hud.setSeed(this.beach.seed)
     this.updateHud()
   }
 
@@ -263,7 +261,7 @@ export class Game {
   // cannot advance part-way through it and the file holds a single frame.
   private exportBeach(): void {
     const savedAt = new Date()
-    const filename = exportFilename(savedAt, this.seed)
+    const filename = exportFilename(savedAt, this.beach.seed)
     downloadJson(filename, JSON.stringify(toGameFile(this.takeSnapshot(), savedAt)))
     this.hud.setStatus(exportStatus(filename, savedAt))
   }
@@ -294,17 +292,14 @@ export class Game {
   // Which beach comes first; the warning that this one will be lost is asked
   // after, as a step of its own, by startChosenGame.
   private newGame(): void {
-    this.newGameDialog.open(this.seed)
+    this.newGameDialog.open(this.beach.seed)
   }
 
   // The beach the player built is destroyed with no undo, so they are asked
   // first. Declining leaves the game exactly as it was, mesh and toolbar
   // included, which is why nothing here runs until a snapshot comes back.
   private startChosenGame(choice: NewGameChoice): void {
-    const seed = resolveSeed(choice, this.seed, Math.random)
-    // Only one generator exists, so a seed's is the newest. Once the game holds
-    // which generator built its beach, a restart takes that one instead.
-    const spec = seed === null ? CLASSIC_BEACH : { generator: LATEST_GENERATOR, seed }
+    const spec = resolveBeach(choice, this.beach, Math.random)
     const started = confirmNewGame(
       this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, spec, (message) => window.confirm(message),
     )
@@ -322,8 +317,8 @@ export class Game {
       toolMode: this.toolMode,
       paused: this.paused,
       lookEnabled: this.lookEnabled,
-      seed: this.seed,
-      generator: this.generator,
+      seed: this.beach.seed,
+      generator: this.beach.generator,
     })
   }
 

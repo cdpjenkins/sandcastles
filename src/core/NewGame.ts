@@ -1,28 +1,33 @@
 import { startNewGame } from './GameSnapshot.ts'
 import type { GameSnapshot, SnapshotTargets } from './GameSnapshot.ts'
 import { randomSeed } from './BeachSeed.ts'
-import type { BeachSeed } from './BeachSeed.ts'
+import { CLASSIC_BEACH, LATEST_GENERATOR } from './generators/BeachGenerator.ts'
 import type { BeachSpec } from './generators/BeachGenerator.ts'
 
-// What the player picked in the new-game chooser, before it becomes a seed.
+// What the player picked in the new-game chooser, before it becomes a beach.
 export type NewGameChoice =
   | { kind: 'classic' }
   | { kind: 'restart' }
   | { kind: 'random' }
   | { kind: 'chosen'; text: string }
 
+// Which beach a choice grows. A new seed is grown by the newest generator; a
+// restart regrows this beach with the generator that grew it; classic is v1's.
+// Choosing an older generator for a new seed is left open: this is the one
+// place that would need to learn it.
+//
 // The random source is passed in so a random beach can be pinned in a test.
 // A chosen seed is stored trimmed, so what the Hud shows is what was hashed.
-export function resolveSeed(
+export function resolveBeach(
   choice: NewGameChoice,
-  current: BeachSeed,
+  current: BeachSpec,
   random: () => number,
-): BeachSeed {
+): BeachSpec {
   switch (choice.kind) {
-    case 'classic': return null
-    case 'restart': return current
-    case 'random': return randomSeed(random)
-    case 'chosen': return choice.text.trim()
+    case 'classic': return { ...CLASSIC_BEACH }
+    case 'restart': return { ...current }
+    case 'random': return { generator: LATEST_GENERATOR, seed: randomSeed(random) }
+    case 'chosen': return { generator: LATEST_GENERATOR, seed: choice.text.trim() }
   }
 }
 

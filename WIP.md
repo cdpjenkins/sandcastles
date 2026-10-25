@@ -6,20 +6,18 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 6 done.
+None - step 7 done.
 
 ## Next Action
 
-Step 7: `resolveBeach` - `Game` holds a `BeachSpec`; restart keeps the
-beach's own generator.
+Step 8: the version is shown - Hud `Beach: <seed or classic> (v<n>)`; the
+dialog's restart option names it too.
 
 ## Status
 
-⏸️ WAITING - suite green (569), tsc clean, build clean. Mutation-checked:
-restore forgetting the sea, and classic allowed for any generator, each fail
-their test. `seaV1(depth)` is the one definition of v1's sea, used by the
-generator and the v3 -> v4 migration. `Game` holds `generator` beside `seed`
-for now; step 7 makes them one `BeachSpec`.
+⏸️ WAITING - suite green (571), tsc clean, build clean. `Game` holds one
+`BeachSpec`. Mutation-checked: a restart taking the newest generator fails
+`restarts with the generator that grew the beach`.
 
 ## Completed
 
@@ -29,7 +27,7 @@ for now; step 7 makes them one `BeachSpec`.
 - [x] Step 4: move spring placement into v1
 - [x] Step 5: the registry and `BeachSpec`
 - [x] Step 6: snapshot v4
-- [ ] Step 7: `resolveBeach`
+- [x] Step 7: `resolveBeach`
 - [ ] Step 8: the version is shown
 - [ ] Step 9: the export filename carries it
 - [ ] Step 10: verify in the browser
