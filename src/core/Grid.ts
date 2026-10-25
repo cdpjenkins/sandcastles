@@ -23,8 +23,11 @@ export interface GridSnapshot {
 export class Grid {
   readonly width: number
   readonly depth: number
-  readonly seaStart: number
-  readonly seaLevel: number
+  // The sea is a value per beach, set by whatever lays the beach out and read
+  // by the sim every step. A grid built without one keeps the sea every beach
+  // has always had.
+  private seaStartRow: number
+  private seaLevelHeight: number
 
   private readonly rock: Float32Array
   private readonly sand: Float32Array
@@ -36,8 +39,8 @@ export class Grid {
   constructor(width: number, depth: number) {
     this.width = width
     this.depth = depth
-    this.seaStart = Math.floor(depth * SEA_FRACTION)
-    this.seaLevel = ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT
+    this.seaStartRow = Math.floor(depth * SEA_FRACTION)
+    this.seaLevelHeight = ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT
     const size = width * depth
     this.rock = new Float32Array(size)
     this.sand = new Float32Array(size)
@@ -45,6 +48,29 @@ export class Grid {
     this.moisture = new Float32Array(size)
     this.source = new Float32Array(size)
     this.sedimentArr = new Float32Array(size)
+  }
+
+  // The first row of sea. Everything above it is land.
+  get seaStart(): number {
+    return this.seaStartRow
+  }
+
+  // An elevation, never a depth: see CLAUDE.md.
+  get seaLevel(): number {
+    return this.seaLevelHeight
+  }
+
+  // At least one row of land and one of sea, so neither the beach nor the
+  // swell is left with nowhere to be.
+  setSea(seaStart: number, seaLevel: number): void {
+    if (!Number.isInteger(seaStart) || seaStart < 1 || seaStart >= this.depth) {
+      throw new RangeError(`sea must start on a row inside the grid, not ${seaStart}`)
+    }
+    if (!Number.isFinite(seaLevel)) {
+      throw new RangeError(`sea level must be a number, not ${seaLevel}`)
+    }
+    this.seaStartRow = seaStart
+    this.seaLevelHeight = seaLevel
   }
 
   private inBounds(x: number, z: number): boolean {

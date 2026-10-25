@@ -447,6 +447,64 @@ describe('Grid', () => {
   })
 })
 
+// The sea is a value per beach: a generator sets it, the sim reads it every
+// step. A grid built without a generator keeps the sea every beach has had.
+describe('The sea', () => {
+  it('defaults to the sea every beach has had', () => {
+    const grid = new Grid(256, 256)
+
+    expect(grid.seaStart).toBe(199)
+    expect(grid.seaLevel).toBe(2)
+  })
+
+  it('is set by whatever lays out the beach', () => {
+    const grid = new Grid(256, 256)
+
+    grid.setSea(180, 3.5)
+
+    expect(grid.seaStart).toBe(180)
+    expect(grid.seaLevel).toBe(3.5)
+  })
+
+  // The sea is restored alongside the layers, by applySnapshot, not with them:
+  // GridSnapshot is the cell layers and nothing else.
+  it('is not carried by the layers snapshot', () => {
+    const source = new Grid(16, 16)
+    source.setSea(10, 3.5)
+    const target = new Grid(16, 16)
+
+    target.restore(source.snapshot())
+
+    expect(target.seaStart).toBe(new Grid(16, 16).seaStart)
+    expect(target.seaLevel).toBe(2)
+  })
+
+  it('refuses a sea that starts off the grid or between rows', () => {
+    const grid = new Grid(16, 16)
+
+    expect(() => grid.setSea(0, 2)).toThrow(RangeError)
+    expect(() => grid.setSea(16, 2)).toThrow(RangeError)
+    expect(() => grid.setSea(10.5, 2)).toThrow(RangeError)
+  })
+
+  it('refuses a sea level that is not a number', () => {
+    const grid = new Grid(16, 16)
+
+    expect(() => grid.setSea(10, NaN)).toThrow(RangeError)
+    expect(() => grid.setSea(10, Infinity)).toThrow(RangeError)
+  })
+
+  it('is left as it was by a refused change', () => {
+    const grid = new Grid(16, 16)
+    grid.setSea(10, 3.5)
+
+    expect(() => grid.setSea(10, NaN)).toThrow()
+
+    expect(grid.seaStart).toBe(10)
+    expect(grid.seaLevel).toBe(3.5)
+  })
+})
+
 // FNV-1a over the layer's raw bytes: bit-exact, so a change in the last place of
 // one cell shows.
 const layerChecksum = (layer: Float32Array): string => {
