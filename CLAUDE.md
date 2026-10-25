@@ -35,7 +35,7 @@ elevation and derives depth as `max(0, seaSurface - bed)`.
 
 This was wrong once and nothing caught it. The two readings agree numerically while the sea bed is
 flat, and only diverge when it slopes — which put the sea surface at −18.91. No test failed, because
-`initBeach` and `Waves` were only ever exercised apart. When a value could be read as either, name it
+`initBeach` (now `layBeachV1`) and `Waves` were only ever exercised apart. When a value could be read as either, name it
 for which it is.
 
 ### Advection weights by velocity, not flux — and deep lakes are where it shows
@@ -432,9 +432,11 @@ A future change of meaning wants the same: a version bump *and* a step in `migra
 
 The seven dirty masks and `WaterSim.velocityArr` (recomputed each step),
 `TerrainMesh` (~3 MiB, derived from `Grid`), and `SimClock.accumulator` (≤ 1/30 s).
-`rock` *is* stored despite never being mutated by the sim: regenerating it saves
-256 KiB of 2 MiB and couples the save format to the noise constants in `Grid.ts`.
-Not worth it — recorded so it is not rediscovered as an oversight.
+`rock` *is* stored despite never being mutated by the sim: regenerating it would
+save 256 KiB of 2 MiB. It was first kept to avoid coupling the save format to the
+noise constants; generators are now frozen and versioned, so that reason has
+gone, but the saving is still not worth a second way of restoring a beach -
+recorded so it is not rediscovered as an oversight.
 
 ### Sizing rules out localStorage, not just disfavours it
 
@@ -548,16 +550,17 @@ describes one and starting over goes through the path boot and import already
 take. That is also what keeps the set-vs-add trap recorded above from reopening
 on a third caller: there is no third caller.
 
-It is built from *real* components (`new Grid(...)`, `initBeach`, `initSpring`)
-rather than a hand-written literal, so it cannot drift from what a first-ever
-boot produces. The test asserting exactly that is the one holding it.
+It is built from *real* components - a fresh `Grid` laid out by the generator
+the `BeachSpec` names - rather than a hand-written literal. A first-ever boot is
+now that same call with `CLASSIC_BEACH`, so the two cannot drift apart at all.
 
-### `initBeach` alone does not give a new game
+### Laying out a beach on a used grid does not give a new game
 
-It overwrites rock, sand and water at every cell and leaves `moisture`,
-`source` and `sediment` untouched — so a naive "just call `initBeach` again"
-keeps the player's damp patches, dug stream sources and suspended sediment
-under a brand new beach. Nothing in the rendered result makes that obvious.
+`layBeachV1` overwrites rock, sand and water at every cell and leaves
+`moisture`, `source` and `sediment` untouched — so a naive "just lay the beach
+out again" keeps the player's damp patches, dug stream sources and suspended
+sediment under a brand new beach. Nothing in the rendered result makes that
+obvious. `newGameSnapshot` always lays out on a fresh `Grid` for this reason.
 
 ### The camera is deliberately exempt
 
@@ -593,18 +596,19 @@ no good.
 
 ## Choosing the beach
 
-`BeachSeed.ts` (`seedFromText`, `noiseSeed`, `randomSeed`), `resolveSeed` in
-`NewGame.ts`, `NewGameDialog.ts`, and the seed in `GameSnapshot` (version 3).
+`BeachSeed.ts` (`seedFromText`, `noiseSeed`, `randomSeed`), `resolveBeach` in
+`NewGame.ts`, `NewGameDialog.ts`, and the seed in `GameSnapshot`. Growing the
+beach from a seed is the generator's job - see *Beach generators* below.
 New game offers classic, restart this beach, random, or a typed seed. The rock
 and sand noise varies, and a seeded beach places its own spring (below); the
 ridge and the sea are the same on every seed. What was expensive to learn:
 
 ### Seed 0 is the classic beach, and a checksum holds it there
 
-The seed is XORed into `hashNoise`'s `h` before the avalanche, so 0 is the
-identity and the classic beach is bit-for-bit what it always was. `grid.test.ts`
-pins a checksum of its rock and sand, written *before* the generator was
-touched. Every scene in this file was tuned on that beach; if the checksum
+The seed is XORed into v1's `hashNoise`'s `h` before the avalanche, so 0 is the
+identity and the classic beach is bit-for-bit what it always was.
+`beachGeneratorV1.test.ts` pins a checksum of its rock and sand, written *before*
+the generator was touched, and `beachPins.test.ts` pins every layer. Every scene in this file was tuned on that beach; if the checksum
 fails, the beach changed, not the test.
 
 ### The seed hash is part of the save format
@@ -615,10 +619,9 @@ pinned against the published test vectors, and it must never be "improved".
 It hashes UTF-16 code units, not UTF-8 bytes, so it parts company with the
 published vectors outside ASCII; a test pins that too.
 
-The noise constants in `Grid.ts` are coupled the same way: changing one changes
-what every seed grows. A restored beach is unaffected - `rock` and `sand` are
-stored - but *Restart this beach* would no longer give back the beach first
-played.
+The generator's constants are coupled the same way: changing one changes what
+every seed grows, and *Restart this beach* would no longer give back the beach
+first played. That is why generators are frozen - see *Beach generators*.
 
 ### Classic is `null`, which stops a mix-up, not a collision
 
@@ -677,7 +680,7 @@ and get the same beach, which is harmless. Lengthen the lists if it ever is not.
 
 ## Where a seeded beach's spring goes
 
-`SpringSite.ts` (`fillCost`, `springSite`), called from `newGameSnapshot`.
+`generators/v1/SpringSiteV1.ts` (`fillCostV1`, `springSiteV1`), frozen with the rest of v1.
 Classic keeps its spring at top-centre; a seeded beach puts its own on dry
 land, off the side walls, as high up the beach as it can while scoring within
 `MAX_SPRING_FILL`, and the seed picks among the top few rows of those. What was
@@ -685,7 +688,7 @@ expensive to learn:
 
 ### The score is whether, not when
 
-`fillCost` is the volume of hollows a spring's water must fill before it can
+`fillCostV1` is the volume of hollows a spring's water must fill before it can
 spill to the sea, read off the terrain alone. It was validated against the
 first sweep with every spring at top-centre: all 14 scoring under 70 arrived
 inside 300s, and 33 of the 37 scoring 130 or more did not. That looked like a
@@ -733,9 +736,9 @@ all 3,162 top-row spots tested, and with the scratch probe exactly on 51
 beaches. A hollow is charged once, as a whole - charging it per cell passed
 every test until one hollow was two cells long.
 
-### `MAX_SPRING_FILL` is coupled to `STREAM_RATE`
+### `MAX_SPRING_FILL` is coupled to v1's spring rate
 
-70 is roughly seventy seconds of spring at a `STREAM_RATE` of 1.0, and it sits
+70 is roughly seventy seconds of spring at a `V1_SPRING_RATE` of 1.0, and it sits
 in the gap the first sweep left between 67 (arrived) and 133 (did not). Change
 the rate and the budget means something else. Lowering it would not have saved
 s10, which scores 0.
@@ -744,15 +747,15 @@ Where nothing is within budget - never seen in 51 beaches - the budget rises to
 the cheapest spot there is and the same rule picks; there is no separate
 fallback path.
 
-### The classic spring is pinned by its cell, not by `initSpring`
+### The classic spring is pinned by its cell, not by `placeClassicSpringV1`
 
 The old test compared a new game's beach with a first boot's, and both go
-through `initSpring` - so moving the spring a cell moved both and stayed green,
+through `initSpring` (now `placeClassicSpringV1`) - so moving the spring a cell moved both and stayed green,
 which mutation showed. `puts the classic spring at top-centre` names `(128, 1)`.
 
 ### The spring's seed is trimmed, like the land's
 
-`noiseSeed` trims, so `'  gull '` grows gull's land; `springSite` must trim too
+`noiseSeed` trims, so `'  gull '` grows gull's land; `springSiteV1` must trim too
 or the same land grows a different spring. Stored seeds are trimmed already, so
 no player would hit it today - but the two must agree, and a test holds them.
 
@@ -764,6 +767,82 @@ A saved beach still loads unchanged - `source` is stored. Accepted rather than
 versioning the generator, because seeds had only existed for four days. Before
 the next thing a seed is made to change, decide that again: a generator version
 in the snapshot is the alternative, and it gets more expensive to add later.
+
+## Beach generators
+
+`generators/BeachGenerator.ts` (`BeachGenerator`, `BeachSpec`, `generatorFor`,
+`LATEST_GENERATOR`, `CLASSIC_BEACH`) and `generators/v1/` (`BeachGeneratorV1.ts`,
+`SpringSiteV1.ts`). Every beach is grown by a numbered generator, and every save
+records which one. What was expensive to learn:
+
+### A shipped generator is frozen; a change is a new one beside it
+
+A save records its beach's generator and seed, and *Restart this beach* and a
+shared seed both regrow from them. So a generator must grow the same beach from
+the same seed forever: not a constant, not the order of an operation may change.
+To change how beaches grow, copy what you want to alter into `generators/v2/`,
+bump `LATEST_GENERATOR`, and leave v1 alone - even where that duplicates code.
+v1 owns everything it calls for this reason, its spring scoring included; a
+shared helper would let a v2 improvement change every v1 beach.
+
+`beachPins.test.ts` holds v1: checksums of every layer of classic,
+`salty-gull-42` and `s46`, through `newGameSnapshot` with `generator: 1` named
+explicitly - the pins pin v1, not "the latest", so a v2 cannot pass them by
+accident. If one fails, a v1 beach changed.
+
+The rock and sand checksums alone were not enough. Raising the sea by 0.0001
+passed every test in `grid.test.ts` and failed all three whole-beach pins: the
+sea lives in the water layer, which only the whole-beach pins read.
+
+### The save format and the generator are two versions, and never match
+
+A file carries `version` (the save format, 4) and `generator` (how its beach
+grew, 1). They change for unrelated reasons, and the format belongs to the file
+while the generator belongs to the beach. The format is migrated; the generator
+must *never* be - "grown by generator 1" is history, and rewriting it would make
+a restart regrow the beach by other rules. So a beach grown by one generator and
+saved in a later format always carries two different numbers. Making them match
+was considered and rejected for exactly this reason.
+
+Hence the labels say `gen`, never a bare `v`: the Hud's `(gen 1)`, the export's
+`sandcastles-gen1-...`. A `v1` beside `"version": 4` invites confusing them.
+`beachLabel` is the one place a beach is named to the player.
+
+### Classic is a v1 idea
+
+`seed: null` is the classic beach, and only a generator with `hasClassic` has
+one. `isValidSnapshot` refuses a classic beach from any other. *Classic* in the
+dialog is always `CLASSIC_BEACH` - v1 - whatever is newest, while random and
+typed seeds get `LATEST_GENERATOR` and a restart keeps the beach's own.
+
+No generator without a classic beach exists yet, so `isValidSnapshot` takes its
+generator lookup as an optional fourth argument, purely so a test can stand one
+in.
+
+### The sea is the beach's, not the grid's
+
+`seaStart` and `seaLevel` are set by the generator through `Grid.setSea` and
+stored in the snapshot, because a later generator may choose its own. One value
+each per beach: a straight shoreline. `new Grid(w, d)` keeps the old values as
+defaults, so a grid built without a generator - every test grid - behaves as
+before. `seaV1(depth)` is the one definition of v1's sea, used by the generator
+and by the v3 -> v4 migration, so the two cannot disagree.
+
+A v2 that moves the sea must sweep before shipping. The tide's ±0.8, the swell,
+refraction and castle survival were all tuned against today's sea - see the
+notes on `SWELL_PERIOD` and castle survival above.
+
+### v1's spring has its own rate
+
+`V1_SPRING_RATE` is 1.0, deliberately not `STREAM_RATE`, which the player's
+Stream tool shares. Before, tuning the tool would have changed every beach;
+doubling `STREAM_RATE` now leaves every pin green.
+
+### A first-ever boot is a new classic game
+
+`Game` grew its first beach with its own `initBeach` + `initSpring` calls - a
+second way of making a beach. It is now `restore(saved ?? newGameSnapshot(...,
+CLASSIC_BEACH))`, the one path every beach takes.
 
 ## An overflowing toolbar is unclickable, not untidy
 
