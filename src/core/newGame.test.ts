@@ -9,6 +9,7 @@ import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
+import { layBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
 
 const SIZE = 64
 
@@ -21,7 +22,7 @@ function aBeachMidGame() {
     bucket: new Bucket(1000),
     camera: new IsoCamera(document.createElement('canvas')),
   }
-  components.grid.initBeach()
+  layBeachV1(components.grid)
   components.grid.setSandHeight(3, 4, 7.5)
   components.bucket.fill(120)
   return components

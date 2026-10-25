@@ -3,13 +3,14 @@ import { Waves } from './Waves.ts'
 import { Sponge } from './Sponge.ts'
 import { WaterSim } from './WaterSim.ts'
 import { Grid } from '../core/Grid.ts'
+import { layBeachV1 } from '../core/generators/v1/BeachGeneratorV1.ts'
 
 const DT = 1 / 30
 const X = 128
 
 const beach = () => {
   const grid = new Grid(256, 256)
-  grid.initBeach()
+  layBeachV1(grid)
   return grid
 }
 

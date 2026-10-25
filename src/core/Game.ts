@@ -1,4 +1,5 @@
 import { Grid, STREAM_RATE } from './Grid.ts'
+import { generateBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
 import { AutoSaver } from './AutoSaver.ts'
 import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
 import { confirmNewGame, resolveSeed } from './NewGame.ts'
@@ -160,8 +161,7 @@ export class Game {
     document.body.appendChild(this.sourcePanel)
 
     this.grid = new Grid(GRID_WIDTH, GRID_DEPTH)
-    this.grid.initBeach()
-    this.grid.initSpring(STREAM_RATE)
+    generateBeachV1(this.grid, null)
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
     this.evaporation = new Evaporation(this.grid.width, this.grid.depth)

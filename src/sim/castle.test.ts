@@ -4,6 +4,7 @@ import { Sponge } from './Sponge.ts'
 import { WaterSim } from './WaterSim.ts'
 import { Erosion } from './Erosion.ts'
 import { Grid } from '../core/Grid.ts'
+import { layBeachV1 } from '../core/generators/v1/BeachGeneratorV1.ts'
 
 const DT = 1 / 30
 const SECONDS = 60
@@ -22,7 +23,7 @@ const HEIGHT = 3
 // rather than testing the swell run against a fixed floor.
 const fractionLost = (withSwell: boolean): number => {
   const grid = new Grid(SIZE, SIZE)
-  grid.initBeach()
+  layBeachV1(grid)
   const waves = new Waves(grid.width, grid.depth)
   const waterSim = new WaterSim(grid.width, grid.depth)
   const sponge = new Sponge(grid.width, grid.depth)

@@ -10,7 +10,7 @@ export function seedFromText(text: string): number {
   return h | 0
 }
 
-// What initBeach is given. Seed 0 is the classic beach.
+// What the v1 generator lays its noise out with. Seed 0 is the classic beach.
 export function noiseSeed(seed: BeachSeed): number {
   return seed === null ? 0 : seedFromText(seed.trim())
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Waves } from './Waves.ts'
 import { Grid } from '../core/Grid.ts'
+import { layBeachV1 } from '../core/generators/v1/BeachGeneratorV1.ts'
 
 const DT = 1 / 30
 // Small grid: width=4, depth=8, seaZ=6 (mimics depth*0.75)
@@ -90,7 +91,7 @@ describe('Waves', () => {
 describe('Waves on the real beach', () => {
   it('leaves a disturbance in the open sea alone', () => {
     const grid = new Grid(256, 256)
-    grid.initBeach()
+    layBeachV1(grid)
     const waves = new Waves(grid.width, grid.depth)
     const x = 128
     const z = 230
@@ -107,7 +108,7 @@ describe('Waves on the real beach', () => {
     // than an elevation would put the surface at -18; this is the regression
     // guard for that, now that the boundary tracks the swell.
     const grid = new Grid(256, 256)
-    grid.initBeach()
+    layBeachV1(grid)
     const waves = new Waves(grid.width, grid.depth)
     const x = 128
     const z = grid.depth - 1
@@ -120,7 +121,7 @@ describe('Waves on the real beach', () => {
 
   it('leaves the sea surface flat at seaLevel inshore of the boundary', () => {
     const grid = new Grid(256, 256)
-    grid.initBeach()
+    layBeachV1(grid)
     const waves = new Waves(grid.width, grid.depth)
     const x = 128
 
@@ -164,7 +165,7 @@ describe('Waves dirty mask', () => {
 describe('Waves snapshot', () => {
   it('restores the swell phase it was snapshotted with', () => {
     const grid = new Grid(16, 16)
-    grid.initBeach()
+    layBeachV1(grid)
     const waves = new Waves(16, 16)
     for (let i = 0; i < 20; i++) waves.step(grid, 1 / 30, 2)
 
@@ -176,7 +177,7 @@ describe('Waves snapshot', () => {
 
   it('restores the countdown to the next wave', () => {
     const grid = new Grid(16, 16)
-    grid.initBeach()
+    layBeachV1(grid)
     const waves = new Waves(16, 16)
     for (let i = 0; i < 20; i++) waves.step(grid, 1 / 30, 2)
 

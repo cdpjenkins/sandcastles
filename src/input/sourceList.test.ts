@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Grid, STREAM_RATE } from '../core/Grid.ts'
 import { getSources, formatSourceList, type SourceCell } from './SourceList.ts'
+import { layBeachV1, placeClassicSpringV1 } from '../core/generators/v1/BeachGeneratorV1.ts'
 
 describe('getSources', () => {
   it('finds nothing on a grid nobody has dug a spring into', () => {
@@ -45,8 +46,8 @@ describe('getSources', () => {
 
   it('finds the spring a fresh beach starts with', () => {
     const grid = new Grid(256, 256)
-    grid.initBeach()
-    grid.initSpring(STREAM_RATE)
+    layBeachV1(grid)
+    placeClassicSpringV1(grid, STREAM_RATE)
 
     expect(getSources(grid)).toHaveLength(1)
   })

@@ -14,6 +14,7 @@ import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
+import { layBeachV1, placeClassicSpringV1 } from './generators/v1/BeachGeneratorV1.ts'
 
 const WIDTH = 4
 const DEPTH = 4
@@ -199,7 +200,7 @@ describe('createSnapshot', () => {
   // nothing at all.
   it('builds a snapshot of the live game that loads back', () => {
     const grid = new Grid(64, 64)
-    grid.initBeach()
+    layBeachV1(grid)
     const waterSim = new WaterSim(64, 64)
     const waves = new Waves(64, 64)
     const tide = new Tide()
@@ -239,7 +240,7 @@ describe('createSnapshot', () => {
 
   it('still loads back after a trip through storage', () => {
     const grid = new Grid(64, 64)
-    grid.initBeach()
+    layBeachV1(grid)
 
     const stored = structuredClone(createSnapshot({
       grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64),
@@ -267,7 +268,7 @@ function freshComponents() {
 
 function aLiveBeach() {
   const components = freshComponents()
-  components.grid.initBeach()
+  layBeachV1(components.grid)
   components.grid.setSandHeight(3, 4, 7.5)
   components.grid.setWaterHeight(5, 6, 2.25)
   components.waterSim.setFlowX(2, 2, 0.75)
@@ -412,8 +413,8 @@ describe('starting a new game', () => {
 
   it('lays out the same beach a first-ever boot gets', () => {
     const booted = freshComponents()
-    booted.grid.initBeach()
-    booted.grid.initSpring(1.0)
+    layBeachV1(booted.grid)
+    placeClassicSpringV1(booted.grid, 1.0)
 
     expect(played().grid.snapshot()).toEqual(booted.grid.snapshot())
   })
@@ -466,7 +467,7 @@ describe('starting a new game', () => {
   // Every scene in CLAUDE.md was tuned with the spring here, and its stream
   // reaches the sea at 185s. A seeded beach will place its own spring; the
   // classic one must not move. A literal cell rather than a comparison with
-  // initSpring, which would move with it.
+  // placeClassicSpringV1, which would move with it.
   it('puts the classic spring at top-centre, and nowhere else', () => {
     const { grid } = newGameSnapshot(256, 256, null)
     const sources: { x: number; z: number; rate: number }[] = []
@@ -483,7 +484,7 @@ describe('starting a new game', () => {
 
   it('grows the beach from the seed it is given, and records it', () => {
     const grown = new Grid(SIZE, SIZE)
-    grown.initBeach(noiseSeed('salty-gull-42'))
+    layBeachV1(grown, noiseSeed('salty-gull-42'))
     const site = springSite(grown, 'salty-gull-42')
     grown.setSourceRate(site.x, site.z, STREAM_RATE)
 
@@ -497,7 +498,7 @@ describe('starting a new game', () => {
   // seeded beach puts its own where its water will reach the sea.
   it('gives a seeded beach one spring, where springSite puts it', () => {
     const grown = new Grid(256, 256)
-    grown.initBeach(noiseSeed('salty-gull-42'))
+    layBeachV1(grown, noiseSeed('salty-gull-42'))
     const site = springSite(grown, 'salty-gull-42')
 
     const { grid } = newGameSnapshot(256, 256, 'salty-gull-42')

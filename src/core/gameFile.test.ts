@@ -12,6 +12,7 @@ import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
 import { POROSITY } from '../sim/Moisture.ts'
+import { layBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
 
 const SIZE = 4
 const SAVED_AT = new Date('2026-08-21T17:40:00.000Z')
@@ -20,7 +21,7 @@ const SAVED_AT = new Date('2026-08-21T17:40:00.000Z')
 // is always made from the shape the game actually snapshots.
 function aSnapshot() {
   const grid = new Grid(SIZE, SIZE)
-  grid.initBeach()
+  layBeachV1(grid)
   grid.setSandHeight(1, 1, 7.5)
   const waterSim = new WaterSim(SIZE, SIZE)
   waterSim.setFlowX(2, 2, 0.75)

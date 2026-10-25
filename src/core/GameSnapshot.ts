@@ -1,4 +1,4 @@
-import { Grid, STREAM_RATE } from './Grid.ts'
+import { Grid } from './Grid.ts'
 import type { GridSnapshot } from './Grid.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import type { WaterSimSnapshot } from '../sim/WaterSim.ts'
@@ -11,8 +11,7 @@ import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
-import { noiseSeed } from './BeachSeed.ts'
-import { springSite } from './SpringSite.ts'
+import { generateBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
 import type { BeachSeed } from './BeachSeed.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
@@ -222,16 +221,7 @@ export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot):
 // what a player's New game goes through, and that leaves the view alone.
 export function newGameSnapshot(width: number, depth: number, seed: BeachSeed): GameSnapshot {
   const grid = new Grid(width, depth)
-  grid.initBeach(noiseSeed(seed))
-  // Classic keeps the spring everything was tuned with. A seeded beach puts
-  // its own where its water will reach the sea - at top-centre on many seeds
-  // it fills a hollow and stays there.
-  if (seed === null) {
-    grid.initSpring(STREAM_RATE)
-  } else {
-    const site = springSite(grid, seed)
-    grid.setSourceRate(site.x, site.z, STREAM_RATE)
-  }
+  generateBeachV1(grid, seed)
 
   return {
     version: SNAPSHOT_VERSION,
