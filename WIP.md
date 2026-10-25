@@ -6,20 +6,22 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None started.
+None - step 1 done.
 
 ## Next Action
 
-Step 1: pin a seeded beach whole - every layer, two seeds - before anything
-moves.
+Step 2: `Grid.setSea(seaStart, seaLevel)`, defaults unchanged.
 
 ## Status
 
-⏸️ WAITING - plan written, no code changed.
+⏸️ WAITING - suite green (547), tsc clean. `beachPins.test.ts`: all six
+layers for classic, salty-gull-42 and s46. Mutation-checked: spring row band
+4 -> 3 fails both seeds; sea water height 1.0 -> 1.0001 fails all three, and
+nothing in grid.test.ts - the old pins were blind to the sea.
 
 ## Completed
 
-- [ ] Step 1: pin a seeded beach, whole
+- [x] Step 1: pin a seeded beach, whole
 - [ ] Step 2: `Grid.setSea`
 - [ ] Step 3: extract v1's terrain
 - [ ] Step 4: move spring placement into v1
