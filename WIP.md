@@ -1,4 +1,47 @@
-# WIP: Extract the beach generator as version 1
+# WIP: A v2 beach generator
+
+The seed shapes the beach as well as its noise: its own sea, tide and
+swell, a seeded ridge and sand share, bolder land, and rock scarps that can make
+waterfalls. A waterfall spike comes first; then the sea, tide and swell move
+onto the grid as one `BeachSea` (snapshot v5). v1 untouched beyond stating its whole sea; v2 unreachable until
+swept and frozen. Plan in `PLAN.md`.
+
+## Current Step
+
+Step 1: the waterfall spike - findings in PLAN.md; awaiting the browser look.
+
+## Status
+
+⏸️ WAITING - the spike passes on the numbers (no NaN, lip stable, drops of 3-10
+hold and deepen over 600s). Waiting on the user's browser look at the
+imported scenes before setting the scarp ranges.
+
+## Steps
+
+- [ ] Step 1: the waterfall spike (decision point)
+- [ ] Step 2: the beach's sea lives on the grid (`BeachSea`)
+- [ ] Step 3: snapshot v5
+- [ ] Step 4: v2 as a copy of v1
+- [ ] Step 5: `shapeV2`
+- [ ] Step 6: seeded sea
+- [ ] Step 7: seeded tide
+- [ ] Step 8: seeded swell
+- [ ] Step 9: seeded ridge and sand share
+- [ ] Step 10: bolder land
+- [ ] Step 11: scarps
+- [ ] Step 12: sweep, then set the ranges (decision point)
+- [ ] Step 13: the generator picker
+- [ ] Step 14: ship v2 (LATEST = 2, pins, frozen)
+- [ ] Step 15: verify in the browser
+- [ ] Step 16: CLAUDE.md
+
+## Shipped before this
+
+- The beach generator extracted as version 1 (`d29dedb`..`e3da65b`).
+
+---
+
+# Previous: Extract the beach generator as version 1
 
 All beach generation gathered into a frozen v1 generator; saves record which
 generator built them (snapshot v4), along with the beach's sea. Plan in

@@ -1,169 +1,483 @@
-# Plan: extract the beach generator as version 1
+# Plan: a v2 beach generator
 
 ## Context
 
-The beach is generated in four places: the shape constants, noise and terrain
-in `Grid` (`initBeach`, `initSpring`, `hashNoise`/`smoothNoise`/`fractalNoise`),
-seed text in `BeachSeed`, spring placement in `SpringSite`, and the assembly in
-`newGameSnapshot`. A fifth, `Game`'s first boot, repeats the generation by hand.
+v1 grows every beach the same shape. The seed varies only the rock and sand
+noise; the ridge, the sea and the tide are the same on every beach. v2 lets the
+seed shape the beach:
 
-This plan gathers all of it into a **version 1 generator**, frozen, and records
-in every save which generator built the beach. A later v2 can then change how
-beaches grow without changing any beach v1 grew: restarting a v1 beach, or
-regenerating one from its seed, gives back the same beach forever.
+- **Seeded sea.** Each beach has its own `seaStart` and `seaLevel`.
+- **Seeded tide.** Each beach has its own tidal amplitude and period.
+- **Seeded swell.** Some beaches have weaker waves, and some less frequent ones.
+  Today's swell is the strongest and most frequent.
+- **Seeded ridge.** Some beaches are steep and some flat. Some are rocky and
+  some sandy (`sandShare`).
+- **Bolder land.** More dunes and outcrops.
+- **Scarps.** A few places where the rock is far steeper than sand can ever
+  stand. A stream crossing one makes a waterfall.
 
-CLAUDE.md asked for exactly this decision before the next change to what a seed
-grows. This is that decision.
+The sea's groundwork is already done: `Grid.setSea`, `seaStart`/`seaLevel` in
+the snapshot, `hasClassic`, the registry and the `gen` labels. The tide and the
+swell have none of it. The tide's amplitude and period are fixed when `Game`
+builds its `Tide`, the swell's are module constants in `Waves.ts`, and neither
+is saved. And the water sim has never run a waterfall. So this plan first
+checks that a waterfall works, then gives the tide and the swell the sea's
+footing, and only then builds v2.
 
 ### Decisions taken up front
 
-- **Extract and version.** Saves record the generator (`generator: 1`).
-  Snapshot version 4. v1's code is frozen; changes go into a v2 beside it.
-- **v1 owns everything it calls**: the shape constants, the noise, the
-  terrain, the classic spring, and its own copy of the spring scoring and
-  placement (`SpringSite.ts` moves into v1). A later v2 copies what it wants
-  to change rather than editing v1's. Duplication is the price of freezing.
-- **Shared and frozen already:** `seedFromText`, which is part of the save
-  format and belongs to every generator.
-- **v1 has its own spring rate**, 1.0, rather than `STREAM_RATE`. That
-  constant is shared with the player's Stream tool (`Game.ts:337`); tuning the
-  tool must not change every v1 beach.
-- **The sea is a value per beach, set by the generator, held on `Grid`.**
-  `seaStart` and `seaLevel` stay on `Grid` because the sim reads them every
-  step, but the generator sets them instead of the constructor deciding. One
-  value each per beach - a straight shoreline. A shoreline that curves across
-  the beach would need a value per column and is not this.
-  - **They are stored in the snapshot.** Today they are recomputed from the
-    grid's size; once a generator can choose them, a reload must restore them.
-  - **`new Grid(w, d)` keeps today's values as defaults**, so the hundred-odd
-    grids built in tests without a generator behave as now.
-  - A v2 that moves them needs its own sweep first: the tide, the swell,
-    refraction and castle survival were all tuned against today's sea. That is
-    v2's problem, recorded here so it is not forgotten.
-- **Classic is a v1 idea.** `seed: null` is valid only for a generator that
-  has a classic beach; v1 does, and a v2 will not. The guard refuses a save
-  claiming otherwise.
-- **New seeds use the newest generator.** Random and typed seeds get
-  `LATEST_GENERATOR`; *Restart this beach* keeps the beach's own generator;
-  *Classic* is always v1. Choosing an older generator is left open, not built:
-  everything downstream of the dialog carries a generator version, so adding a
-  way to pick one later touches only the dialog and `resolveBeach`.
-- **The generator is visible, labelled as the generator.** The Hud reads
-  `Beach: salty-gull-42 (gen 1)` and `Beach: classic (gen 1)`; the dialog's
-  restart option names it too. Typing an old generator waits until a v2 exists.
-- **The generator goes in the export filename:**
-  `sandcastles-gen1-salty-gull-42-2026-10-25T10-00-00.json`. Generator first,
-  so a directory of exports sorts by generator, then beach, then time. The
-  filename is still only a label; import reads the generator from inside the
-  file.
-- **"gen", never a bare "v".** A file holds two version numbers that change
-  for unrelated reasons: `version`, the save format (4 now), and `generator`,
-  how the beach was grown (1 now). A label reading `v1` beside `"version": 4`
-  invites confusing them. Making the two numbers match was considered and
-  rejected: the save format belongs to the file and is migrated, the generator
-  belongs to the beach and must never be, so a beach grown by one generator and
-  saved in a later format necessarily carries two different numbers.
-- **Old saves are v1, as a fact.** A v3 save migrates to v4 as `generator: 1`
-  with today's `seaStart` and `seaLevel` for its depth: every beach that exists
-  was built by what is about to become v1.
+- **A waterfall spike comes first.** A cliff's lip is a sill beside a much lower
+  cell, which is the geometry behind the `conductingDepth` bug recorded in
+  CLAUDE.md. That bug is fixed, but a drop of up to 10 units over one cell is a
+  far harsher test than anything tuned so far. If the water sim cannot carry a
+  stream over a cliff, scarps are pointless, and fixing that is its own piece of
+  work. We find out before building anything.
+- **v1 is not touched, except to state its whole sea.** `beachPins.test.ts`
+  must hold unchanged through every step. v1's `setSea` call now passes the
+  whole sea: the tide's 0.8 and 180 it has always had, and full swell. That is
+  how v1 came to set its sea explicitly in the first place, and its output is
+  identical. Otherwise v2 starts as a copy of v1, `SpringSiteV1` included, and
+  diverges from there. Duplication is the price of freezing.
+- **The tide belongs to the beach.** A real tidal range belongs to the place, as
+  sea level does. So it is held on `Grid` beside the sea, set by the generator
+  and stored in the snapshot.
+- **The beach's sea is one value.** It is `BeachSea`: `seaStart`, `seaLevel`,
+  the tide's amplitude and period, and the swell's frequency and strength. Six
+  values are too many for separate setters, and they are set together and stored
+  together.
+- **One holder.** `Grid` holds the `BeachSea`. `Tide` and `Waves` keep only
+  their clocks and read the rest from the grid. Two copies could disagree after
+  an import.
+- **The swell is stored as fractions of the maximum; the tide is stored
+  absolute.** A beach's swell is `swellFrequency` and `swellStrength`, each a
+  fraction (at most 1) of what `SWELL_PERIOD` and `SWELL_AMPLITUDE` give. Those
+  two stay the tuning knobs CLAUDE.md lists them as: they set the maximum, and
+  every beach scales from it, so retuning castle survival changes how every
+  beach plays without changing any beach. That is how `EROSION_K` already
+  behaves. The tide is a property of the place and is stored absolute, so
+  retuning a tide is a generator change.
+- **Today's swell is the harshest.** No beach gets waves stronger or more
+  frequent than the ones everything was tuned against. Like the tide's 180s
+  minimum, that bounds the stress on the sim from above.
+- **The slowest swell is ~4.5s** (`swellFrequency` ≥ 0.78). Its wavelength is
+  `SWELL_SPEED × period`: 49 cells at 3.5s, 63 at 4.5s. CLAUDE.md records that
+  at 5s (70 cells) the waves did not bend at all. 4.5s keeps some bending. The
+  smallest sea (~51 rows) under the slowest swell is the worst case, and the
+  sweep runs exactly that.
+- **The weakest swell is a third of today's** (`swellStrength` ≥ 0.33). Even
+  the calmest beach has visible waves and some castle erosion.
+- **Slower is not assumed gentler.** On real beaches, longer waves of the same
+  height run further up the sand. So a slow, full-strength swell might wear a
+  castle faster per wave even though fewer waves come. The sweep measures it.
+- **Amplitude, not range.** High water is `seaLevel + amplitude`. Today's 0.8 is
+  an amplitude, which as a range would be 1.6. The name says which, for the same
+  reason sea level is named an elevation.
+- **Snapshot version 5** replaces the flat `seaStart` and `seaLevel` with a
+  `sea: BeachSea`. The 4 -> 5 migration keeps the two values it has and adds a
+  tide of 0.8 and 180 and full swell. That is a fact rather than a guess: every
+  existing beach has had exactly that. The tide's and the swell's phases survive
+  a reload, because each one's `elapsed` and the beach's sea are both stored.
+- **No tide period is shorter than 180s.** Every scene in CLAUDE.md was tuned
+  against 180s. A longer period over the same amplitude rises more slowly (the
+  fastest rise is `2π · amplitude / period`), so it is gentler on all of them.
+  Only the amplitude makes a tide harsher. The harshest tide is therefore the
+  largest amplitude at 180s, and that is what the sweep stresses.
+- **The longest period is set by attention, not physics.** A tide only matters
+  if the player sees it turn. At 360s it comes in over three minutes and goes
+  out over three more. Any slower and it would barely move during a session.
+- **Amplitude and period are drawn independently,** giving fast big tides, slow
+  small ones, and everything between. Real tides do not tie them together
+  either.
+- **Steepness and sand are drawn separately.** `ridgeScale` sets the surface
+  ridge (rock plus sand), which mainly sets how fast the stream runs and how
+  hard it erodes. `sandShare` sets how much of that ridge is sand, which mainly
+  sets soaking and digging. With one effect per knob, the sweep can say which
+  knob a failing seed failed on. Two scales, one for rock and one for sand,
+  could not. `ridgePower` is shared: a power per layer would vary sand depth
+  along the beach in ways that are hard to reason about.
+- **Sand behind a scarp must lie under the angle of repose.** The spike's
+  first scene thinned the sand to nothing over 3 cells behind the lip, which is
+  steeper than sand stands. `Slope` emptied it over the edge and buried the
+  face in its own talus: a 10-high cliff was 1.75 high after 300s, away from the
+  stream entirely. Behind the lip there is a bench of bare rock, then sand
+  thickening by at most 0.3 a cell (`Slope` moves sand beyond 0.625). The foot
+  is left alone: sand cannot climb a rock wall. Shaped this way, every dry face
+  held exactly, to two decimal places, for 600s.
+- **A scarp's height is the surface drop, lip to foot.** Raising the rock by
+  `height` left the foot's sand to eat most of it. A 6 raise gave a real drop
+  of 1.2, which the stream filled. So the rock above is raised per column by
+  whatever makes the drop exactly `height` once the lip is bare.
+- **Scarps stay out of the shore zone,** the 25 rows over which v1 already
+  fades the rock to the sea. The swell, refraction and castle survival were all
+  tuned there.
+- **Nothing aims a scarp at the stream.** The spring sits as high as it can, so
+  it will often be above a scarp. A beach whose stream misses every scarp is a
+  fine beach. The sweep counts how many streams cross one.
+- **v2 has no classic beach** (`hasClassic: false`). *Classic* in the dialog
+  stays `CLASSIC_BEACH`, which is v1's.
+- **The seed draws v2's shape from its own stream:**
+  `seedFromText(seed.trim() + ':shape')` through v2's own mulberry32. That is
+  separate from the noise, which takes the seed's own hash, and from the spring
+  (`':spring'`). The order of the draws is fixed, and becomes part of v2 once it
+  ships.
+- **Ranges are provisional until the sweep.** Every seeded parameter is
+  `min + r * (max - min)`, with its range as a named constant. The figures below
+  are starting points, and the sweep sets the real ones.
+- **v2 cannot be reached until it is frozen.** `LATEST_GENERATOR` stays 1, and
+  the dialog's picker lists only generators up to it. A push partway through
+  this plan therefore lets no player grow an unfrozen v2 beach. The bump to 2
+  lands together with v2's pins, and that is the moment v2 freezes.
+- **Bump only after a sweep passes** step 12's criteria.
+- **A generator picker lets a player regrow an old seed.** It is a small `gen`
+  dropdown beside the seed field, defaulting to the newest generator. It applies
+  only to a typed seed: *Random* always uses the newest, since a random
+  old-generator beach serves nothing, and *Restart* keeps the beach's own.
 
 ## Design
 
-### The generator
+### The waterfall spike
+
+A scratch probe, run through the same full `Game.simStep` pipeline the sweeps
+use. It takes the classic beach and cuts a full-width rock scarp across it
+below the spring, at row 60, 1 cell wide. It runs several heights for 300s
+each, plus a control run with no scarp. For each run it measures:
+
+- NaN or negative depth.
+- The flux over the lip, against the `MAX_VELOCITY * edgeDepth` ceiling.
+- Grid-scale chop below the lip: cell-to-cell sign flips in the surface's
+  curvature along the stream, compared with the control.
+- The plunge pool's deepest standing water, against an onset of ~22 and a
+  limit of 11.
+- Whether the stream still reaches the sea, and when.
+
+It also writes each scene as a beach file through `toGameFile`, so you can
+import it and look at the waterfall in the browser with no change to the game.
+That shows whether a heightfield with one very steep cell reads as a waterfall
+from the isometric camera.
+
+**Findings** (`waterfall.ts` in the scratchpad). Classic beach, face at row 60,
+surface drops of 3, 6 and 10, 600s each, shaped as the decisions above say:
+
+| drop | NaN / negative | drop at 600s, in the stream | dry faces | plunge pool | stream reaches sea | chop below lip |
+|---|---|---|---|---|---|---|
+| none (control) | none | - | - | 0.9 | 185s | 0.19 |
+| 3 | none | 3.00 -> 4.13 | unchanged | 1.96 | 190s | 0.24 |
+| 6 | none | 6.00 -> 8.43 | unchanged | 3.05 | 215s | 0.25 |
+| 10 | none | 10.00 -> 12.57 | unchanged | 3.09 | 210s | 0.24 |
+
+- **The lip is stable.** The flux over it sits exactly on the
+  `MAX_VELOCITY * edgeDepth` ceiling, which is the cap doing its job. The
+  step-to-step sign-flip rate of the water below it is 0.04 - 0.06, the
+  control's level, so there is no chequerboard.
+- **A waterfall pulses.** Water piles up two rows behind the lip and spills over
+  in a smooth surge every couple of seconds. The foot's depth swings by up to
+  0.6 against the control's 0.008. This is a physical surge, not numerical
+  chatter.
+- **A waterfall digs its own plunge pool,** scouring the foot by 1.1 - 2.6 in
+  600s and dropping that sand as a bar a few rows downstream. Pools reached 3.1
+  deep. Still growing at 600s, so the sweep runs scarp-crossing seeds to 900s
+  against its limit of 11.
+- **Measure the lip against the edge depth from *before* the step.** Taken after
+  the step, when the water has already moved, the flux read 8x over the
+  ceiling, which it can never be.
+
+### The beach's sea on the grid
 
 ```ts
-// src/core/generators/BeachGenerator.ts
-export interface BeachGenerator {
-  readonly version: number
-  readonly hasClassic: boolean
-  // Lays out sea, rock, sand, water and the spring on a fresh grid.
-  generate(grid: Grid, seed: BeachSeed): void
+// core/BeachSea.ts
+export interface BeachSea {
+  seaStart: number
+  seaLevel: number        // an elevation
+  tideAmplitude: number   // high water is seaLevel + tideAmplitude
+  tidePeriod: number      // seconds
+  swellFrequency: number  // fraction of the maximum; period = SWELL_PERIOD / this
+  swellStrength: number   // fraction of the maximum; amplitude = SWELL_AMPLITUDE * this
 }
-
-export interface BeachSpec {
-  generator: number
-  seed: BeachSeed
-}
-
-export const LATEST_GENERATOR = 1
-export function generatorFor(version: number): BeachGenerator | null
 ```
 
-`src/core/generators/v1/` holds `BeachGeneratorV1.ts` (constants, noise,
-terrain, classic spring, the sea) and `SpringSiteV1.ts` (today's
-`SpringSite.ts`, moved whole). v1's header says it is frozen and why, and
-points at the checksums that hold it.
+`Grid.setSea(sea: BeachSea)` replaces `setSea(seaStart, seaLevel)`. It throws a
+`RangeError` unless:
 
-### `Grid`
+- `seaStart` is an integer row inside the grid;
+- `seaLevel` is finite;
+- `tideAmplitude` is finite and at least 0, and `tidePeriod` is finite and
+  above 0;
+- `swellFrequency` is in (0, 1] and `swellStrength` in [0, 1].
 
-Loses `initBeach`, `initSpring` and the noise. Gains `setSea(seaStart,
-seaLevel)`; `seaStart` and `seaLevel` become private-set, public-read. The
-constructor's defaults stay today's numbers.
+`grid.sea` reads it, and `seaStart` and `seaLevel` keep their getters for the
+many readers. A fresh grid's default is today's sea, so every test grid behaves
+as now. `isValidSnapshot` applies the same rules, from one shared function so
+the two cannot drift apart.
 
-### The snapshot (version 4)
+`Tide` keeps `elapsed`, `step`, `snapshot` and `restore`, and its offset reads
+the amplitude and period from the grid: `tide.offset(grid)`. `Tide`'s own tests
+now pass `new Tide(180, 0.4)`; instead they build a small grid with that sea.
 
-`GameSnapshot` gains `generator: number`, `seaStart: number`, `seaLevel:
-number` beside `seed`. `isValidSnapshot`: `generator` is one `generatorFor`
-knows; `seed` is `null` only where that generator `hasClassic`; `seaStart` an
-integer inside the grid; `seaLevel` finite. `applySnapshot` calls
-`grid.setSea`. `createSnapshot` reads them from the grid and the game's
-`BeachSpec`. `GameFile` carries them as scalars, and the file's own version
-follows the snapshot's as before. `migrateSnapshot` gains v3 -> v4.
+`Waves` likewise keeps `elapsed` and `timeUntilWave`. It reads its period and
+amplitude from the grid it is given:
 
-### New games
+- `waves.period(grid)` and `waves.surfaceAt(grid, x, z, seaSurface)`;
+- `step` counts the countdown against the beach's period;
+- a new game's `timeUntilWave` starts at the beach's period, not
+  `SWELL_PERIOD`.
 
-`newGameSnapshot(width, depth, spec: BeachSpec)` builds a `Grid`, calls
-`generatorFor(spec.generator).generate(grid, spec.seed)`, and snapshots it.
-`resolveSeed` becomes `resolveBeach(choice, current: BeachSpec, random):
-BeachSpec`. `Game` holds a `BeachSpec` where it held a seed, and its first boot
-goes through `newGameSnapshot` + `applySnapshot` like a new game, instead of
-calling `initBeach` itself.
+`Game`'s readers move over: the sea surface in `simStep`, the Sponge's closure,
+and the Hud. So do the swell, castle and waves tests. Their grids default to
+full swell, so they still test the harshest case.
+
+`seaV1(depth)` returns v1's whole `BeachSea`. v1's generator passes it to
+`setSea`. The 3 -> 4 migration takes its two fields from it as now, and 4 -> 5
+takes the other four.
+
+### The shape a seed draws
+
+```ts
+// generators/v2/ShapeV2.ts
+export interface ScarpV2 {
+  row: number            // where the face crosses, as a fraction of the land's rows
+  xFrom: number          // the stretch of the beach's width it spans,
+  xTo: number            //   as fractions of the width
+  height: number         // how far the rock drops over the face
+  faceWidth: number      // cells the drop is spread over
+  wobble: number         // seed for the face's meander across the beach
+}
+
+export interface ShapeV2 {
+  seaFraction: number    // seaStart = floor(depth * seaFraction)
+  seaLevel: number
+  tideAmplitude: number
+  tidePeriod: number
+  swellFrequency: number
+  swellStrength: number
+  ridgeScale: number     // multiplies v1's surface ridge, rock + sand (12 + 9)
+  ridgePower: number     // ridge = (1 - t) ** ridgePower; v1 is 2
+  sandShare: number      // fraction of the ridge that is sand; v1 is 9/21
+  noiseScale: number     // multiplies v1's rock and sand noise amplitudes
+  scarps: ScarpV2[]      // 0 to 2
+}
+export function shapeV2(seed: string): ShapeV2
+```
+
+Starting ranges, before the sweep:
+
+| parameter | v1 | v2 range | what bounds it |
+|---|---|---|---|
+| `seaFraction` | 0.78 (57 sea rows) | 0.74 - 0.80 | The sea needs more than `SPONGE_ROWS` (12) plus a wavelength (49 cells) for refraction, and the land needs room for the stream |
+| `seaLevel` | 2.0 | 1.6 - 2.4 | `SWELL_SPEED` assumes a boundary depth of ~20, so `SEA_FLOOR_END_HEIGHT` stays -20 |
+| `tideAmplitude` | 0.8 | 0.4 - 1.4 | The water the tide moves (22,822 at 0.8, scaling with amplitude), the swash's reach and castle survival. With `seaLevel`, how low low water and how high high water go |
+| `tidePeriod` | 180 | 180 - 360 | Below 180 is untested; above 360 a player would not see it turn |
+| `swellFrequency` | 1 (3.5s) | 0.78 - 1 (4.5s - 3.5s) | Above 1 is harsher than anything tuned. Below 0.78 the waves stop bending, and less of each wave is absorbed by the sea's absorbing edge |
+| `swellStrength` | 1 (0.15) | 0.33 - 1 | Above 1 is harsher than anything tuned. Below a third, the sea looks flat |
+| `ridgeScale` | 1.0 | 0.7 - 1.3 | The stream's speed and erosion |
+| `ridgePower` | 2 | 1.5 - 2.5 | Where the beach is steep: near the back, or across it |
+| `sandShare` | 0.43 | 0.25 - 0.65 | Rocky to sandy. At the sandy end, deep sand soaks the stream and slows its arrival |
+| `noiseScale` | 1.0 | 1.0 - 1.6 | Deepest inland water must stay well under the advection-instability onset at ~22 |
+| scarp count | 0 | 0 - 2 | |
+| scarp `height` | - | 3 - 10 | The surface drop, lip to foot. All three spiked drops held for 600s, and the pools stayed at 3.1 or less |
+| scarp `faceWidth` | - | 1 - 2 | The spike tried only 1. A 2-cell face is unmeasured until the sweep |
+| scarp `row` | - | from the back of the beach to 25 rows short of `seaStart` | Out of the shore zone |
+| scarp span | - | 30% - 100% of the width | A partial scarp can sometimes be walked round by the water |
+
+### The generator
+
+`generators/v2/BeachGeneratorV2.ts` contains:
+
+- `beachGeneratorV2 = { version: 2, hasClassic: false, generate }`
+- `generateBeachV2(grid, seed)`, which:
+  1. draws the shape;
+  2. sets the sea, the tide and the swell;
+  3. lays out the land (`layBeachV2(grid, shape, noiseSeed)`): ridge, noise,
+     then the scarps, then the sand shaped behind their lips;
+  4. places the spring with `springSiteV2`.
+
+`generate` throws on a `null` seed, which the guard and `resolveBeach` already
+prevent. `generators/v2/SpringSiteV2.ts` is a copy of v1's; its
+`MAX_SPRING_FILL` of 70 stays until the sweep says otherwise.
+
+A scarp raises the rock uphill of its face, in each column, by whatever makes
+the surface drop from lip to foot exactly `height`, falling over `faceWidth`
+cells. Across the beach, the face meanders by a few cells, driven by `wobble`.
+At the ends of its span the height tapers over a few cells rather than stopping
+dead, so a scarp's ends are slopes and not cliff corners.
+
+Behind the lip, `SCARP_BENCH` cells (4 in the spike) are bare rock, and beyond
+that the sand is capped at `SCARP_SAND_RAMP` (0.3) per cell of distance, so it
+lies under the angle of repose. The foot keeps its sand. Moisture is cut in
+proportion with the sand it sits in.
+
+### The dialog
+
+`NewGameChoice`'s `chosen` gains `generator: number`, and the picker supplies
+it. `resolveBeach` uses that generator for a typed seed instead of
+`LATEST_GENERATOR`. The picker:
+
+- lists `1..LATEST_GENERATOR`, newest first and selected;
+- is enabled only while a seed is being typed;
+- goes back to the newest each time the dialog opens.
 
 ## Steps
 
-Each step is a RED-GREEN-REFACTOR cycle, committed on its own once `npm test` and
-`tsc --noEmit` are clean. Steps 3 and 4 are pure moves: no test's expectation
-changes, only where it imports from.
+Each step is a RED-GREEN-REFACTOR cycle, committed on its own once `npm test`
+and `tsc --noEmit` are clean. Steps 1-3 change no beach: the v1 pins hold, and
+the game plays exactly as now.
 
-1. **Pin a seeded beach, whole.** Checksums of every layer `newGameSnapshot`
-   produces - rock, sand, water, source - for two seeds, and water and source
-   for classic (rock and sand are pinned already). Written before anything
-   moves; must hold unchanged through every later step.
-2. **`Grid.setSea`.** Sets both; the defaults are unchanged; `snapshot`/
-   `restore` are unaffected (the sea is restored by `applySnapshot`, step 6).
-3. **Extract v1's terrain.** Constants, noise, `initBeach`, `initSpring` move
-   into `BeachGeneratorV1`; `generate` sets the sea explicitly to today's
-   values, then the terrain, then the spring. The beach-shape tests in
-   `grid.test.ts` move to `beachGeneratorV1.test.ts`; the other test files
-   build beaches through v1. Step 1's checksums hold.
-4. **Move spring placement into v1.** `SpringSite.ts` -> `v1/SpringSiteV1.ts`,
-   with its tests; v1's spring rate becomes its own constant. Checksums hold.
-5. **The registry and `BeachSpec`.** `generatorFor`, `LATEST_GENERATOR`;
-   `newGameSnapshot` takes a `BeachSpec`; `Game`'s first boot goes through it.
-   `generatorFor` of an unknown version is `null`.
-6. **Snapshot v4.** The three fields through `createSnapshot`, the guard,
-   `applySnapshot`, `GameFile`, and the v3 -> v4 migration (and v1 -> v4
-   through every step). A guard test that a v1 classic is fine and a
-   generator without a classic beach refuses `seed: null` (a test double, since
-   v2 does not exist).
-7. **`resolveBeach`.** Classic -> `{1, null}`; random and chosen ->
-   `LATEST_GENERATOR`; restart keeps the current generator and seed. `Game`
-   holds a `BeachSpec`.
-8. **The generator is shown.** Hud `Beach: <seed or classic> (gen <n>)`; the
-   dialog's restart option names the generator.
-9. **The export filename carries it.** `sandcastles-gen<n>-<seed>-<stamp>.json`,
-   and `sandcastles-gen<n>-<stamp>.json` where the seed cleans to nothing.
-10. **Verify in the browser.** Classic, random, typed and restart each look as
-    before and show `(gen 1)`; reload and an import keep the beach and its
-    generator; the export name carries `gen1`; an export from before this
-    imports as generator 1.
-11. **CLAUDE.md** - what v1 freezing means and what it costs, `hasClassic`, the
-    sea as per-beach state, v1's own spring rate, and the rule for v2: copy,
-    don't edit, and sweep before shipping anything that moves the sea.
+1. **The waterfall spike.** A scratch probe as above, plus its beach files.
+   Nothing is committed beyond the findings in PLAN.md and WIP.md.
+   - **Stop here and bring you the table and the files to import.**
+   - If the lip is stable and it looks like a waterfall, set the scarp ranges
+     from what it found and carry on.
+   - If not, scarps come out of this plan and the water-sim fix becomes its own
+     piece of work. The rest of the plan goes ahead either way.
+2. **The beach's sea lives on the grid.**
+   - `BeachSea` and `Grid.setSea(sea)` with today's sea as the default.
+   - `Tide.offset(grid)`; `Waves.period(grid)` and `surfaceAt(grid, ...)`.
+   - `Game`'s readers moved over.
+   - `seaV1` returns the whole sea.
+   - Tests:
+     - `setSea` validation;
+     - the tide follows the grid's amplitude and period;
+     - the swell's period and amplitude follow its frequency and strength, and
+       a half-strength swell's surface is half as far from the sea's;
+     - v1 beaches carry 0.8, 180 and full swell;
+     - the pins are unchanged.
+3. **Snapshot v5.**
+   - `sea: BeachSea` through `createSnapshot`, the guard, `applySnapshot`,
+     `newGameSnapshot` (whose `timeUntilWave` starts at the beach's period) and
+     `GameFile`.
+   - The 4 -> 5 migration, and v1 -> 5 through every step.
+   - Tests:
+     - a round trip keeps a non-default sea;
+     - the guard refuses each out-of-range field;
+     - an old file imports with v1's sea;
+     - a reload keeps the tide's and the swell's phases.
+4. **v2 as a copy of v1.**
+   - Copied into `generators/v2/` and registered with `hasClassic: false`.
+     `LATEST_GENERATOR` stays 1.
+   - Tests:
+     - a seed grows identical layers under v1 and v2. This is scaffolding,
+       which step 6 removes on purpose.
+     - v2 refuses a `null` seed.
+     - `generatorFor(2)` finds it.
+5. **`shapeV2`.** The seeded parameters as a pure function, not yet used.
+   - Tests:
+     - every value lies inside its range across many seeds, scarps included;
+     - the same seed gives the same shape, and different seeds give different
+       shapes;
+     - it trims the seed like `noiseSeed`;
+     - its stream is independent of the spring's.
+6. **Seeded sea.** `generateBeachV2` sets `seaStart` and `seaLevel` from the
+   shape.
+   - Tests:
+     - the grid's sea is the shape's, and the sea rows are water up to that
+       level;
+     - two seeds give different seas;
+     - the sea round-trips through `newGameSnapshot` and `applySnapshot`.
+7. **Seeded tide.**
+   - Tests: the grid's tide is the shape's; two seeds give different tides;
+     every period is at least 180.
+8. **Seeded swell.**
+   - Tests: the grid's swell is the shape's; two seeds give different swells;
+     neither fraction ever exceeds 1.
+9. **Seeded ridge and sand share.** `ridgeScale`, `ridgePower` and `sandShare`
+   in the land's layout. The layout takes a `ShapeV2`, so a test can pass a
+   hand-picked shape rather than search for seeds.
+   - Tests (comparisons, not amounts):
+     - a high-`ridgeScale` shape's back of the beach stands higher than a low
+       one's;
+     - a high-`sandShare` shape has deeper sand there over a similar surface.
+10. **Bolder land.** `noiseScale` on both noise amplitudes, tested the same way.
+11. **Scarps.** Laid out from the shape's `scarps`.
+    - Tests on hand-picked shapes:
+      - the rock drops by the scarp's height across the face;
+      - the lip and its bench are bare rock, and the sand behind them never
+        rises faster than the ramp;
+      - a fresh scarp beach does not move under one `Slope` step;
+      - outside the span and beyond the taper, the rock is the same as the
+        layout without the scarp;
+      - no scarp reaches the shore zone;
+      - a shape with no scarps gives the same layout as before this step.
+12. **Sweep, then set the ranges.** A scratch probe; the only thing committed is
+    the ranges.
+    - 50 seeds through the full `Game.simStep` pipeline, for 300s or one tide
+      period, whichever is longer, and 900s for any stream that has not
+      arrived.
+    - **Corners**, each parameter at its min and max:
+      - **The sea and the tide.** `seaFraction` × `seaLevel` × `tideAmplitude`
+        gives 8 corners. All run at a 180s tide and full swell, which is where
+        the stress is. One more at 360s with the largest amplitude checks the
+        slow end.
+      - **The swell.** `swellFrequency` × `swellStrength` gives 4 corners, on
+        v1's sea and tide. At each: the castle scene against its flat-sea
+        control, the refraction spread, and the reflection from the sea's
+        absorbing edge, measured as CLAUDE.md records.
+      - **The worst for refraction.** The smallest sea under the slowest,
+        weakest swell.
+    - **Also counted:** how many streams cross a scarp, and the chop below each
+      lip they cross, measured the spike's way.
+    - **Criteria** (v1's figures in brackets):
+      - No NaN or negative depth.
+      - The open sea's mean surface stays within 0.3 of the tide (0.26).
+      - Deepest standing water inland is at most 11, half the instability
+        onset (9.4). This includes plunge pools.
+      - At least 40 of 50 streams arrive inside 300s (41). Watch the sandy end
+        of `sandShare` here.
+      - No beach wears a castle down more than twice as fast as classic's,
+        measured over its control. A weak swell is allowed to be gentle. A slow
+        full-strength one is the corner to watch.
+      - Refraction spread, divided by `swellStrength`, is at least 0.05 (0.09).
+        Spread shrinks with amplitude by design, so the floor is per unit of
+        strength.
+      - Reflection from the absorbing edge is at most twice today's (0.035).
+      - No lip chops worse than the spike's passing runs.
+    - **Stop here and bring you the table.** Narrow any range that fails and
+      sweep again. Any change to `MAX_SPRING_FILL` is also decided here.
+13. **The generator picker.**
+    - `chosen` carries a generator, and `resolveBeach` uses it.
+    - The dialog lists `1..LATEST_GENERATOR` with the newest selected. It is
+      enabled only for a typed seed and resets on each open.
+    - Only `gen 1` is listed until step 14.
+14. **Ship v2.**
+    - `LATEST_GENERATOR = 2`, and v2's files gain the FROZEN header.
+    - `beachPins.test.ts` gains every layer and the whole `BeachSea` of two v2
+      seeds, one of them with a scarp, named with `generator: 2` explicitly.
+      The v1 pins are unchanged.
+15. **Verify in the browser.**
+    - *Random* gives a `(gen 2)` beach with a visibly different shape.
+    - Over a few beaches:
+      - rocky ones and sandy ones;
+      - a tide rising visibly higher on some and turning slower on others;
+      - gentler or slower waves on some;
+      - a scarp, and a seed whose stream falls over one.
+    - `salty-gull-42` typed with `gen 1` gives back exactly the v1 beach.
+    - *Classic* is still `(gen 1)`, and *Restart* keeps each beach's generator.
+    - A reload keeps the tide and the waves where they were.
+    - Export names read `gen2`, and an old v1 file still imports.
+16. **CLAUDE.md.**
+    - What the spike found about waterfalls.
+    - The beach's sea as one value with one holder.
+    - Tide absolute, swell as fractions, and why each is stored that way.
+      `SWELL_PERIOD` and `SWELL_AMPLITUDE` are now the maximum.
+    - Amplitude, not range. Why 180s is the tide's minimum period and what
+      bounds its maximum; why 4.5s bounds the swell's.
+    - Steepness and sand share as separate knobs. Sand behind a lip lies under
+      repose, or `Slope` buries the face; height is the surface drop.
+    - v2's shape stream, and why its draw order is frozen.
+    - The sweep's table, and the ranges with what bounds each one.
+    - The picker, and why *Random* ignores it.
+    - *Sample over less than 180s* becomes *less than the beach's tide period*.
+      180 is still the safe default, since it is the minimum.
 
 ## Out of scope
 
-- **A v2 generator.** This only makes room for one.
-- **Choosing a generator in the dialog, or typing `v1:seed`.** Left open by
-  `BeachSpec`; built when a v2 exists.
-- **A shoreline that varies across the beach.**
+- **A seeded spring rate, or a route-aware spring score.** v2's spring
+  placement is v1's, copied.
+- **Aiming a scarp at the stream.** Waterfalls happen where they happen.
+- **Overhangs or caves.** The ground is a heightfield, so a cliff is at most
+  vertical.
+- **A shoreline that varies across the beach.** There is still one `seaStart`
+  per beach.
+- **The swell's direction** (`SWELL_ANGLE`). Refraction depends on it, and it
+  stays a sim constant.
+- **Showing the tide or the swell in the Hud** beyond the readouts already
+  there.
+- **Typing a generator into the seed (`gen1:...`).** The picker does this job.
