@@ -6,18 +6,17 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 9 done.
+None - step 10 done.
 
 ## Next Action
 
-Step 10: verify in the browser - the user's check. Classic, random, typed
-and restart each look as before and show `(gen 1)`; reload and an import keep
-the beach and its generator; the export name carries `gen1`; an export from
-before this imports as generator 1.
+Step 11: CLAUDE.md - what freezing v1 means and costs, `hasClassic`, the sea
+as per-beach state, v1's own spring rate, "gen" not "v", and the rule for
+v2: copy, don't edit, and sweep before shipping anything that moves the sea.
 
 ## Status
 
-⏸️ WAITING - suite green (575), tsc clean, build clean.
+⏸️ WAITING - browser-checked by the user: looks ok.
 
 ## Completed
 
@@ -30,7 +29,7 @@ before this imports as generator 1.
 - [x] Step 7: `resolveBeach`
 - [x] Step 8: the generator is shown
 - [x] Step 9: the export filename carries it
-- [ ] Step 10: verify in the browser
+- [x] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md
 
 ## Shipped before this
