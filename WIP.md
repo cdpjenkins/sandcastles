@@ -6,19 +6,17 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 7 done.
+None - step 8 done.
 
 ## Next Action
 
-Step 8: the generator is shown - Hud `Beach: <seed or classic> (gen <n>)`;
-the dialog's restart option names it too. "gen", never a bare "v": see
-PLAN.md.
+Step 9: the export filename carries the generator -
+`sandcastles-gen<n>-<seed>-<stamp>.json`.
 
 ## Status
 
-⏸️ WAITING - suite green (571), tsc clean, build clean. `Game` holds one
-`BeachSpec`. Mutation-checked: a restart taking the newest generator fails
-`restarts with the generator that grew the beach`.
+⏸️ WAITING - suite green (574), tsc clean, build clean. One `beachLabel`
+names a beach for both the Hud and the dialog.
 
 ## Completed
 
@@ -29,7 +27,7 @@ PLAN.md.
 - [x] Step 5: the registry and `BeachSpec`
 - [x] Step 6: snapshot v4
 - [x] Step 7: `resolveBeach`
-- [ ] Step 8: the generator is shown
+- [x] Step 8: the generator is shown
 - [ ] Step 9: the export filename carries it
 - [ ] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md

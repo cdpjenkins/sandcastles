@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { NewGameDialog } from './NewGameDialog.ts'
 import type { NewGameChoice } from '../core/NewGame.ts'
+import type { BeachSpec } from '../core/generators/BeachGenerator.ts'
 
 const choiceRadio = (dialog: NewGameDialog, kind: string): HTMLInputElement =>
   dialog.element.querySelector<HTMLInputElement>(`input[type="radio"][value="${kind}"]`)!
@@ -35,7 +36,7 @@ afterEach(() => {
   document.body.replaceChildren()
 })
 
-function aDialog(current: string | null = 'salty-gull-42') {
+function aDialog(current: BeachSpec = { generator: 1, seed: 'salty-gull-42' }) {
   const dialog = new NewGameDialog()
   document.body.appendChild(dialog.element)
   const chosen: NewGameChoice[] = []
@@ -69,8 +70,10 @@ describe('NewGameDialog', () => {
 
   // "Restart this beach" means nothing unless the player can see which beach.
   it('names the beach a restart would bring back', () => {
-    expect(aDialog('salty-gull-42').dialog.element.textContent).toContain('salty-gull-42')
-    expect(aDialog(null).dialog.element.textContent).toMatch(/classic/i)
+    expect(aDialog({ generator: 1, seed: 'salty-gull-42' }).dialog.element.textContent)
+      .toContain('Restart this beach: salty-gull-42 (gen 1)')
+    expect(aDialog({ generator: 1, seed: null }).dialog.element.textContent)
+      .toContain('Restart this beach: classic (gen 1)')
   })
 
   it('starts a random beach unless told otherwise', () => {
@@ -199,7 +202,7 @@ describe('NewGameDialog', () => {
     typeSeed(dialog, 'gull')
     button(dialog, 'cancel').click()
 
-    dialog.open(null)
+    dialog.open({ generator: 1, seed: null })
     button(dialog, 'start').click()
 
     expect(seedField(dialog).value).toBe('')

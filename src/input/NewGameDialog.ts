@@ -1,4 +1,5 @@
-import type { BeachSeed } from '../core/BeachSeed.ts'
+import type { BeachSpec } from '../core/generators/BeachGenerator.ts'
+import { beachLabel } from './beachLabel.ts'
 import type { NewGameChoice } from '../core/NewGame.ts'
 
 type ChoiceKind = NewGameChoice['kind']
@@ -79,8 +80,8 @@ export class NewGameDialog {
 
   // Opens afresh every time: a seed half-typed and cancelled is not carried
   // into the next visit.
-  open(current: BeachSeed): void {
-    this.restartLabel.textContent = `Restart this beach (${current ?? 'classic'})`
+  open(current: BeachSpec): void {
+    this.restartLabel.textContent = `Restart this beach: ${beachLabel(current)}`
     this.radios.get(DEFAULT_CHOICE)!.checked = true
     this.seedField.value = ''
     this.reflect()

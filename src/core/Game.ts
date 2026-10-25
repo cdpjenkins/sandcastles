@@ -253,7 +253,7 @@ export class Game {
     this.toolbar.setLook(this.lookEnabled)
     this.toolbar.setPaused(this.paused)
     this.lookPanel.style.display = this.lookEnabled ? 'block' : 'none'
-    this.hud.setSeed(this.beach.seed)
+    this.hud.setBeach(this.beach)
     this.updateHud()
   }
 
@@ -292,7 +292,7 @@ export class Game {
   // Which beach comes first; the warning that this one will be lost is asked
   // after, as a step of its own, by startChosenGame.
   private newGame(): void {
-    this.newGameDialog.open(this.beach.seed)
+    this.newGameDialog.open(this.beach)
   }
 
   // The beach the player built is destroyed with no undo, so they are asked

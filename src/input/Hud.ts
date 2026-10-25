@@ -1,4 +1,6 @@
-import type { BeachSeed } from '../core/BeachSeed.ts'
+import { CLASSIC_BEACH } from '../core/generators/BeachGenerator.ts'
+import type { BeachSpec } from '../core/generators/BeachGenerator.ts'
+import { beachLabel } from './beachLabel.ts'
 
 // The readouts and the status used to live in the toolbar, which made the bar
 // wide enough to push its own buttons off a 1440px screen - and a button past
@@ -33,7 +35,7 @@ export class Hud {
     this.beach.style.pointerEvents = 'auto'
     this.beach.style.userSelect = 'text'
     this.element.appendChild(this.beach)
-    this.setSeed(null)
+    this.setBeach(CLASSIC_BEACH)
 
     this.status = document.createElement('div')
     this.status.dataset.role = 'status'
@@ -50,8 +52,8 @@ export class Hud {
 
   // Its own element for the same reason as the status below: the readouts are
   // rewritten every frame, and the beach changes only on a new game or load.
-  setSeed(seed: BeachSeed): void {
-    this.beach.textContent = `Beach: ${seed ?? 'classic'}`
+  setBeach(beach: BeachSpec): void {
+    this.beach.textContent = `Beach: ${beachLabel(beach)}`
   }
 
   // Its own element rather than part of the readouts: Game rewrites those

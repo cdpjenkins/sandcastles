@@ -57,20 +57,20 @@ describe('Hud', () => {
   it('names the beach the player is on', () => {
     const hud = new Hud()
 
-    hud.setSeed('salty-gull-42')
-    expect(beach(hud).textContent).toBe('Beach: salty-gull-42')
+    hud.setBeach({ generator: 1, seed: 'salty-gull-42' })
+    expect(beach(hud).textContent).toBe('Beach: salty-gull-42 (gen 1)')
 
-    hud.setSeed(null)
-    expect(beach(hud).textContent).toBe('Beach: classic')
+    hud.setBeach({ generator: 1, seed: null })
+    expect(beach(hud).textContent).toBe('Beach: classic (gen 1)')
   })
 
   it('keeps the beach named while the readouts are rewritten', () => {
     const hud = new Hud()
-    hud.setSeed('salty-gull-42')
+    hud.setBeach({ generator: 1, seed: 'salty-gull-42' })
 
     hud.setReadouts('bucket: 0.0 / 1000   wave: 2s')
 
-    expect(beach(hud).textContent).toBe('Beach: salty-gull-42')
+    expect(beach(hud).textContent).toBe('Beach: salty-gull-42 (gen 1)')
   })
 
   // A seed is for sharing, so the player has to be able to select and copy it,
