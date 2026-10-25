@@ -10,8 +10,9 @@ None - step 7 done.
 
 ## Next Action
 
-Step 8: the version is shown - Hud `Beach: <seed or classic> (v<n>)`; the
-dialog's restart option names it too.
+Step 8: the generator is shown - Hud `Beach: <seed or classic> (gen <n>)`;
+the dialog's restart option names it too. "gen", never a bare "v": see
+PLAN.md.
 
 ## Status
 
@@ -28,7 +29,7 @@ dialog's restart option names it too.
 - [x] Step 5: the registry and `BeachSpec`
 - [x] Step 6: snapshot v4
 - [x] Step 7: `resolveBeach`
-- [ ] Step 8: the version is shown
+- [ ] Step 8: the generator is shown
 - [ ] Step 9: the export filename carries it
 - [ ] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md

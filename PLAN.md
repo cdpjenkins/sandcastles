@@ -48,13 +48,21 @@ grows. This is that decision.
   *Classic* is always v1. Choosing an older generator is left open, not built:
   everything downstream of the dialog carries a generator version, so adding a
   way to pick one later touches only the dialog and `resolveBeach`.
-- **The version is visible.** The Hud reads `Beach: salty-gull-42 (v1)` and
-  `Beach: classic (v1)`; the dialog's restart option names it too. Typing an
-  old version waits until a v2 exists.
-- **The version goes in the export filename:**
-  `sandcastles-v1-salty-gull-42-2026-10-25T10-00-00.json`. Version first, so a
-  directory of exports sorts by generator, then beach, then time. The filename
-  is still only a label; import reads the version from inside the file.
+- **The generator is visible, labelled as the generator.** The Hud reads
+  `Beach: salty-gull-42 (gen 1)` and `Beach: classic (gen 1)`; the dialog's
+  restart option names it too. Typing an old generator waits until a v2 exists.
+- **The generator goes in the export filename:**
+  `sandcastles-gen1-salty-gull-42-2026-10-25T10-00-00.json`. Generator first,
+  so a directory of exports sorts by generator, then beach, then time. The
+  filename is still only a label; import reads the generator from inside the
+  file.
+- **"gen", never a bare "v".** A file holds two version numbers that change
+  for unrelated reasons: `version`, the save format (4 now), and `generator`,
+  how the beach was grown (1 now). A label reading `v1` beside `"version": 4`
+  invites confusing them. Making the two numbers match was considered and
+  rejected: the save format belongs to the file and is migrated, the generator
+  belongs to the beach and must never be, so a beach grown by one generator and
+  saved in a later format necessarily carries two different numbers.
 - **Old saves are v1, as a fact.** A v3 save migrates to v4 as `generator: 1`
   with today's `seaStart` and `seaLevel` for its depth: every beach that exists
   was built by what is about to become v1.
@@ -141,14 +149,14 @@ changes, only where it imports from.
 7. **`resolveBeach`.** Classic -> `{1, null}`; random and chosen ->
    `LATEST_GENERATOR`; restart keeps the current generator and seed. `Game`
    holds a `BeachSpec`.
-8. **The version is shown.** Hud `Beach: <seed or classic> (v<n>)`; the
-   dialog's restart option names the version.
-9. **The export filename carries it.** `sandcastles-v<n>-<seed>-<stamp>.json`,
-   and `sandcastles-v<n>-<stamp>.json` where the seed cleans to nothing.
+8. **The generator is shown.** Hud `Beach: <seed or classic> (gen <n>)`; the
+   dialog's restart option names the generator.
+9. **The export filename carries it.** `sandcastles-gen<n>-<seed>-<stamp>.json`,
+   and `sandcastles-gen<n>-<stamp>.json` where the seed cleans to nothing.
 10. **Verify in the browser.** Classic, random, typed and restart each look as
-    before and show `(v1)`; reload and an import keep the beach and its
-    version; the export name carries `v1`; an export from before this imports
-    as v1.
+    before and show `(gen 1)`; reload and an import keep the beach and its
+    generator; the export name carries `gen1`; an export from before this
+    imports as generator 1.
 11. **CLAUDE.md** - what v1 freezing means and what it costs, `hasClassic`, the
     sea as per-beach state, v1's own spring rate, and the rule for v2: copy,
     don't edit, and sweep before shipping anything that moves the sea.
