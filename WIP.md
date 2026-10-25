@@ -6,26 +6,25 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 3 done.
+None - step 4 done.
 
 ## Next Action
 
-Step 4: move spring placement into v1 (`SpringSite.ts` ->
-`generators/v1/SpringSiteV1.ts`); v1 gets its own spring rate.
+Step 5: the registry and `BeachSpec` - `generatorFor`, `LATEST_GENERATOR`;
+`newGameSnapshot` takes a `BeachSpec`; `Game`'s first boot goes through it.
 
 ## Status
 
-⏸️ WAITING - suite green (553, same as before), tsc clean, 793 assertions
-before and after. Step 1's pins passed through v1 before `Grid`'s copy was
-deleted. `Game`'s boot calls `generateBeachV1` until step 5 routes it through
-`newGameSnapshot`.
+⏸️ WAITING - suite green (553), tsc clean, 793 assertions before and after.
+Checked: doubling STREAM_RATE leaves every pin, generator and snapshot test
+green - v1's beaches no longer follow the Stream tool's rate.
 
 ## Completed
 
 - [x] Step 1: pin a seeded beach, whole
 - [x] Step 2: `Grid.setSea`
 - [x] Step 3: extract v1's terrain
-- [ ] Step 4: move spring placement into v1
+- [x] Step 4: move spring placement into v1
 - [ ] Step 5: the registry and `BeachSpec`
 - [ ] Step 6: snapshot v4
 - [ ] Step 7: `resolveBeach`

@@ -1,10 +1,14 @@
-import type { Grid } from './Grid.ts'
-import type { GridCoord } from '../types.ts'
-import { seedFromText } from './BeachSeed.ts'
+import type { Grid } from '../../Grid.ts'
+import type { GridCoord } from '../../../types.ts'
+import { seedFromText } from '../../BeachSeed.ts'
+
+// Spring placement for the v1 generator. FROZEN, with the rest of v1: a later
+// generator that wants a different rule copies this file rather than editing
+// it, or every v1 seed would grow its spring somewhere new.
 
 // How much a spring may have to fill and still be sure of reaching the sea:
 // across the 50-seed sweep every spring scoring under 70 arrived inside 300s,
-// and the lowest that did not scored 133. Coupled to STREAM_RATE and the
+// and the lowest that did not scored 133. Coupled to v1's spring rate and the
 // world's unit scale - it is roughly "70 seconds of spring" - and measured, not
 // chosen.
 export const MAX_SPRING_FILL = 70
@@ -80,7 +84,7 @@ class CellHeap {
 // lowest it could drain at) and the neighbour it drains through. Following
 // those is a cell's route to the sea, so one pass scores every cell; flooding
 // out from each candidate instead took 3s on the full beach.
-export function fillCost(grid: Grid): Float32Array {
+export function fillCostV1(grid: Grid): Float32Array {
   const { width, depth } = grid
   const cells = width * depth
   const surface = new Float32Array(cells)
@@ -194,9 +198,9 @@ function seededRandom(seed: number): () => number {
 // Where nothing is within budget - it never happened across 51 beaches, but
 // the terrain is unbounded - the budget rises to the cheapest spot there is,
 // and the same rule picks among those.
-export function springSite(grid: Grid, seed: string): GridCoord {
+export function springSiteV1(grid: Grid, seed: string): GridCoord {
   const { width, seaStart } = grid
-  const cost = fillCost(grid)
+  const cost = fillCostV1(grid)
 
   const candidates: number[] = []
   for (let z = 0; z < seaStart; z++) {

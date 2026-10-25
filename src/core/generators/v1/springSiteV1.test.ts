@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
-  fillCost, springSite, MAX_SPRING_FILL, SPRING_ROW_BAND, SPRING_SIDE_MARGIN,
-} from './SpringSite.ts'
-import { Grid } from './Grid.ts'
+  fillCostV1, springSiteV1, MAX_SPRING_FILL, SPRING_ROW_BAND, SPRING_SIDE_MARGIN,
+} from './SpringSiteV1.ts'
+import { Grid } from '../../Grid.ts'
 
 // 5 wide, 20 deep: seaStart is 15. The land is a valley falling towards the sea
 // and towards its centre line, x = 2, so water anywhere runs down the middle -
@@ -28,15 +28,15 @@ function digPit(grid: Grid, z: number, depth: number): void {
 }
 
 const costAt = (grid: Grid, x: number, z: number): number =>
-  fillCost(grid)[z * grid.width + x]!
+  fillCostV1(grid)[z * grid.width + x]!
 
-describe('fillCost', () => {
+describe('fillCostV1', () => {
   it('scores every cell', () => {
-    expect(fillCost(aValley())).toHaveLength(WIDTH * DEPTH)
+    expect(fillCostV1(aValley())).toHaveLength(WIDTH * DEPTH)
   })
 
   it('costs nothing where the water runs straight to the sea', () => {
-    const cost = fillCost(aValley())
+    const cost = fillCostV1(aValley())
 
     expect(Math.max(...cost)).toBe(0)
   })
@@ -110,7 +110,7 @@ describe('fillCost', () => {
   it('costs nothing in the sea', () => {
     const grid = aValley()
     digPit(grid, 5, 4)
-    const cost = fillCost(grid)
+    const cost = fillCostV1(grid)
 
     for (let i = grid.seaStart * WIDTH; i < WIDTH * DEPTH; i++) expect(cost[i]).toBe(0)
   })
@@ -138,10 +138,10 @@ function digWidePit(grid: Grid, z: number, volume: number): void {
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => `s${i + 1}`)
 
-describe('springSite', () => {
+describe('springSiteV1', () => {
   it('puts the spring as high up the beach as it can', () => {
     for (const seed of SEEDS) {
-      expect(springSite(aWideValley(), seed).z).toBeLessThanOrEqual(SPRING_ROW_BAND)
+      expect(springSiteV1(aWideValley(), seed).z).toBeLessThanOrEqual(SPRING_ROW_BAND)
     }
   })
 
@@ -149,7 +149,7 @@ describe('springSite', () => {
     const grid = aWideValley()
     digWidePit(grid, 6, MAX_SPRING_FILL / 2)
 
-    expect(springSite(grid, 's1').z).toBeLessThanOrEqual(SPRING_ROW_BAND)
+    expect(springSiteV1(grid, 's1').z).toBeLessThanOrEqual(SPRING_ROW_BAND)
   })
 
   // The whole upper valley drains into a hollow too big to fill, so the spring
@@ -157,10 +157,10 @@ describe('springSite', () => {
   it('moves below a hollow too big to fill', () => {
     const grid = aWideValley()
     digWidePit(grid, 6, MAX_SPRING_FILL * 2)
-    const cost = fillCost(grid)
+    const cost = fillCostV1(grid)
 
     for (const seed of SEEDS) {
-      const site = springSite(grid, seed)
+      const site = springSiteV1(grid, seed)
       expect(site.z).toBeGreaterThan(6)
       expect(cost[site.z * WIDE + site.x]).toBeLessThanOrEqual(MAX_SPRING_FILL)
     }
@@ -168,7 +168,7 @@ describe('springSite', () => {
 
   it('keeps off the side walls', () => {
     for (const seed of SEEDS) {
-      const { x } = springSite(aWideValley(), seed)
+      const { x } = springSiteV1(aWideValley(), seed)
       expect(x).toBeGreaterThanOrEqual(SPRING_SIDE_MARGIN)
       expect(x).toBeLessThan(WIDE - SPRING_SIDE_MARGIN)
     }
@@ -182,20 +182,20 @@ describe('springSite', () => {
     }
 
     for (const seed of SEEDS) {
-      const site = springSite(grid, seed)
+      const site = springSiteV1(grid, seed)
       expect(grid.getWaterHeight(site.x, site.z)).toBe(0)
       expect(site.z).toBeLessThan(grid.seaStart)
     }
   })
 
   it('is the same spot every time for the same seed', () => {
-    expect(springSite(aWideValley(), 'salty-gull-42'))
-      .toEqual(springSite(aWideValley(), 'salty-gull-42'))
+    expect(springSiteV1(aWideValley(), 'salty-gull-42'))
+      .toEqual(springSiteV1(aWideValley(), 'salty-gull-42'))
   })
 
   it('lets the seed choose between equally good spots', () => {
     const sites = new Set(SEEDS.map((seed) => {
-      const { x, z } = springSite(aWideValley(), seed)
+      const { x, z } = springSiteV1(aWideValley(), seed)
       return `${x},${z}`
     }))
 
@@ -211,7 +211,7 @@ describe('springSite', () => {
       grid.setRockHeight(x, 14, grid.getRockHeight(x, 15)! - MAX_SPRING_FILL)
     }
     digWidePit(grid, 3, 10)
-    const cost = fillCost(grid)
+    const cost = fillCostV1(grid)
     let cheapest = Infinity
     for (let z = 0; z < grid.seaStart; z++) {
       for (let x = SPRING_SIDE_MARGIN; x < WIDE - SPRING_SIDE_MARGIN; x++) {
@@ -221,7 +221,7 @@ describe('springSite', () => {
     expect(cheapest).toBeGreaterThan(MAX_SPRING_FILL)
 
     for (const seed of SEEDS) {
-      const site = springSite(grid, seed)
+      const site = springSiteV1(grid, seed)
       expect(cost[site.z * WIDE + site.x]).toBe(cheapest)
       expect(site.z).toBeGreaterThan(3)
     }

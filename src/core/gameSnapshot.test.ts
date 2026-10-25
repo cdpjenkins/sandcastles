@@ -6,15 +6,15 @@ import {
 import { POROSITY } from '../sim/Moisture.ts'
 import type { GameSnapshot } from './GameSnapshot.ts'
 import { ToolMode } from '../input/Tools.ts'
-import { Grid, STREAM_RATE } from './Grid.ts'
+import { Grid } from './Grid.ts'
 import { noiseSeed } from './BeachSeed.ts'
-import { springSite } from './SpringSite.ts'
+import { springSiteV1 } from './generators/v1/SpringSiteV1.ts'
 import { Bucket } from './Bucket.ts'
 import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
-import { layBeachV1, placeClassicSpringV1 } from './generators/v1/BeachGeneratorV1.ts'
+import { layBeachV1, placeClassicSpringV1, V1_SPRING_RATE } from './generators/v1/BeachGeneratorV1.ts'
 
 const WIDTH = 4
 const DEPTH = 4
@@ -475,7 +475,7 @@ describe('starting a new game', () => {
       if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
     })
 
-    expect(sources).toEqual([{ x: 128, z: 1, rate: STREAM_RATE }])
+    expect(sources).toEqual([{ x: 128, z: 1, rate: 1 }])
   })
 
   it('is the classic beach when given no seed', () => {
@@ -485,8 +485,8 @@ describe('starting a new game', () => {
   it('grows the beach from the seed it is given, and records it', () => {
     const grown = new Grid(SIZE, SIZE)
     layBeachV1(grown, noiseSeed('salty-gull-42'))
-    const site = springSite(grown, 'salty-gull-42')
-    grown.setSourceRate(site.x, site.z, STREAM_RATE)
+    const site = springSiteV1(grown, 'salty-gull-42')
+    grown.setSourceRate(site.x, site.z, V1_SPRING_RATE)
 
     const snapshot = newGameSnapshot(SIZE, SIZE, 'salty-gull-42')
 
@@ -496,10 +496,10 @@ describe('starting a new game', () => {
 
   // The classic spring is top-centre whatever the land around it does; a
   // seeded beach puts its own where its water will reach the sea.
-  it('gives a seeded beach one spring, where springSite puts it', () => {
+  it('gives a seeded beach one spring, where springSiteV1 puts it', () => {
     const grown = new Grid(256, 256)
     layBeachV1(grown, noiseSeed('salty-gull-42'))
-    const site = springSite(grown, 'salty-gull-42')
+    const site = springSiteV1(grown, 'salty-gull-42')
 
     const { grid } = newGameSnapshot(256, 256, 'salty-gull-42')
     const sources: { x: number; z: number; rate: number }[] = []
@@ -507,7 +507,7 @@ describe('starting a new game', () => {
       if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
     })
 
-    expect(sources).toEqual([{ ...site, rate: STREAM_RATE }])
+    expect(sources).toEqual([{ ...site, rate: V1_SPRING_RATE }])
   })
 
   // noiseSeed trims, so the land ignores spaces round a seed; the spring must
