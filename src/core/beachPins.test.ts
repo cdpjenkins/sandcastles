@@ -11,7 +11,7 @@ const layerChecksum = (layer: Float32Array): string => {
 }
 
 const checksums = (seed: string | null): Record<string, string> => {
-  const { grid } = newGameSnapshot(256, 256, seed)
+  const { grid } = newGameSnapshot(256, 256, { generator: 1, seed })
   return Object.fromEntries(GRID_LAYERS.map((layer) => [layer, layerChecksum(grid[layer])]))
 }
 

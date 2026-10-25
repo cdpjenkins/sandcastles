@@ -2,6 +2,7 @@ import { startNewGame } from './GameSnapshot.ts'
 import type { GameSnapshot, SnapshotTargets } from './GameSnapshot.ts'
 import { randomSeed } from './BeachSeed.ts'
 import type { BeachSeed } from './BeachSeed.ts'
+import type { BeachSpec } from './generators/BeachGenerator.ts'
 
 // What the player picked in the new-game chooser, before it becomes a seed.
 export type NewGameChoice =
@@ -38,9 +39,9 @@ export function confirmNewGame(
   targets: Omit<SnapshotTargets, 'camera'>,
   width: number,
   depth: number,
-  seed: BeachSeed,
+  spec: BeachSpec,
   ask: (message: string) => boolean,
 ): GameSnapshot | null {
   if (!ask(NEW_GAME_WARNING)) return null
-  return startNewGame(targets, width, depth, seed)
+  return startNewGame(targets, width, depth, spec)
 }

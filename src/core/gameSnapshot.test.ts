@@ -403,12 +403,12 @@ describe('migrateSnapshot', () => {
 describe('starting a new game', () => {
   const played = () => {
     const components = aLiveBeach()
-    startNewGame(components, SIZE, SIZE, null)
+    startNewGame(components, SIZE, SIZE, { generator: 1, seed: null })
     return components
   }
 
   it('is a loadable beach', () => {
-    expect(isValidSnapshot(newGameSnapshot(SIZE, SIZE, null), SIZE, SIZE)).toBe(true)
+    expect(isValidSnapshot(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: null }), SIZE, SIZE)).toBe(true)
   })
 
   it('lays out the same beach a first-ever boot gets', () => {
@@ -429,7 +429,7 @@ describe('starting a new game', () => {
     beach.grid.setSourceRate(20, 21, 1.0)
     const dug = beach.grid.snapshot()
 
-    startNewGame(beach, SIZE, SIZE, null)
+    startNewGame(beach, SIZE, SIZE, { generator: 1, seed: null })
 
     expect(beach.grid.snapshot()).not.toEqual(dug)
     expect(beach.grid.getMoisture(8, 9)).toBe(0)
@@ -469,7 +469,7 @@ describe('starting a new game', () => {
   // classic one must not move. A literal cell rather than a comparison with
   // placeClassicSpringV1, which would move with it.
   it('puts the classic spring at top-centre, and nowhere else', () => {
-    const { grid } = newGameSnapshot(256, 256, null)
+    const { grid } = newGameSnapshot(256, 256, { generator: 1, seed: null })
     const sources: { x: number; z: number; rate: number }[] = []
     grid.source.forEach((rate, i) => {
       if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
@@ -478,8 +478,14 @@ describe('starting a new game', () => {
     expect(sources).toEqual([{ x: 128, z: 1, rate: 1 }])
   })
 
+  // A save from a newer game may name a generator this one does not have;
+  // nothing can lay that beach out, and pretending would be worse.
+  it('refuses a generator this game does not have', () => {
+    expect(() => newGameSnapshot(SIZE, SIZE, { generator: 99, seed: 'gull' })).toThrow()
+  })
+
   it('is the classic beach when given no seed', () => {
-    expect(newGameSnapshot(SIZE, SIZE, null).seed).toBeNull()
+    expect(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: null }).seed).toBeNull()
   })
 
   it('grows the beach from the seed it is given, and records it', () => {
@@ -488,7 +494,7 @@ describe('starting a new game', () => {
     const site = springSiteV1(grown, 'salty-gull-42')
     grown.setSourceRate(site.x, site.z, V1_SPRING_RATE)
 
-    const snapshot = newGameSnapshot(SIZE, SIZE, 'salty-gull-42')
+    const snapshot = newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' })
 
     expect(snapshot.grid).toEqual(grown.snapshot())
     expect(snapshot.seed).toBe('salty-gull-42')
@@ -501,7 +507,7 @@ describe('starting a new game', () => {
     layBeachV1(grown, noiseSeed('salty-gull-42'))
     const site = springSiteV1(grown, 'salty-gull-42')
 
-    const { grid } = newGameSnapshot(256, 256, 'salty-gull-42')
+    const { grid } = newGameSnapshot(256, 256, { generator: 1, seed: 'salty-gull-42' })
     const sources: { x: number; z: number; rate: number }[] = []
     grid.source.forEach((rate, i) => {
       if (rate !== 0) sources.push({ x: i % 256, z: Math.floor(i / 256), rate })
@@ -513,17 +519,17 @@ describe('starting a new game', () => {
   // noiseSeed trims, so the land ignores spaces round a seed; the spring must
   // too, or the same land would grow a different spring.
   it('grows the same spring for a seed with spaces round it', () => {
-    expect(newGameSnapshot(SIZE, SIZE, '  salty-gull-42 ').grid.source)
-      .toEqual(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid.source)
+    expect(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: '  salty-gull-42 ' }).grid.source)
+      .toEqual(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }).grid.source)
   })
 
   it('lays a different beach for a seed than for classic', () => {
-    expect(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid.sand)
-      .not.toEqual(newGameSnapshot(SIZE, SIZE, null).grid.sand)
+    expect(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }).grid.sand)
+      .not.toEqual(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: null }).grid.sand)
   })
 
   it('starts unpaused, with the spade in hand and Look off', () => {
-    const snapshot = newGameSnapshot(SIZE, SIZE, null)
+    const snapshot = newGameSnapshot(SIZE, SIZE, { generator: 1, seed: null })
 
     expect(snapshot.toolMode).toBe(ToolMode.Spade)
     expect(snapshot.paused).toBe(false)

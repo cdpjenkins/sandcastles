@@ -34,7 +34,7 @@ describe('confirmNewGame', () => {
   it('asks before it destroys the beach the player has been digging', () => {
     const asked: string[] = []
 
-    confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, (message) => {
+    confirmNewGame(aBeachMidGame(), SIZE, SIZE, { generator: 1, seed: null }, (message) => {
       asked.push(message)
       return false
     })
@@ -47,7 +47,7 @@ describe('confirmNewGame', () => {
   it('warns that the beach is lost and cannot be brought back', () => {
     let asked = ''
 
-    confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, (message) => {
+    confirmNewGame(aBeachMidGame(), SIZE, SIZE, { generator: 1, seed: null }, (message) => {
       asked = message
       return false
     })
@@ -59,7 +59,7 @@ describe('confirmNewGame', () => {
     const components = aBeachMidGame()
     const before = gridOf(components)
 
-    confirmNewGame(components, SIZE, SIZE, null, () => true)
+    confirmNewGame(components, SIZE, SIZE, { generator: 1, seed: null }, () => true)
 
     expect(gridOf(components)).not.toEqual(before)
     expect(components.bucket.amount).toBe(0)
@@ -70,14 +70,14 @@ describe('confirmNewGame', () => {
     const components = aBeachMidGame()
     const before = gridOf(components)
 
-    confirmNewGame(components, SIZE, SIZE, null, () => false)
+    confirmNewGame(components, SIZE, SIZE, { generator: 1, seed: null }, () => false)
 
     expect(gridOf(components)).toEqual(before)
     expect(components.bucket.amount).toBe(120)
   })
 
   it('reports back the state a new game starts in, so the caller can reflect it', () => {
-    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, () => true)
+    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, { generator: 1, seed: null }, () => true)
 
     expect(started).not.toBeNull()
     expect(started?.toolMode).toBe(ToolMode.Spade)
@@ -87,7 +87,7 @@ describe('confirmNewGame', () => {
   // Distinguishable from a fresh start, so a caller that rebuilds the mesh and
   // rewrites the toolbar on the way through does neither when nothing changed.
   it('reports nothing when the player declines', () => {
-    expect(confirmNewGame(aBeachMidGame(), SIZE, SIZE, null, () => false)).toBeNull()
+    expect(confirmNewGame(aBeachMidGame(), SIZE, SIZE, { generator: 1, seed: null }, () => false)).toBeNull()
   })
 
   // The state it reports is the state the components are actually left in, so
@@ -95,7 +95,7 @@ describe('confirmNewGame', () => {
   it('starts a game the autosave can store and the next boot can load', () => {
     const components = aBeachMidGame()
 
-    const started = confirmNewGame(components, SIZE, SIZE, null, () => true)!
+    const started = confirmNewGame(components, SIZE, SIZE, { generator: 1, seed: null }, () => true)!
 
     expect(createSnapshot({
       ...components,
@@ -111,13 +111,13 @@ describe('confirmNewGame on a seed', () => {
   it('lays the beach that seed grows', () => {
     const components = aBeachMidGame()
 
-    confirmNewGame(components, SIZE, SIZE, 'salty-gull-42', () => true)
+    confirmNewGame(components, SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }, () => true)
 
-    expect(gridOf(components)).toEqual(newGameSnapshot(SIZE, SIZE, 'salty-gull-42').grid)
+    expect(gridOf(components)).toEqual(newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }).grid)
   })
 
   it('reports the seed, so the game knows which beach it is on', () => {
-    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, 'salty-gull-42', () => true)
+    const started = confirmNewGame(aBeachMidGame(), SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }, () => true)
 
     expect(started?.seed).toBe('salty-gull-42')
   })
@@ -126,7 +126,7 @@ describe('confirmNewGame on a seed', () => {
     const components = aBeachMidGame()
     const before = gridOf(components)
 
-    expect(confirmNewGame(components, SIZE, SIZE, 'salty-gull-42', () => false)).toBeNull()
+    expect(confirmNewGame(components, SIZE, SIZE, { generator: 1, seed: 'salty-gull-42' }, () => false)).toBeNull()
     expect(gridOf(components)).toEqual(before)
   })
 })

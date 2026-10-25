@@ -1,7 +1,7 @@
 import { Grid, STREAM_RATE } from './Grid.ts'
-import { generateBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
+import { CLASSIC_BEACH, LATEST_GENERATOR } from './generators/BeachGenerator.ts'
 import { AutoSaver } from './AutoSaver.ts'
-import { createSnapshot, applySnapshot } from './GameSnapshot.ts'
+import { createSnapshot, applySnapshot, newGameSnapshot } from './GameSnapshot.ts'
 import { confirmNewGame, resolveSeed } from './NewGame.ts'
 import type { NewGameChoice } from './NewGame.ts'
 import { confirmImport } from './ImportBeach.ts'
@@ -161,7 +161,6 @@ export class Game {
     document.body.appendChild(this.sourcePanel)
 
     this.grid = new Grid(GRID_WIDTH, GRID_DEPTH)
-    generateBeachV1(this.grid, null)
     this.bucket = new Bucket(BUCKET_CAPACITY)
     this.waterSim = new WaterSim(this.grid.width, this.grid.depth)
     this.evaporation = new Evaporation(this.grid.width, this.grid.depth)
@@ -177,7 +176,9 @@ export class Game {
     this.isoCamera = new IsoCamera(canvas)
     // After the camera exists and before TerrainMesh reads the grid: the mesh
     // is built from whatever the restore leaves behind.
-    if (saved !== null) this.restore(saved)
+    // A first-ever boot is a new classic game, laid out the way New game lays
+    // one out, rather than a second way of growing a beach.
+    this.restore(saved ?? newGameSnapshot(GRID_WIDTH, GRID_DEPTH, CLASSIC_BEACH))
     this.terrain = new TerrainMesh(this.grid)
     this.renderer.scene.add(this.terrain.mesh)
 
@@ -298,8 +299,11 @@ export class Game {
   // included, which is why nothing here runs until a snapshot comes back.
   private startChosenGame(choice: NewGameChoice): void {
     const seed = resolveSeed(choice, this.seed, Math.random)
+    // Only one generator exists, so a seed's is the newest. Once the game holds
+    // which generator built its beach, a restart takes that one instead.
+    const spec = seed === null ? CLASSIC_BEACH : { generator: LATEST_GENERATOR, seed }
     const started = confirmNewGame(
-      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, seed, (message) => window.confirm(message),
+      this.snapshotComponents, GRID_WIDTH, GRID_DEPTH, spec, (message) => window.confirm(message),
     )
     if (started === null) return
 

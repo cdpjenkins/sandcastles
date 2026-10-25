@@ -11,7 +11,8 @@ import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import { ToolMode } from '../input/Tools.ts'
 import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
-import { generateBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
+import { generatorFor } from './generators/BeachGenerator.ts'
+import type { BeachSpec } from './generators/BeachGenerator.ts'
 import type { BeachSeed } from './BeachSeed.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
@@ -219,9 +220,11 @@ export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot):
 //
 // The camera it carries is the one a first boot starts at. startNewGame is
 // what a player's New game goes through, and that leaves the view alone.
-export function newGameSnapshot(width: number, depth: number, seed: BeachSeed): GameSnapshot {
+export function newGameSnapshot(width: number, depth: number, spec: BeachSpec): GameSnapshot {
+  const generator = generatorFor(spec.generator)
+  if (generator === null) throw new Error(`no beach generator version ${spec.generator}`)
   const grid = new Grid(width, depth)
-  generateBeachV1(grid, seed)
+  generator.generate(grid, spec.seed)
 
   return {
     version: SNAPSHOT_VERSION,
@@ -236,7 +239,7 @@ export function newGameSnapshot(width: number, depth: number, seed: BeachSeed): 
     toolMode: ToolMode.Spade,
     paused: false,
     lookEnabled: false,
-    seed,
+    seed: spec.seed,
   }
 }
 
@@ -247,9 +250,9 @@ export function startNewGame(
   targets: Omit<SnapshotTargets, 'camera'>,
   width: number,
   depth: number,
-  seed: BeachSeed,
+  spec: BeachSpec,
 ): GameSnapshot {
-  const snapshot = newGameSnapshot(width, depth, seed)
+  const snapshot = newGameSnapshot(width, depth, spec)
   applySnapshot({ ...targets, camera: { restore: () => {} } }, snapshot)
   return snapshot
 }

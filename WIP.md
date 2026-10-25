@@ -6,18 +6,20 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 4 done.
+None - step 5 done.
 
 ## Next Action
 
-Step 5: the registry and `BeachSpec` - `generatorFor`, `LATEST_GENERATOR`;
-`newGameSnapshot` takes a `BeachSpec`; `Game`'s first boot goes through it.
+Step 6: snapshot v4 - `generator`, `seaStart`, `seaLevel` through
+`createSnapshot`, the guard, `applySnapshot`, `GameFile`, and v3 -> v4.
 
 ## Status
 
-⏸️ WAITING - suite green (553), tsc clean, 793 assertions before and after.
-Checked: doubling STREAM_RATE leaves every pin, generator and snapshot test
-green - v1's beaches no longer follow the Stream tool's rate.
+⏸️ WAITING - suite green (558), tsc clean, build clean. Every caller names
+the generator; the pins name v1, not the latest. `Game`'s first boot is
+`restore(saved ?? newGameSnapshot(CLASSIC_BEACH))`. Temporary until step 7:
+`startChosenGame` gives a seed `LATEST_GENERATOR`, so a restart does not yet
+keep its own generator - harmless while v1 is the only one.
 
 ## Completed
 
@@ -25,7 +27,7 @@ green - v1's beaches no longer follow the Stream tool's rate.
 - [x] Step 2: `Grid.setSea`
 - [x] Step 3: extract v1's terrain
 - [x] Step 4: move spring placement into v1
-- [ ] Step 5: the registry and `BeachSpec`
+- [x] Step 5: the registry and `BeachSpec`
 - [ ] Step 6: snapshot v4
 - [ ] Step 7: `resolveBeach`
 - [ ] Step 8: the version is shown

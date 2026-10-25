@@ -2,6 +2,7 @@ import type { Grid } from '../../Grid.ts'
 import { noiseSeed } from '../../BeachSeed.ts'
 import type { BeachSeed } from '../../BeachSeed.ts'
 import { springSiteV1 } from './SpringSiteV1.ts'
+import type { BeachGenerator } from '../BeachGenerator.ts'
 
 // Version 1 of the beach generator. FROZEN.
 //
@@ -29,6 +30,12 @@ const SEA_FLOOR_END_HEIGHT = -20
 // The spring's flow. Its own constant rather than STREAM_RATE, which the
 // player's Stream tool shares: tuning the tool must not change every v1 beach.
 export const V1_SPRING_RATE = 1.0
+
+export const beachGeneratorV1: BeachGenerator = {
+  version: 1,
+  hasClassic: true,
+  generate: (grid, seed) => generateBeachV1(grid, seed),
+}
 
 // A whole v1 beach: the sea, the land and the spring. Classic (null) keeps the
 // spring everything was tuned with; a seeded beach puts its own where its water
