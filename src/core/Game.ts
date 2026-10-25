@@ -261,7 +261,7 @@ export class Game {
   // cannot advance part-way through it and the file holds a single frame.
   private exportBeach(): void {
     const savedAt = new Date()
-    const filename = exportFilename(savedAt, this.beach.seed)
+    const filename = exportFilename(savedAt, this.beach)
     downloadJson(filename, JSON.stringify(toGameFile(this.takeSnapshot(), savedAt)))
     this.hud.setStatus(exportStatus(filename, savedAt))
   }

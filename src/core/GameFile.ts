@@ -8,6 +8,7 @@ import type { CameraSnapshot } from '../render/IsoCamera.ts'
 import type { ToolMode } from '../input/Tools.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
 import type { BeachSeed } from './BeachSeed.ts'
+import type { BeachSpec } from './generators/BeachGenerator.ts'
 
 export const FILE_ENCODING = 'base64-f32le'
 
@@ -155,11 +156,14 @@ export function seedForFilename(seed: BeachSeed): string {
   return dashed.replace(/^-+|-+$/g, '').slice(0, FILENAME_SEED_LENGTH).replace(/-+$/, '')
 }
 
-// The beach comes first, so a directory of exports sorts by beach and then,
-// within each, into the order they were saved. Colons are illegal in a Windows
-// filename; the ISO form is kept otherwise, zero-padding and all, for that sort.
-export function exportFilename(savedAt: Date, seed: BeachSeed): string {
+// The generator comes first, then the beach, so a directory of exports sorts
+// by generator, then beach, then into the order they were saved. "gen", never
+// a bare "v": the file also carries the save format's version, which changes
+// for unrelated reasons. Colons are illegal in a Windows filename; the ISO
+// form is kept otherwise, zero-padding and all, for that sort.
+export function exportFilename(savedAt: Date, beach: BeachSpec): string {
   const stamp = savedAt.toISOString().slice(0, 19).replaceAll(':', '-')
-  const beach = seedForFilename(seed)
-  return beach === '' ? `sandcastles-${stamp}.json` : `sandcastles-${beach}-${stamp}.json`
+  const gen = `gen${beach.generator}`
+  const seed = seedForFilename(beach.seed)
+  return seed === '' ? `sandcastles-${gen}-${stamp}.json` : `sandcastles-${gen}-${seed}-${stamp}.json`
 }

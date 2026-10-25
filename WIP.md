@@ -6,17 +6,18 @@ generator built them (snapshot v4), along with the beach's sea. Plan in
 
 ## Current Step
 
-None - step 8 done.
+None - step 9 done.
 
 ## Next Action
 
-Step 9: the export filename carries the generator -
-`sandcastles-gen<n>-<seed>-<stamp>.json`.
+Step 10: verify in the browser - the user's check. Classic, random, typed
+and restart each look as before and show `(gen 1)`; reload and an import keep
+the beach and its generator; the export name carries `gen1`; an export from
+before this imports as generator 1.
 
 ## Status
 
-⏸️ WAITING - suite green (574), tsc clean, build clean. One `beachLabel`
-names a beach for both the Hud and the dialog.
+⏸️ WAITING - suite green (575), tsc clean, build clean.
 
 ## Completed
 
@@ -28,7 +29,7 @@ names a beach for both the Hud and the dialog.
 - [x] Step 6: snapshot v4
 - [x] Step 7: `resolveBeach`
 - [x] Step 8: the generator is shown
-- [ ] Step 9: the export filename carries it
+- [x] Step 9: the export filename carries it
 - [ ] Step 10: verify in the browser
 - [ ] Step 11: CLAUDE.md
 
