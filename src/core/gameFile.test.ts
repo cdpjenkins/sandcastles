@@ -33,7 +33,7 @@ function aSnapshot() {
   return createSnapshot({
     grid, waterSim, waves: new Waves(SIZE, SIZE), tide, bucket,
     camera: new IsoCamera(document.createElement('canvas')),
-    toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42',
+    toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42', generator: 1,
   })
 }
 
@@ -68,6 +68,9 @@ describe('toGameFile', () => {
     expect(file.paused).toBe(true)
     expect(file.lookEnabled).toBe(true)
     expect(file.seed).toBe('salty-gull-42')
+    expect(file.generator).toBe(1)
+    expect(file.seaStart).toBe(snapshot.seaStart)
+    expect(file.seaLevel).toBe(snapshot.seaLevel)
   })
 
   it('encodes every grid layer so it decodes back to the same cells', () => {
@@ -164,6 +167,20 @@ describe('parseGameFile', () => {
 
     expect(loaded).not.toBeNull()
     expect(loaded!.seed).toBeNull()
+  })
+
+  it('loads a v3 file as grown by v1', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT) as unknown as Record<string, unknown>
+    file['version'] = 3
+    delete file['generator']
+    delete file['seaStart']
+    delete file['seaLevel']
+
+    const loaded = parseGameFile(JSON.stringify(file), SIZE, SIZE)
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.generator).toBe(1)
+    expect(loaded!.seaStart).toBe(Math.floor(SIZE * 0.78))
   })
 
   it('refuses a file with a layer missing', () => {

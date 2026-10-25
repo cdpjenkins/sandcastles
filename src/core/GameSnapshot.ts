@@ -12,12 +12,14 @@ import { ToolMode } from '../input/Tools.ts'
 import { POROSITY } from '../sim/Moisture.ts'
 import type { SnapshotStore } from './SnapshotStore.ts'
 import { generatorFor } from './generators/BeachGenerator.ts'
-import type { BeachSpec } from './generators/BeachGenerator.ts'
+import type { BeachGenerator, BeachSpec } from './generators/BeachGenerator.ts'
+import { seaV1 } from './generators/v1/BeachGeneratorV1.ts'
 import type { BeachSeed } from './BeachSeed.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
-// water. 3: the seed the beach grew from. migrateSnapshot reads a 1 or a 2.
-export const SNAPSHOT_VERSION = 3
+// water. 3: the seed the beach grew from. 4: the generator that grew it, and
+// the beach's own sea. migrateSnapshot reads a 1, 2 or 3.
+export const SNAPSHOT_VERSION = 4
 
 export const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
 export const FLOW_LAYERS = ['flowX', 'flowZ'] as const
@@ -36,6 +38,11 @@ export interface GameSnapshot {
   paused: boolean
   lookEnabled: boolean
   seed: BeachSeed
+  // Which generator grew the beach, so a restart regrows it the same way.
+  generator: number
+  // The beach's own sea: a generator chooses it, so it is stored, not derived.
+  seaStart: number
+  seaLevel: number
 }
 
 const TOOL_MODES: readonly string[] = Object.values(ToolMode)
@@ -69,10 +76,13 @@ function hasScalars(group: unknown, names: readonly string[]): boolean {
   return names.every((name) => isScalar(record[name]))
 }
 
+// The generator lookup is a parameter only so a test can stand in a generator
+// with no classic beach, which does not exist yet.
 export function isValidSnapshot(
   value: unknown,
   width: number,
   depth: number,
+  generators: (version: number) => BeachGenerator | null = generatorFor,
 ): value is GameSnapshot {
   if (typeof value !== 'object' || value === null) return false
   const s = value as Record<string, unknown>
@@ -93,6 +103,17 @@ export function isValidSnapshot(
   if (typeof s['paused'] !== 'boolean' || typeof s['lookEnabled'] !== 'boolean') return false
   if (s['seed'] !== null && typeof s['seed'] !== 'string') return false
 
+  // A beach this game cannot regrow is refused, and so is a classic beach from
+  // a generator that has none: classic is a v1 idea.
+  const generator = typeof s['generator'] === 'number' ? generators(s['generator']) : null
+  if (generator === null) return false
+  if (s['seed'] === null && !generator.hasClassic) return false
+
+  const seaStart = s['seaStart']
+  if (typeof seaStart !== 'number' || !Number.isInteger(seaStart)) return false
+  if (seaStart < 1 || seaStart >= depth) return false
+  if (!isScalar(s['seaLevel'])) return false
+
   return true
 }
 
@@ -100,7 +121,7 @@ export function isValidSnapshot(
 // came for isValidSnapshot to judge. Never mutates what it is given. Each step
 // takes a save one version on, so a v1 save goes through both.
 export function migrateSnapshot(value: unknown): unknown {
-  return fromVersion2(fromVersion1(value))
+  return fromVersion3(fromVersion2(fromVersion1(value)))
 }
 
 // v1 -> v2: moisture was a fraction of what the sand could hold, and becomes
@@ -141,6 +162,16 @@ function fromVersion2(value: unknown): unknown {
   return { ...s, version: 3, seed: null }
 }
 
+// v3 -> v4: the generator and the sea. Every beach before generators were
+// versioned was grown by what became v1, with v1's sea - a fact, not a guess.
+function fromVersion3(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  const s = value as Record<string, unknown>
+  if (s['version'] !== 3 || typeof s['depth'] !== 'number') return value
+
+  return { ...s, version: 4, generator: 1, ...seaV1(s['depth']) }
+}
+
 // Storage is treated as hostile and never allowed to stop the game booting:
 // anything unreadable, stale or corrupt comes back as null, which the caller
 // reads as "start a fresh beach".
@@ -161,7 +192,7 @@ export async function loadSnapshot(
 // Game builds its snapshot through here rather than assembling the literal
 // itself, so the shape the tests check is the shape the game writes.
 export interface SnapshotSources {
-  grid: { width: number; depth: number; snapshot(): GridSnapshot }
+  grid: { width: number; depth: number; seaStart: number; seaLevel: number; snapshot(): GridSnapshot }
   waterSim: { snapshot(): WaterSimSnapshot }
   waves: { snapshot(): WavesSnapshot }
   tide: { snapshot(): TideSnapshot }
@@ -171,6 +202,7 @@ export interface SnapshotSources {
   paused: boolean
   lookEnabled: boolean
   seed: BeachSeed
+  generator: number
 }
 
 export function createSnapshot(sources: SnapshotSources): GameSnapshot {
@@ -188,11 +220,14 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
     paused: sources.paused,
     lookEnabled: sources.lookEnabled,
     seed: sources.seed,
+    generator: sources.generator,
+    seaStart: sources.grid.seaStart,
+    seaLevel: sources.grid.seaLevel,
   }
 }
 
 export interface SnapshotTargets {
-  grid: { restore(snapshot: GridSnapshot): void }
+  grid: { restore(snapshot: GridSnapshot): void; setSea(seaStart: number, seaLevel: number): void }
   waterSim: { restore(snapshot: WaterSimSnapshot): void }
   waves: { restore(snapshot: WavesSnapshot): void }
   tide: { restore(snapshot: TideSnapshot): void }
@@ -202,6 +237,7 @@ export interface SnapshotTargets {
 
 export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot): void {
   targets.grid.restore(snapshot.grid)
+  targets.grid.setSea(snapshot.seaStart, snapshot.seaLevel)
   targets.waterSim.restore(snapshot.water)
   targets.waves.restore(snapshot.waves)
   targets.tide.restore(snapshot.tide)
@@ -240,6 +276,9 @@ export function newGameSnapshot(width: number, depth: number, spec: BeachSpec): 
     paused: false,
     lookEnabled: false,
     seed: spec.seed,
+    generator: spec.generator,
+    seaStart: grid.seaStart,
+    seaLevel: grid.seaLevel,
   }
 }
 

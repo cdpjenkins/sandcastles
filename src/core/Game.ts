@@ -78,6 +78,8 @@ export class Game {
   private lookEnabled = false
   // The seed this beach grew from; null is the classic beach.
   private seed: BeachSeed = null
+  // Which generator grew this beach.
+  private generator = CLASSIC_BEACH.generator
   // Deliberately not in the snapshot, unlike lookEnabled: the panel is a
   // question the player asks about the beach, not part of the beach, so it
   // does not survive a reload and does not bump the save format.
@@ -243,6 +245,7 @@ export class Game {
     this.paused = snapshot.paused
     this.lookEnabled = snapshot.lookEnabled
     this.seed = snapshot.seed
+    this.generator = snapshot.generator
   }
 
   // Puts the toolbar and the panels back in step with the game's own state,
@@ -320,6 +323,7 @@ export class Game {
       paused: this.paused,
       lookEnabled: this.lookEnabled,
       seed: this.seed,
+      generator: this.generator,
     })
   }
 

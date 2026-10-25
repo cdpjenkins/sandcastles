@@ -17,7 +17,8 @@ function snap(): GameSnapshot {
     tide: { elapsed: 47.5 },
     bucket: { amount: 321, water: 0 },
     camera: { zoom: 120, panX: 30, panZ: 60 },
-    toolMode: ToolMode.Dump, paused: true, lookEnabled: true, seed: null,
+    toolMode: ToolMode.Dump, paused: true, lookEnabled: true, seed: null, generator: 1,
+    seaStart: 6, seaLevel: 2,
   }
 }
 

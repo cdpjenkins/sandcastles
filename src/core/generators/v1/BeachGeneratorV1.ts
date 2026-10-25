@@ -41,7 +41,8 @@ export const beachGeneratorV1: BeachGenerator = {
 // spring everything was tuned with; a seeded beach puts its own where its water
 // will reach the sea.
 export function generateBeachV1(grid: Grid, seed: BeachSeed): void {
-  grid.setSea(Math.floor(grid.depth * SEA_FRACTION), ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT)
+  const { seaStart, seaLevel } = seaV1(grid.depth)
+  grid.setSea(seaStart, seaLevel)
   layBeachV1(grid, noiseSeed(seed))
   if (seed === null) {
     placeClassicSpringV1(grid, V1_SPRING_RATE)
@@ -49,6 +50,12 @@ export function generateBeachV1(grid: Grid, seed: BeachSeed): void {
     const site = springSiteV1(grid, seed)
     grid.setSourceRate(site.x, site.z, V1_SPRING_RATE)
   }
+}
+
+// v1's sea for a beach this deep. Also what a save from before generators were
+// versioned is given, since every such beach was grown by v1.
+export function seaV1(depth: number): { seaStart: number; seaLevel: number } {
+  return { seaStart: Math.floor(depth * SEA_FRACTION), seaLevel: ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT }
 }
 
 // The land and the sea bed, with water up to sea level wherever the ground is

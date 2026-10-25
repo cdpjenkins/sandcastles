@@ -103,6 +103,7 @@ describe('confirmNewGame', () => {
       paused: started.paused,
       lookEnabled: started.lookEnabled,
       seed: started.seed,
+      generator: started.generator,
     })).toEqual(started)
   })
 })

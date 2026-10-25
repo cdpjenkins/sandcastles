@@ -38,6 +38,9 @@ function aSnapshot(overrides: Record<string, unknown> = {}): GameSnapshot {
     paused: false,
     lookEnabled: false,
     seed: null,
+    generator: 1,
+    seaStart: 3,
+    seaLevel: 2,
     ...overrides,
   } as GameSnapshot
 }
@@ -112,6 +115,39 @@ describe('isValidSnapshot', () => {
   it('rejects a save that does not say what beach it is', () => {
     expect(isValidSnapshot(aSnapshot({ seed: undefined }), WIDTH, DEPTH)).toBe(false)
     expect(isValidSnapshot(aSnapshot({ seed: 42 }), WIDTH, DEPTH)).toBe(false)
+  })
+
+  it('accepts a beach from a generator this game has', () => {
+    expect(isValidSnapshot(aSnapshot({ generator: 1 }), WIDTH, DEPTH)).toBe(true)
+  })
+
+  // A save from a newer game names a generator this one cannot regrow.
+  it('rejects a beach from a generator this game does not have', () => {
+    for (const generator of [2, 0, '1', undefined]) {
+      expect(isValidSnapshot(aSnapshot({ generator }), WIDTH, DEPTH)).toBe(false)
+    }
+  })
+
+  // Classic is a v1 idea. No generator without a classic beach exists yet, so
+  // the lookup is a stand-in for one.
+  it('rejects a classic beach from a generator that has none', () => {
+    const noClassic = (version: number) =>
+      version === 7 ? { version: 7, hasClassic: false, generate: () => {} } : null
+
+    expect(isValidSnapshot(aSnapshot({ generator: 7, seed: null }), WIDTH, DEPTH, noClassic)).toBe(false)
+    expect(isValidSnapshot(aSnapshot({ generator: 7, seed: 'gull' }), WIDTH, DEPTH, noClassic)).toBe(true)
+  })
+
+  it('rejects a sea that starts off the grid or between rows', () => {
+    for (const seaStart of [0, DEPTH, 1.5, undefined, '3']) {
+      expect(isValidSnapshot(aSnapshot({ seaStart }), WIDTH, DEPTH)).toBe(false)
+    }
+  })
+
+  it('rejects a sea level that is not a number', () => {
+    for (const seaLevel of [NaN, Infinity, undefined, '2']) {
+      expect(isValidSnapshot(aSnapshot({ seaLevel }), WIDTH, DEPTH)).toBe(false)
+    }
   })
 
   it('rejects a save whose dimensions are transposed but cell count agrees', () => {
@@ -211,7 +247,7 @@ describe('createSnapshot', () => {
 
     const snapshot = createSnapshot({
       grid, waterSim, waves, tide, bucket, camera,
-      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42',
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42', generator: 1,
     })
 
     expect(isValidSnapshot(snapshot, 64, 64)).toBe(true)
@@ -219,6 +255,7 @@ describe('createSnapshot', () => {
 
   it('carries the live values, not defaults', () => {
     const grid = new Grid(64, 64)
+    grid.setSea(40, 3.5)
     const bucket = new Bucket(1000)
     bucket.fill(120)
     const tide = new Tide()
@@ -227,7 +264,7 @@ describe('createSnapshot', () => {
     const snapshot = createSnapshot({
       grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64), tide, bucket,
       camera: new IsoCamera(document.createElement('canvas')),
-      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42',
+      toolMode: ToolMode.Stream, paused: true, lookEnabled: false, seed: 'salty-gull-42', generator: 1,
     })
 
     expect(snapshot.bucket.amount).toBe(120)
@@ -236,6 +273,9 @@ describe('createSnapshot', () => {
     expect(snapshot.paused).toBe(true)
     expect(snapshot.width).toBe(64)
     expect(snapshot.seed).toBe('salty-gull-42')
+    expect(snapshot.generator).toBe(1)
+    expect(snapshot.seaStart).toBe(40)
+    expect(snapshot.seaLevel).toBe(3.5)
   })
 
   it('still loads back after a trip through storage', () => {
@@ -246,7 +286,7 @@ describe('createSnapshot', () => {
       grid, waterSim: new WaterSim(64, 64), waves: new Waves(64, 64),
       tide: new Tide(), bucket: new Bucket(1000),
       camera: new IsoCamera(document.createElement('canvas')),
-      toolMode: ToolMode.Spade, paused: false, lookEnabled: false, seed: null,
+      toolMode: ToolMode.Spade, paused: false, lookEnabled: false, seed: null, generator: 1,
     }))
 
     expect(isValidSnapshot(stored, 64, 64)).toBe(true)
@@ -277,10 +317,11 @@ function aLiveBeach() {
   components.tide.step(9)
   components.bucket.fill(120, 0.005)
   components.camera.restore({ zoom: 55, panX: 10, panZ: 20 })
+  components.grid.setSea(40, 3.5)
   return components
 }
 
-const UI = { toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42' }
+const UI = { toolMode: ToolMode.Stream, paused: true, lookEnabled: true, seed: 'salty-gull-42', generator: 1 }
 
 describe('applySnapshot', () => {
   // The other half of the property createSnapshot's tests protect. Game cannot
@@ -297,6 +338,17 @@ describe('applySnapshot', () => {
 
   // The bucket is the one target that is not a plain restore: fill() adds, and
   // an import lands in a game whose bucket may already hold sand.
+  // The sea is the beach's own, chosen by the generator that laid it out.
+  it('puts the sea back the beach was saved with', () => {
+    const snapshot = createSnapshot({ ...aLiveBeach(), ...UI })
+    const restored = freshComponents()
+
+    applySnapshot(restored, snapshot)
+
+    expect(restored.grid.seaStart).toBe(40)
+    expect(restored.grid.seaLevel).toBe(3.5)
+  })
+
   it('sets the bucket rather than adding to what it holds', () => {
     const snapshot = createSnapshot({ ...aLiveBeach(), ...UI })
     const restored = freshComponents()
@@ -378,6 +430,36 @@ describe('migrateSnapshot', () => {
 
   it('takes a v1 save all the way to classic', () => {
     expect((migrateSnapshot(aVersion1()) as GameSnapshot).seed).toBeNull()
+  })
+
+  // Every beach before generators were versioned was grown by what became v1,
+  // so a v3 save is v1 as a matter of fact, with v1's sea for its depth.
+  it('marks a v3 save as grown by v1, with v1\'s sea', () => {
+    const v3 = aSnapshot({ version: 3, generator: undefined, seaStart: undefined, seaLevel: undefined })
+
+    const migrated = migrateSnapshot(v3) as GameSnapshot
+
+    expect(migrated.version).toBe(SNAPSHOT_VERSION)
+    expect(migrated.generator).toBe(1)
+    expect(migrated.seaStart).toBe(Math.floor(DEPTH * 0.78))
+    expect(migrated.seaLevel).toBe(2)
+    expect(isValidSnapshot(migrated, WIDTH, DEPTH)).toBe(true)
+  })
+
+  it('leaves the v3 save it was handed alone', () => {
+    const v3 = aSnapshot({ version: 3, generator: undefined, seaStart: undefined, seaLevel: undefined })
+
+    migrateSnapshot(v3)
+
+    expect(v3.version).toBe(3)
+    expect(v3.generator).toBeUndefined()
+  })
+
+  it('takes a v1 save all the way to v1\'s generator and sea', () => {
+    const migrated = migrateSnapshot(aVersion1()) as GameSnapshot
+
+    expect(migrated.generator).toBe(1)
+    expect(migrated.seaStart).toBe(Math.floor(DEPTH * 0.78))
   })
 
   it('passes a current save through untouched', () => {
@@ -480,6 +562,14 @@ describe('starting a new game', () => {
 
   // A save from a newer game may name a generator this one does not have;
   // nothing can lay that beach out, and pretending would be worse.
+  it('records the generator and the sea it laid the beach out with', () => {
+    const snapshot = newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'gull' })
+
+    expect(snapshot.generator).toBe(1)
+    expect(snapshot.seaStart).toBe(Math.floor(SIZE * 0.78))
+    expect(snapshot.seaLevel).toBe(2)
+  })
+
   it('refuses a generator this game does not have', () => {
     expect(() => newGameSnapshot(SIZE, SIZE, { generator: 99, seed: 'gull' })).toThrow()
   })

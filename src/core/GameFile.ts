@@ -32,6 +32,9 @@ export interface GameFile {
   paused: boolean
   lookEnabled: boolean
   seed: BeachSeed
+  generator: number
+  seaStart: number
+  seaLevel: number
 }
 
 export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
@@ -61,6 +64,9 @@ export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
     paused: snapshot.paused,
     lookEnabled: snapshot.lookEnabled,
     seed: snapshot.seed,
+    generator: snapshot.generator,
+    seaStart: snapshot.seaStart,
+    seaLevel: snapshot.seaLevel,
   }
 }
 
@@ -120,6 +126,9 @@ export function parseGameFile(
     paused: file['paused'],
     lookEnabled: file['lookEnabled'],
     seed: file['seed'],
+    generator: file['generator'],
+    seaStart: file['seaStart'],
+    seaLevel: file['seaLevel'],
   })
 
   return isValidSnapshot(candidate, width, depth) ? candidate : null
