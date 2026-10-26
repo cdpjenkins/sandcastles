@@ -55,7 +55,7 @@ const fractionLost = (withSwell: boolean): number => {
   // A flat sea still needs the sponge fed a surface, or the seaward boundary
   // radiates and the whole basin drains.
   const surface = withSwell
-    ? (x: number, z: number) => waves.surfaceAt(x, z, grid.seaLevel)
+    ? (x: number, z: number) => waves.surfaceAt(grid, x, z, grid.seaLevel)
     : () => grid.seaLevel
 
   const before = sandInFootprint()

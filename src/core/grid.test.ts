@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Grid } from './Grid.ts'
+import type { BeachSea } from './BeachSea.ts'
 
 describe('Grid', () => {
   it('getTotalSandHeight sums sand height across the whole grid', () => {
@@ -185,20 +186,46 @@ describe('Grid', () => {
 
 // The sea is a value per beach: a generator sets it, the sim reads it every
 // step. A grid built without a generator keeps the sea every beach has had.
+const SEA: BeachSea = {
+  seaStart: 10,
+  seaLevel: 3.5,
+  tideAmplitude: 0.4,
+  tidePeriod: 240,
+  swellFrequency: 0.8,
+  swellStrength: 0.5,
+}
+
 describe('The sea', () => {
   it('defaults to the sea every beach has had', () => {
     const grid = new Grid(256, 256)
 
-    expect(grid.seaStart).toBe(199)
-    expect(grid.seaLevel).toBe(2)
+    expect(grid.sea).toEqual({
+      seaStart: 199,
+      seaLevel: 2,
+      tideAmplitude: 0.8,
+      tidePeriod: 180,
+      swellFrequency: 1,
+      swellStrength: 1,
+    })
   })
 
-  it('is set by whatever lays out the beach', () => {
-    const grid = new Grid(256, 256)
+  it('is set whole by whatever lays out the beach', () => {
+    const grid = new Grid(16, 16)
 
-    grid.setSea(180, 3.5)
+    grid.setSea(SEA)
 
-    expect(grid.seaStart).toBe(180)
+    expect(grid.sea).toEqual(SEA)
+    expect(grid.seaStart).toBe(10)
+    expect(grid.seaLevel).toBe(3.5)
+  })
+
+  it('is not changed by changing the object it was set from', () => {
+    const grid = new Grid(16, 16)
+    const sea = { ...SEA }
+    grid.setSea(sea)
+
+    sea.seaLevel = 9
+
     expect(grid.seaLevel).toBe(3.5)
   })
 
@@ -206,37 +233,71 @@ describe('The sea', () => {
   // GridSnapshot is the cell layers and nothing else.
   it('is not carried by the layers snapshot', () => {
     const source = new Grid(16, 16)
-    source.setSea(10, 3.5)
+    source.setSea(SEA)
     const target = new Grid(16, 16)
 
     target.restore(source.snapshot())
 
-    expect(target.seaStart).toBe(new Grid(16, 16).seaStart)
-    expect(target.seaLevel).toBe(2)
+    expect(target.sea).toEqual(new Grid(16, 16).sea)
   })
 
   it('refuses a sea that starts off the grid or between rows', () => {
     const grid = new Grid(16, 16)
 
-    expect(() => grid.setSea(0, 2)).toThrow(RangeError)
-    expect(() => grid.setSea(16, 2)).toThrow(RangeError)
-    expect(() => grid.setSea(10.5, 2)).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, seaStart: 0 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, seaStart: 16 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, seaStart: 10.5 })).toThrow(RangeError)
   })
 
   it('refuses a sea level that is not a number', () => {
     const grid = new Grid(16, 16)
 
-    expect(() => grid.setSea(10, NaN)).toThrow(RangeError)
-    expect(() => grid.setSea(10, Infinity)).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, seaLevel: NaN })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, seaLevel: Infinity })).toThrow(RangeError)
+  })
+
+  it('refuses a tide with a negative amplitude or no period', () => {
+    const grid = new Grid(16, 16)
+
+    expect(() => grid.setSea({ ...SEA, tideAmplitude: -0.1 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, tideAmplitude: NaN })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, tidePeriod: 0 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, tidePeriod: Infinity })).toThrow(RangeError)
+  })
+
+  it('takes a tide that does not move', () => {
+    const grid = new Grid(16, 16)
+
+    grid.setSea({ ...SEA, tideAmplitude: 0 })
+
+    expect(grid.sea.tideAmplitude).toBe(0)
+  })
+
+  // The swell is a fraction of the harshest swell anything was tuned with.
+  it('refuses a swell harsher than the maximum, or with no frequency', () => {
+    const grid = new Grid(16, 16)
+
+    expect(() => grid.setSea({ ...SEA, swellFrequency: 0 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, swellFrequency: 1.01 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, swellStrength: -0.1 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, swellStrength: 1.01 })).toThrow(RangeError)
+    expect(() => grid.setSea({ ...SEA, swellStrength: NaN })).toThrow(RangeError)
+  })
+
+  it('takes a flat sea', () => {
+    const grid = new Grid(16, 16)
+
+    grid.setSea({ ...SEA, swellStrength: 0 })
+
+    expect(grid.sea.swellStrength).toBe(0)
   })
 
   it('is left as it was by a refused change', () => {
     const grid = new Grid(16, 16)
-    grid.setSea(10, 3.5)
+    grid.setSea(SEA)
 
-    expect(() => grid.setSea(10, NaN)).toThrow()
+    expect(() => grid.setSea({ ...SEA, seaLevel: 1, swellFrequency: 2 })).toThrow()
 
-    expect(grid.seaStart).toBe(10)
-    expect(grid.seaLevel).toBe(3.5)
+    expect(grid.sea).toEqual(SEA)
   })
 })

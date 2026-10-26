@@ -29,7 +29,7 @@ const rangeAt = (z: number, seconds: number, skip: number): number => {
   for (let i = 0; i < 30 * seconds; i++) {
     waves.step(grid, DT, grid.seaLevel)
     sim.step(grid, DT)
-    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(xx, zz, grid.seaLevel))
+    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(grid, xx, zz, grid.seaLevel))
     if (i >= 30 * skip) {
       const s = surfaceAt(grid, z)
       min = Math.min(min, s)
@@ -54,7 +54,7 @@ const angleTangentsAt = (zs: number[], seconds: number, skip: number): number[] 
   for (let i = 0; i < 30 * seconds; i++) {
     waves.step(grid, DT, grid.seaLevel)
     sim.step(grid, DT)
-    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(xx, zz, grid.seaLevel))
+    sponge.step(grid, sim, DT, (xx, zz) => waves.surfaceAt(grid, xx, zz, grid.seaLevel))
     if (i < 30 * skip) continue
     zs.forEach((z, j) => {
       // Sample away from the x-walls, which reflect an oblique wave.

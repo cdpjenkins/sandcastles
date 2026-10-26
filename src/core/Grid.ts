@@ -1,8 +1,6 @@
-// The sea a grid has until something lays out a beach on it: the sea every
-// beach had before generators chose their own. v1 sets the same values
-// explicitly, from constants of its own.
-const DEFAULT_SEA_FRACTION = 0.78
-const DEFAULT_SEA_LEVEL = 2.0
+import { defaultSea, seaProblem } from './BeachSea.ts'
+import type { BeachSea } from './BeachSea.ts'
+
 export const STREAM_RATE = 1.0
 
 export interface GridSnapshot {
@@ -20,8 +18,7 @@ export class Grid {
   // The sea is a value per beach, set by whatever lays the beach out and read
   // by the sim every step. A grid built without one keeps the sea every beach
   // has always had.
-  private seaStartRow: number
-  private seaLevelHeight: number
+  private seaValue: Readonly<BeachSea>
 
   private readonly rock: Float32Array
   private readonly sand: Float32Array
@@ -33,8 +30,7 @@ export class Grid {
   constructor(width: number, depth: number) {
     this.width = width
     this.depth = depth
-    this.seaStartRow = Math.floor(depth * DEFAULT_SEA_FRACTION)
-    this.seaLevelHeight = DEFAULT_SEA_LEVEL
+    this.seaValue = defaultSea(depth)
     const size = width * depth
     this.rock = new Float32Array(size)
     this.sand = new Float32Array(size)
@@ -44,27 +40,27 @@ export class Grid {
     this.sedimentArr = new Float32Array(size)
   }
 
+  // The beach's whole sea. Read-only rather than a copy: the swell reads it
+  // for every boundary and sponge cell, every step. setSea copies what it is
+  // given, so it changes only through setSea.
+  get sea(): Readonly<BeachSea> {
+    return this.seaValue
+  }
+
   // The first row of sea. Everything above it is land.
   get seaStart(): number {
-    return this.seaStartRow
+    return this.seaValue.seaStart
   }
 
   // An elevation, never a depth: see CLAUDE.md.
   get seaLevel(): number {
-    return this.seaLevelHeight
+    return this.seaValue.seaLevel
   }
 
-  // At least one row of land and one of sea, so neither the beach nor the
-  // swell is left with nowhere to be.
-  setSea(seaStart: number, seaLevel: number): void {
-    if (!Number.isInteger(seaStart) || seaStart < 1 || seaStart >= this.depth) {
-      throw new RangeError(`sea must start on a row inside the grid, not ${seaStart}`)
-    }
-    if (!Number.isFinite(seaLevel)) {
-      throw new RangeError(`sea level must be a number, not ${seaLevel}`)
-    }
-    this.seaStartRow = seaStart
-    this.seaLevelHeight = seaLevel
+  setSea(sea: BeachSea): void {
+    const problem = seaProblem(sea, this.depth)
+    if (problem !== null) throw new RangeError(problem)
+    this.seaValue = { ...sea }
   }
 
   private inBounds(x: number, z: number): boolean {

@@ -432,7 +432,7 @@ export class Game {
   private updateHud(): void {
     const fill = `${this.bucket.amount.toFixed(1)} / ${this.bucket.capacity}`
     const wave = `wave: ${Math.ceil(this.waves.timeUntilWave)}s`
-    const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset).toFixed(2)}`
+    const seaLevel = `sea level: ${(this.grid.seaLevel + this.tide.offset(this.grid)).toFixed(2)}`
     const state = this.paused ? '   ⏸ PAUSED' : ''
     this.hud.setReadouts(`bucket: ${fill}   ${wave}   ${seaLevel}${state}`)
   }
@@ -484,11 +484,11 @@ export class Game {
 
   private simStep(dt: number): void {
     this.tide.step(dt)
-    const seaSurface = this.grid.seaLevel + this.tide.offset
+    const seaSurface = this.grid.seaLevel + this.tide.offset(this.grid)
     const wavesDirty = this.waves.step(this.grid, dt, seaSurface)
     const waterDirty = this.waterSim.step(this.grid, dt)
     const spongeDirty = this.sponge.step(this.grid, this.waterSim, dt, (x, z) =>
-      this.waves.surfaceAt(x, z, seaSurface))
+      this.waves.surfaceAt(this.grid, x, z, seaSurface))
     const evaporationDirty = this.evaporation.step(this.grid, dt, seaSurface)
     const erosionDirty = this.erosion.step(this.grid, this.waterSim, dt)
     const moistureDirty = this.moisture.step(this.grid, dt)

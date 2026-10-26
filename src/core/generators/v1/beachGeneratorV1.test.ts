@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Grid } from '../../Grid.ts'
-import { layBeachV1, placeClassicSpringV1 } from './BeachGeneratorV1.ts'
+import { layBeachV1, placeClassicSpringV1, generateBeachV1, seaV1 } from './BeachGeneratorV1.ts'
 
 describe('The v1 beach', () => {
   it('initialises beach with positive average sand height inland', () => {
@@ -333,6 +333,32 @@ describe('A seeded beach', () => {
     for (const layer of ['rock', 'sand', 'water'] as const) {
       expect(layerChecksum(seeded[layer].subarray(seaFrom)))
         .toBe(layerChecksum(classic[layer].subarray(seaFrom)))
+    }
+  })
+})
+
+// The tide and the swell every beach has had, now that a beach states them:
+// v1 grows every beach on the sea everything was tuned against.
+describe("The v1 beach's sea", () => {
+  it('is the whole sea, tide and swell included', () => {
+    expect(seaV1(256)).toEqual({
+      seaStart: 199,
+      seaLevel: 2,
+      tideAmplitude: 0.8,
+      tidePeriod: 180,
+      swellFrequency: 1,
+      swellStrength: 1,
+    })
+  })
+
+  it('is what a v1 beach is grown with, classic or seeded', () => {
+    for (const seed of [null, 'salty-gull-42']) {
+      const grid = new Grid(256, 256)
+      grid.setSea({ ...grid.sea, tideAmplitude: 0.1, swellStrength: 0.5 })
+
+      generateBeachV1(grid, seed)
+
+      expect(grid.sea).toEqual(seaV1(256))
     }
   })
 })

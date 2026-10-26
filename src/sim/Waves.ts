@@ -1,5 +1,8 @@
 import type { Grid } from '../core/Grid.ts'
 
+// The harshest swell any beach has: a beach's own is a fraction of each, set by
+// its sea's swellFrequency and swellStrength.
+//
 // Tuned so a castle on the shoreline weathers rather than dissolves: at
 // 2.0/0.3 a cone lost 61% of its sand to 60s of waves, which is a castle gone
 // while you watch. At 3.5/0.15 it loses 11%, against an unchanged 3.4% on a
@@ -32,7 +35,6 @@ export interface WavesSnapshot {
 }
 
 export class Waves {
-  readonly period = SWELL_PERIOD
   timeUntilWave = SWELL_PERIOD
   fired = false
 
@@ -56,17 +58,24 @@ export class Waves {
     this.timeUntilWave = snapshot.timeUntilWave
   }
 
+  // The beach's swell period: a lower frequency is a longer period, and with
+  // it a longer wavelength.
+  period(grid: Grid): number {
+    return SWELL_PERIOD / grid.sea.swellFrequency
+  }
+
   // Surface elevation of the incident swell. The wave runs shoreward, towards
   // decreasing z, so seaward rows lead in phase and inshore rows lag; the x term
   // tilts the crests off shore-parallel so there is an angle for the shallows to
   // work on.
-  surfaceAt(x: number, z: number, seaSurface: number): number {
-    const k = (2 * Math.PI) / (SWELL_SPEED * SWELL_PERIOD)
+  surfaceAt(grid: Grid, x: number, z: number, seaSurface: number): number {
+    const period = this.period(grid)
+    const k = (2 * Math.PI) / (SWELL_SPEED * period)
     const phase =
-      (2 * Math.PI * this.elapsed) / SWELL_PERIOD +
+      (2 * Math.PI * this.elapsed) / period +
       k * Math.cos(SWELL_ANGLE) * (z - (this.depth - 1)) -
       k * Math.sin(SWELL_ANGLE) * x
-    return seaSurface + SWELL_AMPLITUDE * Math.sin(phase)
+    return seaSurface + SWELL_AMPLITUDE * grid.sea.swellStrength * Math.sin(phase)
   }
 
   step(grid: Grid, dt: number, seaSurface: number): Uint8Array {
@@ -75,7 +84,7 @@ export class Waves {
     this.timeUntilWave -= dt
     if (this.timeUntilWave <= 0) {
       this.fired = true
-      this.timeUntilWave += SWELL_PERIOD
+      this.timeUntilWave += this.period(grid)
     }
     this.dirty.fill(0)
 
@@ -84,7 +93,7 @@ export class Waves {
 
     for (let z = D - BOUNDARY_ROWS; z < D; z++) {
       for (let x = 0; x < W; x++) {
-        const surface = this.surfaceAt(x, z, seaSurface)
+        const surface = this.surfaceAt(grid, x, z, seaSurface)
         const bed = grid.getSurfaceHeight(x, z) ?? 0
         const target = Math.max(0, surface - bed)
         const w = grid.getWaterHeight(x, z) ?? 0

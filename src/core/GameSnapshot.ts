@@ -15,6 +15,7 @@ import { generatorFor } from './generators/BeachGenerator.ts'
 import type { BeachGenerator, BeachSpec } from './generators/BeachGenerator.ts'
 import { seaV1 } from './generators/v1/BeachGeneratorV1.ts'
 import type { BeachSeed } from './BeachSeed.ts'
+import type { BeachSea } from './BeachSea.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
 // water. 3: the seed the beach grew from. 4: the generator that grew it, and
@@ -169,7 +170,8 @@ function fromVersion3(value: unknown): unknown {
   const s = value as Record<string, unknown>
   if (s['version'] !== 3 || typeof s['depth'] !== 'number') return value
 
-  return { ...s, version: 4, generator: 1, ...seaV1(s['depth']) }
+  const { seaStart, seaLevel } = seaV1(s['depth'])
+  return { ...s, version: 4, generator: 1, seaStart, seaLevel }
 }
 
 // Storage is treated as hostile and never allowed to stop the game booting:
@@ -227,7 +229,7 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
 }
 
 export interface SnapshotTargets {
-  grid: { restore(snapshot: GridSnapshot): void; setSea(seaStart: number, seaLevel: number): void }
+  grid: { restore(snapshot: GridSnapshot): void; setSea(sea: BeachSea): void }
   waterSim: { restore(snapshot: WaterSimSnapshot): void }
   waves: { restore(snapshot: WavesSnapshot): void }
   tide: { restore(snapshot: TideSnapshot): void }
@@ -237,7 +239,9 @@ export interface SnapshotTargets {
 
 export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot): void {
   targets.grid.restore(snapshot.grid)
-  targets.grid.setSea(snapshot.seaStart, snapshot.seaLevel)
+  // A save does not store the tide or the swell yet, and every beach that can
+  // be saved was grown by v1, so they are v1's.
+  targets.grid.setSea({ ...seaV1(snapshot.depth), seaStart: snapshot.seaStart, seaLevel: snapshot.seaLevel })
   targets.waterSim.restore(snapshot.water)
   targets.waves.restore(snapshot.waves)
   targets.tide.restore(snapshot.tide)

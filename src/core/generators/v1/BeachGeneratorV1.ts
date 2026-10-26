@@ -3,6 +3,7 @@ import { noiseSeed } from '../../BeachSeed.ts'
 import type { BeachSeed } from '../../BeachSeed.ts'
 import { springSiteV1 } from './SpringSiteV1.ts'
 import type { BeachGenerator } from '../BeachGenerator.ts'
+import type { BeachSea } from '../../BeachSea.ts'
 
 // Version 1 of the beach generator. FROZEN.
 //
@@ -26,6 +27,11 @@ const ROCK_SHORE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
+// The tide and swell every beach had before a beach could have its own.
+const TIDE_AMPLITUDE = 0.8
+const TIDE_PERIOD = 180
+const SWELL_FREQUENCY = 1
+const SWELL_STRENGTH = 1
 
 // The spring's flow. Its own constant rather than STREAM_RATE, which the
 // player's Stream tool shares: tuning the tool must not change every v1 beach.
@@ -41,8 +47,7 @@ export const beachGeneratorV1: BeachGenerator = {
 // spring everything was tuned with; a seeded beach puts its own where its water
 // will reach the sea.
 export function generateBeachV1(grid: Grid, seed: BeachSeed): void {
-  const { seaStart, seaLevel } = seaV1(grid.depth)
-  grid.setSea(seaStart, seaLevel)
+  grid.setSea(seaV1(grid.depth))
   layBeachV1(grid, noiseSeed(seed))
   if (seed === null) {
     placeClassicSpringV1(grid, V1_SPRING_RATE)
@@ -52,10 +57,18 @@ export function generateBeachV1(grid: Grid, seed: BeachSeed): void {
   }
 }
 
-// v1's sea for a beach this deep. Also what a save from before generators were
-// versioned is given, since every such beach was grown by v1.
-export function seaV1(depth: number): { seaStart: number; seaLevel: number } {
-  return { seaStart: Math.floor(depth * SEA_FRACTION), seaLevel: ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT }
+// v1's whole sea for a beach this deep, tide and swell included. Also what a
+// save from before a beach stored its sea is given, since every such beach was
+// grown by v1.
+export function seaV1(depth: number): BeachSea {
+  return {
+    seaStart: Math.floor(depth * SEA_FRACTION),
+    seaLevel: ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT,
+    tideAmplitude: TIDE_AMPLITUDE,
+    tidePeriod: TIDE_PERIOD,
+    swellFrequency: SWELL_FREQUENCY,
+    swellStrength: SWELL_STRENGTH,
+  }
 }
 
 // The land and the sea bed, with water up to sea level wherever the ground is

@@ -29,7 +29,7 @@ const makeGrid = () => {
 const meanBoundaryDepthOverAPeriod = (seaSurface: number): number => {
   const grid = makeGrid()
   const waves = new Waves(4, 8)
-  const steps = Math.round(waves.period / DT)
+  const steps = Math.round(waves.period(grid) / DT)
   let sum = 0
   for (let i = 0; i < steps; i++) {
     waves.step(grid, DT, seaSurface)
@@ -81,10 +81,56 @@ describe('Waves', () => {
   it('timer resets after a crest passes', () => {
     const grid = makeGrid()
     const waves = new Waves(4, 8)
-    const steps = Math.ceil(waves.period / DT) + 1
+    const steps = Math.ceil(waves.period(grid) / DT) + 1
     for (let i = 0; i < steps; i++) waves.step(grid, DT, SEA_SURFACE)
 
-    expect(waves.timeUntilWave).toBeCloseTo(waves.period, 0)
+    expect(waves.timeUntilWave).toBeCloseTo(waves.period(grid), 0)
+  })
+})
+
+// The beach's swell is a fraction of the harshest one anything was tuned with:
+// a lower frequency is a longer period, a lower strength a smaller wave.
+const withSwell = (swellFrequency: number, swellStrength: number): Grid => {
+  const grid = makeGrid()
+  grid.setSea({ ...grid.sea, swellFrequency, swellStrength })
+  return grid
+}
+
+describe("Waves on a beach's own swell", () => {
+  it('has the full period at full frequency, and a longer one below it', () => {
+    const waves = new Waves(4, 8)
+    const full = waves.period(withSwell(1, 1))
+
+    expect(waves.period(withSwell(0.8, 1))).toBeCloseTo(full / 0.8, 5)
+  })
+
+  it("counts down to the next wave against the beach's period", () => {
+    const grid = withSwell(0.8, 1)
+    const waves = new Waves(4, 8)
+    do waves.step(grid, DT, SEA_SURFACE)
+    while (!waves.fired)
+
+    expect(waves.timeUntilWave).toBeGreaterThan(waves.period(grid) - DT)
+    expect(waves.timeUntilWave).toBeLessThanOrEqual(waves.period(grid))
+  })
+
+  it("puts a half-strength swell's surface half as far from the sea's", () => {
+    const waves = new Waves(4, 8)
+    waves.step(makeGrid(), 0.7, SEA_SURFACE)
+
+    for (const [x, z] of [[0, 7], [3, 7], [2, 5]] as const) {
+      const full = waves.surfaceAt(withSwell(1, 1), x, z, SEA_SURFACE) - SEA_SURFACE
+      const half = waves.surfaceAt(withSwell(1, 0.5), x, z, SEA_SURFACE) - SEA_SURFACE
+      expect(Math.abs(full)).toBeGreaterThan(0.01)
+      expect(half).toBeCloseTo(full / 2, 5)
+    }
+  })
+
+  it('leaves the sea flat at no strength', () => {
+    const waves = new Waves(4, 8)
+    waves.step(makeGrid(), 0.7, SEA_SURFACE)
+
+    expect(waves.surfaceAt(withSwell(1, 0), 0, 7, SEA_SURFACE)).toBe(SEA_SURFACE)
   })
 })
 
@@ -116,7 +162,7 @@ describe('Waves on the real beach', () => {
     waves.step(grid, DT, grid.seaLevel)
 
     const surface = grid.getSurfaceHeight(x, z)! + grid.getWaterHeight(x, z)!
-    expect(surface).toBeCloseTo(waves.surfaceAt(x, z, grid.seaLevel), 5)
+    expect(surface).toBeCloseTo(waves.surfaceAt(grid, x, z, grid.seaLevel), 5)
   })
 
   it('leaves the sea surface flat at seaLevel inshore of the boundary', () => {
@@ -172,7 +218,7 @@ describe('Waves snapshot', () => {
     const restored = new Waves(16, 16)
     restored.restore(waves.snapshot())
 
-    expect(restored.surfaceAt(4, 15, 2)).toBeCloseTo(waves.surfaceAt(4, 15, 2))
+    expect(restored.surfaceAt(grid, 4, 15, 2)).toBeCloseTo(waves.surfaceAt(grid, 4, 15, 2))
   })
 
   it('restores the countdown to the next wave', () => {

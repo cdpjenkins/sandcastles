@@ -255,7 +255,7 @@ describe('createSnapshot', () => {
 
   it('carries the live values, not defaults', () => {
     const grid = new Grid(64, 64)
-    grid.setSea(40, 3.5)
+    grid.setSea({ ...grid.sea, seaStart: 40, seaLevel: 3.5 })
     const bucket = new Bucket(1000)
     bucket.fill(120)
     const tide = new Tide()
@@ -317,7 +317,7 @@ function aLiveBeach() {
   components.tide.step(9)
   components.bucket.fill(120, 0.005)
   components.camera.restore({ zoom: 55, panX: 10, panZ: 20 })
-  components.grid.setSea(40, 3.5)
+  components.grid.setSea({ ...components.grid.sea, seaStart: 40, seaLevel: 3.5 })
   return components
 }
 

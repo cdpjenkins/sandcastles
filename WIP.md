@@ -8,18 +8,20 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 1 done. Next: step 2, the beach's sea lives on the grid (`BeachSea`).
+Step 2 done. Next: step 3, snapshot v5.
 
 ## Status
 
-⏸️ WAITING - step 1 closed: waterfalls work, scarps stay in the plan as narrow
-walled notches (10 - 40 cells), and a cliff face now shows water only where
-water comes over it (86acbbc). Waiting on "start step 2".
+⏸️ WAITING - step 2 complete: the whole sea (`BeachSea`) lives on the grid,
+`Tide.offset(grid)`, `Waves.period(grid)` / `surfaceAt(grid, ...)`, and
+`seaV1` returns v1's whole sea. Saves still store only seaStart and seaLevel;
+`applySnapshot` fills in v1's tide and swell until step 3. Suite 594 green, tsc
+clean, pins unchanged. Waiting on "start step 3".
 
 ## Steps
 
 - [x] Step 1: the waterfall spike (decision point)
-- [ ] Step 2: the beach's sea lives on the grid (`BeachSea`)
+- [x] Step 2: the beach's sea lives on the grid (`BeachSea`)
 - [ ] Step 3: snapshot v5
 - [ ] Step 4: v2 as a copy of v1
 - [ ] Step 5: `shapeV2`
