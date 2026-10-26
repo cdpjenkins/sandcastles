@@ -5,6 +5,7 @@ import { rockColour } from './rockColour.ts'
 import { groundColour } from './groundColour.ts'
 import { waterColour } from './waterColour.ts'
 import { cellNoise } from './cellNoise.ts'
+import { showsWater } from './faceWater.ts'
 import { saturation } from '../sim/Moisture.ts'
 
 const JITTER = 0.06
@@ -79,8 +80,11 @@ export class TerrainMesh {
     const sandDepth = this.grid.getSandHeight(x, z) ?? 0
     const moisture = saturation(this.grid.getMoisture(x, z) ?? 0, sandDepth, water)
     const dryCol = groundColour(sandColour(moisture), rockColour(moisture), sandDepth)
-    const col = water > 0 ? waterColour(dryCol, water) : dryCol
-    const jitter = water > 0 ? 0 : cellNoise(x, z) * JITTER
+    // Read from the cell's neighbours too, but a still pool under a face is
+    // never left stale: Evaporation dirties any cell whose water changes.
+    const wet = showsWater(this.grid, x, z)
+    const col = wet ? waterColour(dryCol, water) : dryCol
+    const jitter = wet ? 0 : cellNoise(x, z) * JITTER
     this.colors[vi] = Math.max(0, Math.min(1, col.r + jitter))
     this.colors[vi + 1] = Math.max(0, Math.min(1, col.g + jitter))
     this.colors[vi + 2] = Math.max(0, Math.min(1, col.b + jitter))
