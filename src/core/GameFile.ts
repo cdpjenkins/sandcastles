@@ -9,6 +9,7 @@ import type { ToolMode } from '../input/Tools.ts'
 import { encodeCells, decodeCells } from './base64Cells.ts'
 import type { BeachSeed } from './BeachSeed.ts'
 import type { BeachSpec } from './generators/BeachGenerator.ts'
+import type { BeachSea } from './BeachSea.ts'
 
 export const FILE_ENCODING = 'base64-f32le'
 
@@ -34,8 +35,7 @@ export interface GameFile {
   lookEnabled: boolean
   seed: BeachSeed
   generator: number
-  seaStart: number
-  seaLevel: number
+  sea: BeachSea
 }
 
 export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
@@ -66,8 +66,7 @@ export function toGameFile(snapshot: GameSnapshot, savedAt: Date): GameFile {
     lookEnabled: snapshot.lookEnabled,
     seed: snapshot.seed,
     generator: snapshot.generator,
-    seaStart: snapshot.seaStart,
-    seaLevel: snapshot.seaLevel,
+    sea: snapshot.sea,
   }
 }
 
@@ -128,6 +127,8 @@ export function parseGameFile(
     lookEnabled: file['lookEnabled'],
     seed: file['seed'],
     generator: file['generator'],
+    sea: file['sea'],
+    // Only an older file has these; migrating it folds them into the sea.
     seaStart: file['seaStart'],
     seaLevel: file['seaLevel'],
   })

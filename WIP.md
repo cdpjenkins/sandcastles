@@ -8,21 +8,22 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 2 done. Next: step 3, snapshot v5.
+Step 3 done. Next: step 4, v2 as a copy of v1.
 
 ## Status
 
-⏸️ WAITING - step 2 complete: the whole sea (`BeachSea`) lives on the grid,
-`Tide.offset(grid)`, `Waves.period(grid)` / `surfaceAt(grid, ...)`, and
-`seaV1` returns v1's whole sea. Saves still store only seaStart and seaLevel;
-`applySnapshot` fills in v1's tide and swell until step 3. Suite 594 green, tsc
-clean, pins unchanged. Waiting on "start step 3".
+⏸️ WAITING - step 3 complete: snapshot v5 stores the whole sea as `sea`, the
+guard holds it to the grid's own `seaProblem`, files carry it, and a v4 save
+or file migrates to its stored start and level with v1's tide and swell. A
+new game's first wave comes at the beach's swell period. Suite 601 green, tsc
+clean. CLAUDE.md still says the save format is 4; step 16 updates it.
+Waiting on "start step 4".
 
 ## Steps
 
 - [x] Step 1: the waterfall spike (decision point)
 - [x] Step 2: the beach's sea lives on the grid (`BeachSea`)
-- [ ] Step 3: snapshot v5
+- [x] Step 3: snapshot v5
 - [ ] Step 4: v2 as a copy of v1
 - [ ] Step 5: `shapeV2`
 - [ ] Step 6: seeded sea

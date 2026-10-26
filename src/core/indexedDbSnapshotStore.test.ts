@@ -18,7 +18,7 @@ function snap(): GameSnapshot {
     bucket: { amount: 321, water: 0 },
     camera: { zoom: 120, panX: 30, panZ: 60 },
     toolMode: ToolMode.Dump, paused: true, lookEnabled: true, seed: null, generator: 1,
-    seaStart: 6, seaLevel: 2,
+    sea: { seaStart: 6, seaLevel: 2, tideAmplitude: 0.8, tidePeriod: 180, swellFrequency: 1, swellStrength: 1 },
   }
 }
 

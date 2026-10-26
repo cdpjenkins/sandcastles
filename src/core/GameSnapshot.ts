@@ -15,15 +15,20 @@ import { generatorFor } from './generators/BeachGenerator.ts'
 import type { BeachGenerator, BeachSpec } from './generators/BeachGenerator.ts'
 import { seaV1 } from './generators/v1/BeachGeneratorV1.ts'
 import type { BeachSeed } from './BeachSeed.ts'
+import { seaProblem } from './BeachSea.ts'
 import type { BeachSea } from './BeachSea.ts'
 
 // 2: moisture holds water rather than a 0-1 fraction, and the bucket carries
 // water. 3: the seed the beach grew from. 4: the generator that grew it, and
-// the beach's own sea. migrateSnapshot reads a 1, 2 or 3.
-export const SNAPSHOT_VERSION = 4
+// the beach's own sea. 5: the whole sea, tide and swell included, as one
+// value. migrateSnapshot reads a 1, 2, 3 or 4.
+export const SNAPSHOT_VERSION = 5
 
 export const GRID_LAYERS = ['rock', 'sand', 'water', 'moisture', 'source', 'sediment'] as const
 export const FLOW_LAYERS = ['flowX', 'flowZ'] as const
+const SEA_FIELDS: readonly (keyof BeachSea)[] = [
+  'seaStart', 'seaLevel', 'tideAmplitude', 'tidePeriod', 'swellFrequency', 'swellStrength',
+]
 
 export interface GameSnapshot {
   version: number
@@ -42,8 +47,7 @@ export interface GameSnapshot {
   // Which generator grew the beach, so a restart regrows it the same way.
   generator: number
   // The beach's own sea: a generator chooses it, so it is stored, not derived.
-  seaStart: number
-  seaLevel: number
+  sea: BeachSea
 }
 
 const TOOL_MODES: readonly string[] = Object.values(ToolMode)
@@ -110,10 +114,10 @@ export function isValidSnapshot(
   if (generator === null) return false
   if (s['seed'] === null && !generator.hasClassic) return false
 
-  const seaStart = s['seaStart']
-  if (typeof seaStart !== 'number' || !Number.isInteger(seaStart)) return false
-  if (seaStart < 1 || seaStart >= depth) return false
-  if (!isScalar(s['seaLevel'])) return false
+  // seaProblem is what the grid's setSea throws on, so a sea let through here
+  // can never fail halfway through restoring a beach.
+  if (!hasScalars(s['sea'], SEA_FIELDS)) return false
+  if (seaProblem(s['sea'] as BeachSea, depth) !== null) return false
 
   return true
 }
@@ -122,7 +126,7 @@ export function isValidSnapshot(
 // came for isValidSnapshot to judge. Never mutates what it is given. Each step
 // takes a save one version on, so a v1 save goes through both.
 export function migrateSnapshot(value: unknown): unknown {
-  return fromVersion3(fromVersion2(fromVersion1(value)))
+  return fromVersion4(fromVersion3(fromVersion2(fromVersion1(value))))
 }
 
 // v1 -> v2: moisture was a fraction of what the sand could hold, and becomes
@@ -174,6 +178,18 @@ function fromVersion3(value: unknown): unknown {
   return { ...s, version: 4, generator: 1, seaStart, seaLevel }
 }
 
+// v4 -> v5: the whole sea as one value. A v4 save stored only where its sea
+// started and how high it stood; every beach that could be saved then was
+// grown by v1, so its tide and swell are v1's - a fact, not a guess.
+function fromVersion4(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  const s = value as Record<string, unknown>
+  if (s['version'] !== 4 || typeof s['depth'] !== 'number') return value
+
+  const { seaStart, seaLevel, ...rest } = s
+  return { ...rest, version: 5, sea: { ...seaV1(s['depth']), seaStart, seaLevel } }
+}
+
 // Storage is treated as hostile and never allowed to stop the game booting:
 // anything unreadable, stale or corrupt comes back as null, which the caller
 // reads as "start a fresh beach".
@@ -194,7 +210,7 @@ export async function loadSnapshot(
 // Game builds its snapshot through here rather than assembling the literal
 // itself, so the shape the tests check is the shape the game writes.
 export interface SnapshotSources {
-  grid: { width: number; depth: number; seaStart: number; seaLevel: number; snapshot(): GridSnapshot }
+  grid: { width: number; depth: number; sea: Readonly<BeachSea>; snapshot(): GridSnapshot }
   waterSim: { snapshot(): WaterSimSnapshot }
   waves: { snapshot(): WavesSnapshot }
   tide: { snapshot(): TideSnapshot }
@@ -223,8 +239,7 @@ export function createSnapshot(sources: SnapshotSources): GameSnapshot {
     lookEnabled: sources.lookEnabled,
     seed: sources.seed,
     generator: sources.generator,
-    seaStart: sources.grid.seaStart,
-    seaLevel: sources.grid.seaLevel,
+    sea: { ...sources.grid.sea },
   }
 }
 
@@ -239,9 +254,7 @@ export interface SnapshotTargets {
 
 export function applySnapshot(targets: SnapshotTargets, snapshot: GameSnapshot): void {
   targets.grid.restore(snapshot.grid)
-  // A save does not store the tide or the swell yet, and every beach that can
-  // be saved was grown by v1, so they are v1's.
-  targets.grid.setSea({ ...seaV1(snapshot.depth), seaStart: snapshot.seaStart, seaLevel: snapshot.seaLevel })
+  targets.grid.setSea(snapshot.sea)
   targets.waterSim.restore(snapshot.water)
   targets.waves.restore(snapshot.waves)
   targets.tide.restore(snapshot.tide)
@@ -265,6 +278,10 @@ export function newGameSnapshot(width: number, depth: number, spec: BeachSpec): 
   if (generator === null) throw new Error(`no beach generator version ${spec.generator}`)
   const grid = new Grid(width, depth)
   generator.generate(grid, spec.seed)
+  // The first wave comes one of this beach's periods in, not the harshest
+  // swell's, which is all a Waves knows before it has seen a grid.
+  const waves = new Waves(width, depth)
+  waves.timeUntilWave = waves.period(grid)
 
   return {
     version: SNAPSHOT_VERSION,
@@ -272,7 +289,7 @@ export function newGameSnapshot(width: number, depth: number, spec: BeachSpec): 
     depth,
     grid: grid.snapshot(),
     water: new WaterSim(width, depth).snapshot(),
-    waves: new Waves(width, depth).snapshot(),
+    waves: waves.snapshot(),
     tide: new Tide().snapshot(),
     bucket: { amount: 0, water: 0 },
     camera: DEFAULT_CAMERA,
@@ -281,8 +298,7 @@ export function newGameSnapshot(width: number, depth: number, spec: BeachSpec): 
     lookEnabled: false,
     seed: spec.seed,
     generator: spec.generator,
-    seaStart: grid.seaStart,
-    seaLevel: grid.seaLevel,
+    sea: { ...grid.sea },
   }
 }
 

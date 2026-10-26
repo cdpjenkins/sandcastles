@@ -12,7 +12,7 @@ import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
 import { POROSITY } from '../sim/Moisture.ts'
-import { layBeachV1 } from './generators/v1/BeachGeneratorV1.ts'
+import { layBeachV1, seaV1 } from './generators/v1/BeachGeneratorV1.ts'
 
 const SIZE = 4
 const SAVED_AT = new Date('2026-08-21T17:40:00.000Z')
@@ -69,8 +69,7 @@ describe('toGameFile', () => {
     expect(file.lookEnabled).toBe(true)
     expect(file.seed).toBe('salty-gull-42')
     expect(file.generator).toBe(1)
-    expect(file.seaStart).toBe(snapshot.seaStart)
-    expect(file.seaLevel).toBe(snapshot.seaLevel)
+    expect(file.sea).toEqual(snapshot.sea)
   })
 
   it('encodes every grid layer so it decodes back to the same cells', () => {
@@ -173,14 +172,35 @@ describe('parseGameFile', () => {
     const file = toGameFile(aSnapshot(), SAVED_AT) as unknown as Record<string, unknown>
     file['version'] = 3
     delete file['generator']
-    delete file['seaStart']
-    delete file['seaLevel']
+    delete file['sea']
 
     const loaded = parseGameFile(JSON.stringify(file), SIZE, SIZE)
 
     expect(loaded).not.toBeNull()
     expect(loaded!.generator).toBe(1)
-    expect(loaded!.seaStart).toBe(Math.floor(SIZE * 0.78))
+    expect(loaded!.sea).toEqual(seaV1(SIZE))
+  })
+
+  it('loads a v4 file with the sea it stored, and v1\'s tide and swell', () => {
+    const file = toGameFile(aSnapshot(), SAVED_AT) as unknown as Record<string, unknown>
+    file['version'] = 4
+    delete file['sea']
+    file['seaStart'] = 2
+    file['seaLevel'] = 2.5
+
+    const loaded = parseGameFile(JSON.stringify(file), SIZE, SIZE)
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.sea).toEqual({ ...seaV1(SIZE), seaStart: 2, seaLevel: 2.5 })
+  })
+
+  it('keeps a beach\'s own tide and swell through a file', () => {
+    const snapshot = aSnapshot()
+    const sea = { ...snapshot.sea, tideAmplitude: 1.2, tidePeriod: 300, swellFrequency: 0.85, swellStrength: 0.5 }
+
+    const loaded = parseGameFile(JSON.stringify(toGameFile({ ...snapshot, sea }, SAVED_AT)), SIZE, SIZE)
+
+    expect(loaded!.sea).toEqual(sea)
   })
 
   it('refuses a file with a layer missing', () => {

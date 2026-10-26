@@ -14,7 +14,7 @@ import { WaterSim } from '../sim/WaterSim.ts'
 import { Waves } from '../sim/Waves.ts'
 import { Tide } from '../sim/Tide.ts'
 import { IsoCamera } from '../render/IsoCamera.ts'
-import { layBeachV1, placeClassicSpringV1, V1_SPRING_RATE } from './generators/v1/BeachGeneratorV1.ts'
+import { layBeachV1, placeClassicSpringV1, V1_SPRING_RATE, seaV1 } from './generators/v1/BeachGeneratorV1.ts'
 
 const WIDTH = 4
 const DEPTH = 4
@@ -39,8 +39,9 @@ function aSnapshot(overrides: Record<string, unknown> = {}): GameSnapshot {
     lookEnabled: false,
     seed: null,
     generator: 1,
-    seaStart: 3,
-    seaLevel: 2,
+    sea: {
+      seaStart: 3, seaLevel: 2, tideAmplitude: 0.8, tidePeriod: 180, swellFrequency: 1, swellStrength: 1,
+    },
     ...overrides,
   } as GameSnapshot
 }
@@ -138,16 +139,34 @@ describe('isValidSnapshot', () => {
     expect(isValidSnapshot(aSnapshot({ generator: 7, seed: 'gull' }), WIDTH, DEPTH, noClassic)).toBe(true)
   })
 
-  it('rejects a sea that starts off the grid or between rows', () => {
-    for (const seaStart of [0, DEPTH, 1.5, undefined, '3']) {
-      expect(isValidSnapshot(aSnapshot({ seaStart }), WIDTH, DEPTH)).toBe(false)
+  it('rejects a save with no sea', () => {
+    for (const sea of [undefined, null, 'calm', 2]) {
+      expect(isValidSnapshot(aSnapshot({ sea }), WIDTH, DEPTH)).toBe(false)
     }
   })
 
-  it('rejects a sea level that is not a number', () => {
-    for (const seaLevel of [NaN, Infinity, undefined, '2']) {
-      expect(isValidSnapshot(aSnapshot({ seaLevel }), WIDTH, DEPTH)).toBe(false)
+  // The same rules the grid holds a sea to: a sea the guard lets through must
+  // never be one setSea throws on, halfway through restoring a beach.
+  it('rejects each field of the sea out of its range', () => {
+    const bad: Record<string, unknown[]> = {
+      seaStart: [0, DEPTH, 1.5, undefined, '3'],
+      seaLevel: [NaN, Infinity, undefined, '2'],
+      tideAmplitude: [-0.1, NaN, undefined, '0.8'],
+      tidePeriod: [0, -180, Infinity, undefined],
+      swellFrequency: [0, 1.5, NaN, undefined],
+      swellStrength: [-0.1, 1.5, NaN, undefined],
     }
+    for (const [field, values] of Object.entries(bad)) {
+      for (const value of values) {
+        const sea = { ...aSnapshot().sea, [field]: value }
+        expect(isValidSnapshot(aSnapshot({ sea }), WIDTH, DEPTH), `${field} ${String(value)}`).toBe(false)
+      }
+    }
+  })
+
+  it('accepts a beach with no tide and a flat sea', () => {
+    const sea = { ...aSnapshot().sea, tideAmplitude: 0, swellStrength: 0 }
+    expect(isValidSnapshot(aSnapshot({ sea }), WIDTH, DEPTH)).toBe(true)
   })
 
   it('rejects a save whose dimensions are transposed but cell count agrees', () => {
@@ -255,7 +274,7 @@ describe('createSnapshot', () => {
 
   it('carries the live values, not defaults', () => {
     const grid = new Grid(64, 64)
-    grid.setSea({ ...grid.sea, seaStart: 40, seaLevel: 3.5 })
+    grid.setSea({ seaStart: 40, seaLevel: 3.5, tideAmplitude: 1.2, tidePeriod: 300, swellFrequency: 0.85, swellStrength: 0.5 })
     const bucket = new Bucket(1000)
     bucket.fill(120)
     const tide = new Tide()
@@ -274,8 +293,7 @@ describe('createSnapshot', () => {
     expect(snapshot.width).toBe(64)
     expect(snapshot.seed).toBe('salty-gull-42')
     expect(snapshot.generator).toBe(1)
-    expect(snapshot.seaStart).toBe(40)
-    expect(snapshot.seaLevel).toBe(3.5)
+    expect(snapshot.sea).toEqual({ seaStart: 40, seaLevel: 3.5, tideAmplitude: 1.2, tidePeriod: 300, swellFrequency: 0.85, swellStrength: 0.5 })
   })
 
   it('still loads back after a trip through storage', () => {
@@ -317,7 +335,7 @@ function aLiveBeach() {
   components.tide.step(9)
   components.bucket.fill(120, 0.005)
   components.camera.restore({ zoom: 55, panX: 10, panZ: 20 })
-  components.grid.setSea({ ...components.grid.sea, seaStart: 40, seaLevel: 3.5 })
+  components.grid.setSea({ seaStart: 40, seaLevel: 3.5, tideAmplitude: 1.2, tidePeriod: 300, swellFrequency: 0.85, swellStrength: 0.5 })
   return components
 }
 
@@ -345,8 +363,7 @@ describe('applySnapshot', () => {
 
     applySnapshot(restored, snapshot)
 
-    expect(restored.grid.seaStart).toBe(40)
-    expect(restored.grid.seaLevel).toBe(3.5)
+    expect(restored.grid.sea).toEqual({ seaStart: 40, seaLevel: 3.5, tideAmplitude: 1.2, tidePeriod: 300, swellFrequency: 0.85, swellStrength: 0.5 })
   })
 
   it('sets the bucket rather than adding to what it holds', () => {
@@ -435,19 +452,18 @@ describe('migrateSnapshot', () => {
   // Every beach before generators were versioned was grown by what became v1,
   // so a v3 save is v1 as a matter of fact, with v1's sea for its depth.
   it('marks a v3 save as grown by v1, with v1\'s sea', () => {
-    const v3 = aSnapshot({ version: 3, generator: undefined, seaStart: undefined, seaLevel: undefined })
+    const v3 = aSnapshot({ version: 3, generator: undefined, sea: undefined })
 
     const migrated = migrateSnapshot(v3) as GameSnapshot
 
     expect(migrated.version).toBe(SNAPSHOT_VERSION)
     expect(migrated.generator).toBe(1)
-    expect(migrated.seaStart).toBe(Math.floor(DEPTH * 0.78))
-    expect(migrated.seaLevel).toBe(2)
+    expect(migrated.sea).toEqual(seaV1(DEPTH))
     expect(isValidSnapshot(migrated, WIDTH, DEPTH)).toBe(true)
   })
 
   it('leaves the v3 save it was handed alone', () => {
-    const v3 = aSnapshot({ version: 3, generator: undefined, seaStart: undefined, seaLevel: undefined })
+    const v3 = aSnapshot({ version: 3, generator: undefined, sea: undefined })
 
     migrateSnapshot(v3)
 
@@ -459,7 +475,36 @@ describe('migrateSnapshot', () => {
     const migrated = migrateSnapshot(aVersion1()) as GameSnapshot
 
     expect(migrated.generator).toBe(1)
-    expect(migrated.seaStart).toBe(Math.floor(DEPTH * 0.78))
+    expect(migrated.sea).toEqual(seaV1(DEPTH))
+  })
+
+  // A v4 save stored its sea's start and level, and every beach that could be
+  // saved then was v1's, so its tide and swell are v1's as a matter of fact.
+  const aVersion4 = () => aSnapshot({ version: 4, sea: undefined, seaStart: 2, seaLevel: 2.5 })
+
+  it('gives a v4 save the sea it stored, with v1\'s tide and swell', () => {
+    const migrated = migrateSnapshot(aVersion4()) as GameSnapshot
+
+    expect(migrated.version).toBe(SNAPSHOT_VERSION)
+    expect(migrated.sea).toEqual({ ...seaV1(DEPTH), seaStart: 2, seaLevel: 2.5 })
+    expect(isValidSnapshot(migrated, WIDTH, DEPTH)).toBe(true)
+  })
+
+  it('folds the v4 save\'s sea fields into the sea, leaving none behind', () => {
+    const migrated = migrateSnapshot(aVersion4()) as Record<string, unknown>
+
+    expect(migrated).not.toHaveProperty('seaStart')
+    expect(migrated).not.toHaveProperty('seaLevel')
+  })
+
+  it('leaves the v4 save it was handed alone', () => {
+    const v4 = aVersion4() as unknown as Record<string, unknown>
+
+    migrateSnapshot(v4)
+
+    expect(v4['version']).toBe(4)
+    expect(v4['seaStart']).toBe(2)
+    expect(v4['sea']).toBeUndefined()
   })
 
   it('passes a current save through untouched', () => {
@@ -566,8 +611,15 @@ describe('starting a new game', () => {
     const snapshot = newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'gull' })
 
     expect(snapshot.generator).toBe(1)
-    expect(snapshot.seaStart).toBe(Math.floor(SIZE * 0.78))
-    expect(snapshot.seaLevel).toBe(2)
+    expect(snapshot.sea).toEqual(seaV1(SIZE))
+  })
+
+  it("starts the countdown to the first wave at the beach's swell period", () => {
+    const snapshot = newGameSnapshot(SIZE, SIZE, { generator: 1, seed: 'gull' })
+    const grid = new Grid(SIZE, SIZE)
+    grid.setSea(snapshot.sea)
+
+    expect(snapshot.waves.timeUntilWave).toBe(new Waves(SIZE, SIZE).period(grid))
   })
 
   it('refuses a generator this game does not have', () => {
