@@ -107,12 +107,29 @@ footing, and only then builds v2.
   `height` left the foot's sand to eat most of it. A 6 raise gave a real drop
   of 1.2, which the stream filled. So the rock above is raised per column by
   whatever makes the drop exactly `height` once the lip is bare.
+- **A scarp is a narrow notch, walled at both ends.** On a full-width cliff
+  the falling water spread along the whole foot: 116 columns wet under a
+  7-column stream, sideways flow 9x the downhill flow, the foot scoured into a
+  gutter along the wall. The sim has no vertical momentum, so water lands at
+  the foot with nothing carrying it away, and it fills whatever room the foot
+  gives it. A notch 24 wide, with the raised ground either side carrying on
+  seaward and ramping down at 0.4 a row, stopped the spread at its walls.
+- **The foot is not shaped.** A foot sloping away from the face at 0.4 a row
+  was tried in the notch and made no difference: the fall dug a pool and built a
+  bar below it within minutes either way.
+- **A cliff face shows water only where water comes over it** (`86acbbc`,
+  already shipped, and true of every cliff a player digs too). The mesh has one
+  vertex per cell, so a face is one quad blended from lip to foot, and a pool
+  at the foot painted the face blue across its full width. `showsWater` colours
+  a wet cell under a face as water only when a cell on the face's top is wet.
 - **Scarps stay out of the shore zone,** the 25 rows over which v1 already
   fades the rock to the sea. The swell, refraction and castle survival were all
   tuned there.
 - **Nothing aims a scarp at the stream.** The spring sits as high as it can, so
   it will often be above a scarp. A beach whose stream misses every scarp is a
-  fine beach. The sweep counts how many streams cross one.
+  fine beach. The sweep counts how many streams cross one. With scarps 10 - 40
+  wide on a 256-wide beach, that may be few: if waterfalls turn out too rare to
+  matter, aiming them comes back as a decision, not a range tweak.
 - **v2 has no classic beach** (`hasClassic: false`). *Classic* in the dialog
   stays `CLASSIC_BEACH`, which is v1's.
 - **The seed draws v2's shape from its own stream:**
@@ -177,6 +194,25 @@ surface drops of 3, 6 and 10, 600s each, shaped as the decisions above say:
   600s and dropping that sand as a bar a few rows downstream. Pools reached 3.1
   deep. Still growing at 600s, so the sweep runs scarp-crossing seeds to 900s
   against its limit of 11.
+- **The water spreads along the foot of a wide cliff** (see the decision
+  above), and the mesh painted that spread up the face. That looked like water
+  flowing across the fall rather than down it.
+
+**The notch** (`notch.ts` in the scratchpad). The same face, 24 columns wide
+(x 109 - 132) around where the stream crosses, the raised ground either side
+ramping down seaward at 0.4 a row, and the foot sloped at 0.4 a row for 6
+rows. 600s each:
+
+| drop | NaN / negative | stream at lip | wet at the foot | sideways / downhill at the foot | foot scoured | stream reaches sea |
+|---|---|---|---|---|---|---|
+| 6 | none | 6 columns | 24 (the notch) | 4.6x | 1.0 - 1.6 | 185s |
+| 10 | none | 4 columns | 24 (the notch) | 3.6x | 1.8 - 2.7 | 210s |
+
+The ground beside the notch did not move. With `showsWater`, the face shows
+water across 11 - 13 columns of the foot, and the old wide cliff across 11
+rather than 116. Checked in the browser: the fall reads as a waterfall from the
+game's camera, and the face colouring looks better.
+
 - **Measure the lip against the edge depth from *before* the step.** Taken after
   the step, when the water has already moved, the flux read 8x over the
   ceiling, which it can never be.
@@ -235,8 +271,8 @@ takes the other four.
 // generators/v2/ShapeV2.ts
 export interface ScarpV2 {
   row: number            // where the face crosses, as a fraction of the land's rows
-  xFrom: number          // the stretch of the beach's width it spans,
-  xTo: number            //   as fractions of the width
+  xFrom: number          // the notch's first column
+  xTo: number            // its last: 10 - 40 cells wide
   height: number         // how far the rock drops over the face
   faceWidth: number      // cells the drop is spread over
   wobble: number         // seed for the face's meander across the beach
@@ -273,10 +309,10 @@ Starting ranges, before the sweep:
 | `sandShare` | 0.43 | 0.25 - 0.65 | Rocky to sandy. At the sandy end, deep sand soaks the stream and slows its arrival |
 | `noiseScale` | 1.0 | 1.0 - 1.6 | Deepest inland water must stay well under the advection-instability onset at ~22 |
 | scarp count | 0 | 0 - 2 | |
-| scarp `height` | - | 3 - 10 | The surface drop, lip to foot. All three spiked drops held for 600s, and the pools stayed at 3.1 or less |
+| scarp `height` | - | 3 - 10 | The surface drop, lip to foot. All three spiked drops held for 600s, and the pools stayed at 3.9 or less |
 | scarp `faceWidth` | - | 1 - 2 | The spike tried only 1. A 2-cell face is unmeasured until the sweep |
-| scarp `row` | - | from the back of the beach to 25 rows short of `seaStart` | Out of the shore zone |
-| scarp span | - | 30% - 100% of the width | A partial scarp can sometimes be walked round by the water |
+| scarp `row` | - | from the back of the beach to 25 rows, plus its side ramps (`height / 0.4`), short of `seaStart` | Out of the shore zone, ramps included |
+| scarp span | - | 10 - 40 cells | The fall's pool spreads to the notch's walls, so wider is a wide pool under a narrow fall. The spike ran 24 |
 
 ### The generator
 
@@ -297,8 +333,14 @@ prevent. `generators/v2/SpringSiteV2.ts` is a copy of v1's; its
 A scarp raises the rock uphill of its face, in each column, by whatever makes
 the surface drop from lip to foot exactly `height`, falling over `faceWidth`
 cells. Across the beach, the face meanders by a few cells, driven by `wobble`.
-At the ends of its span the height tapers over a few cells rather than stopping
-dead, so a scarp's ends are slopes and not cliff corners.
+
+The raise covers the whole width uphill of the face, each column outside the
+span taking its nearest span column's raise. Outside the span the raised
+ground carries on past the face row and ramps back down at `SCARP_SIDE_SLOPE`
+(0.4 a row), so the cliff is a notch in a headland and its foot is walled on
+both sides. Beside the walls, `SCARP_BENCH` cells are bare rock and the sand
+beyond them is capped by the same ramp as behind the lip, so it cannot slide
+into the notch.
 
 Behind the lip, `SCARP_BENCH` cells (4 in the spike) are bare rock, and beyond
 that the sand is capped at `SCARP_SAND_RAMP` (0.3) per cell of distance, so it
@@ -392,9 +434,12 @@ the game plays exactly as now.
       - the lip and its bench are bare rock, and the sand behind them never
         rises faster than the ramp;
       - a fresh scarp beach does not move under one `Slope` step;
-      - outside the span and beyond the taper, the rock is the same as the
+      - outside the span, the ground ramps down seaward no steeper than
+        `SCARP_SIDE_SLOPE`, and beyond the ramp the rock is the same as the
         layout without the scarp;
-      - no scarp reaches the shore zone;
+      - the foot is walled: at the face row, the ground just outside the span
+        stands above the foot;
+      - no scarp, ramps included, reaches the shore zone;
       - a shape with no scarps gives the same layout as before this step.
 12. **Sweep, then set the ranges.** A scratch probe; the only thing committed is
     the ranges.
@@ -453,7 +498,8 @@ the game plays exactly as now.
     - A reload keeps the tide and the waves where they were.
     - Export names read `gen2`, and an old v1 file still imports.
 16. **CLAUDE.md.**
-    - What the spike found about waterfalls.
+    - What the spike found about waterfalls: why a wide cliff's foot spreads
+      sideways (no vertical momentum), the notch, and `showsWater`.
     - The beach's sea as one value with one holder.
     - Tide absolute, swell as fractions, and why each is stored that way.
       `SWELL_PERIOD` and `SWELL_AMPLITUDE` are now the maximum.

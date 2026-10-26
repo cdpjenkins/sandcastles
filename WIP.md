@@ -8,17 +8,17 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 1: the waterfall spike - findings in PLAN.md; awaiting the browser look.
+Step 1 done. Next: step 2, the beach's sea lives on the grid (`BeachSea`).
 
 ## Status
 
-⏸️ WAITING - the spike passes on the numbers (no NaN, lip stable, drops of 3-10
-hold and deepen over 600s). Waiting on the user's browser look at the
-imported scenes before setting the scarp ranges.
+⏸️ WAITING - step 1 closed: waterfalls work, scarps stay in the plan as narrow
+walled notches (10 - 40 cells), and a cliff face now shows water only where
+water comes over it (86acbbc). Waiting on "start step 2".
 
 ## Steps
 
-- [ ] Step 1: the waterfall spike (decision point)
+- [x] Step 1: the waterfall spike (decision point)
 - [ ] Step 2: the beach's sea lives on the grid (`BeachSea`)
 - [ ] Step 3: snapshot v5
 - [ ] Step 4: v2 as a copy of v1
