@@ -8,13 +8,13 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 7 done. Next: step 8, seeded swell.
+Step 8 done. Next: step 9, seeded ridge and sand share.
 
 ## Status
 
-⏸️ WAITING - step 7 complete: a v2 beach's tide amplitude (0.4 - 1.4) and
-period (180 - 360s) come from its shape. Swell still v1's. Suite 620 green, tsc
-clean. Waiting on "start step 8".
+⏸️ WAITING - step 8 complete: a v2 beach's swell frequency (0.78 - 1) and
+strength (0.33 - 1) come from its shape, so its whole sea is now seeded.
+Suite 623 green, tsc clean. Waiting on "start step 9".
 
 ## Steps
 
@@ -25,7 +25,7 @@ clean. Waiting on "start step 8".
 - [x] Step 5: `shapeV2`
 - [x] Step 6: seeded sea
 - [x] Step 7: seeded tide
-- [ ] Step 8: seeded swell
+- [x] Step 8: seeded swell
 - [ ] Step 9: seeded ridge and sand share
 - [ ] Step 10: bolder land
 - [ ] Step 11: scarps

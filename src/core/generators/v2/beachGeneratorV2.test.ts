@@ -87,6 +87,33 @@ describe('The v2 generator', () => {
     }
   })
 
+  it("gives the beach the shape's swell", () => {
+    for (const seed of ['salty-gull-42', 's46', 'gull']) {
+      const shape = shapeV2(seed)
+      const { sea } = grown(generateBeachV2, seed)
+
+      expect(sea.swellFrequency).toBe(shape.swellFrequency)
+      expect(sea.swellStrength).toBe(shape.swellStrength)
+    }
+  })
+
+  it('gives two seeds different swells', () => {
+    const a = grown(generateBeachV2, 'salty-gull-42').sea
+    const b = grown(generateBeachV2, 's46').sea
+
+    expect(a.swellFrequency).not.toBe(b.swellFrequency)
+    expect(a.swellStrength).not.toBe(b.swellStrength)
+  })
+
+  // The swell everything was tuned against is the harshest a beach may have.
+  it('never gives a beach a swell harsher than the maximum', () => {
+    for (let i = 0; i < 30; i++) {
+      const { sea } = grown(generateBeachV2, `s${i}`)
+      expect(sea.swellFrequency).toBeLessThanOrEqual(1)
+      expect(sea.swellStrength).toBeLessThanOrEqual(1)
+    }
+  })
+
   // Classic is a v1 idea. The guard and resolveBeach already keep a null seed
   // away from v2; this says what happens if something gets past them.
   it('refuses to grow a beach from no seed', () => {

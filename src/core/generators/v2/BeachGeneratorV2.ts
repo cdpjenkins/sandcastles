@@ -25,9 +25,6 @@ const ROCK_SHORE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
-// v1's swell, until v2 seeds its own.
-const SWELL_FREQUENCY = 1
-const SWELL_STRENGTH = 1
 
 // The spring's flow. Its own constant rather than STREAM_RATE, which the
 // player's Stream tool shares, or v1's: tuning either must not change every v2
@@ -58,8 +55,8 @@ function seaV2(depth: number, shape: ShapeV2): BeachSea {
     seaLevel: shape.seaLevel,
     tideAmplitude: shape.tideAmplitude,
     tidePeriod: shape.tidePeriod,
-    swellFrequency: SWELL_FREQUENCY,
-    swellStrength: SWELL_STRENGTH,
+    swellFrequency: shape.swellFrequency,
+    swellStrength: shape.swellStrength,
   }
 }
 
