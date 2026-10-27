@@ -8,23 +8,22 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 3 done. Next: step 4, v2 as a copy of v1.
+Step 4 done. Next: step 5, `shapeV2`.
 
 ## Status
 
-⏸️ WAITING - step 3 complete: snapshot v5 stores the whole sea as `sea`, the
-guard holds it to the grid's own `seaProblem`, files carry it, and a v4 save
-or file migrates to its stored start and level with v1's tide and swell. A
-new game's first wave comes at the beach's swell period. Suite 601 green, tsc
-clean. CLAUDE.md still says the save format is 4; step 16 updates it.
-Waiting on "start step 4".
+⏸️ WAITING - step 4 complete: `generators/v2/` is a copy of v1 (no classic
+beach; refuses a `null` seed), registered so `generatorFor(2)` finds it, and
+`LATEST_GENERATOR` is still 1, held by a test. A scaffolding test says v2 grows
+v1's beach exactly; step 6 removes it. Suite 606 green, tsc clean. Waiting on
+"start step 5".
 
 ## Steps
 
 - [x] Step 1: the waterfall spike (decision point)
 - [x] Step 2: the beach's sea lives on the grid (`BeachSea`)
 - [x] Step 3: snapshot v5
-- [ ] Step 4: v2 as a copy of v1
+- [x] Step 4: v2 as a copy of v1
 - [ ] Step 5: `shapeV2`
 - [ ] Step 6: seeded sea
 - [ ] Step 7: seeded tide

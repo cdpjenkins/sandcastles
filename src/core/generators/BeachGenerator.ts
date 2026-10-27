@@ -1,6 +1,7 @@
 import type { Grid } from '../Grid.ts'
 import type { BeachSeed } from '../BeachSeed.ts'
 import { beachGeneratorV1 } from './v1/BeachGeneratorV1.ts'
+import { beachGeneratorV2 } from './v2/BeachGeneratorV2.ts'
 
 // A way of growing a beach. Each is frozen once shipped: a save records the
 // generator that built it, and a seed must regenerate the same beach forever.
@@ -20,9 +21,10 @@ export interface BeachSpec {
   seed: BeachSeed
 }
 
-const GENERATORS: readonly BeachGenerator[] = [beachGeneratorV1]
+const GENERATORS: readonly BeachGenerator[] = [beachGeneratorV1, beachGeneratorV2]
 
-// What a new random or typed seed is grown with.
+// What a new random or typed seed is grown with. Still 1 while v2 is being
+// built: an unfrozen generator must grow no player's beach.
 export const LATEST_GENERATOR = 1
 
 export const CLASSIC_BEACH: Readonly<BeachSpec> = Object.freeze({ generator: 1, seed: null })
