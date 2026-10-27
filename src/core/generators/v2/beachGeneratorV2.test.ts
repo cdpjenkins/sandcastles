@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { Grid } from '../../Grid.ts'
-import { generateBeachV1 } from '../v1/BeachGeneratorV1.ts'
+import { newGameSnapshot, applySnapshot } from '../../GameSnapshot.ts'
+import { WaterSim } from '../../../sim/WaterSim.ts'
+import { Waves } from '../../../sim/Waves.ts'
+import { Tide } from '../../../sim/Tide.ts'
+import { shapeV2 } from './ShapeV2.ts'
 import { beachGeneratorV2, generateBeachV2 } from './BeachGeneratorV2.ts'
 
 const grown = (generate: (grid: Grid, seed: string) => void, seed: string): Grid => {
@@ -15,16 +19,47 @@ describe('The v2 generator', () => {
     expect(beachGeneratorV2.hasClassic).toBe(false)
   })
 
-  // Scaffolding: v2 starts as a copy of v1, and this says the copy is exact.
-  // Step 6 of the v2 plan seeds the sea and removes it on purpose.
-  it('grows the same beach as v1 from the same seed, for now', () => {
-    for (const seed of ['salty-gull-42', 's46']) {
-      const v1 = grown(generateBeachV1, seed)
-      const v2 = grown(generateBeachV2, seed)
+  // v2 began as an exact copy of v1, and a test said so until the sea was
+  // seeded. That test is gone on purpose: from here, v2 grows its own beaches.
+  it("lays the beach out on the shape's sea", () => {
+    for (const seed of ['salty-gull-42', 's46', 'gull']) {
+      const shape = shapeV2(seed)
+      const grid = grown(generateBeachV2, seed)
 
-      expect(v2.sea).toEqual(v1.sea)
-      expect(v2.snapshot()).toEqual(v1.snapshot())
+      expect(grid.seaStart).toBe(Math.floor(256 * shape.seaFraction))
+      expect(grid.seaLevel).toBe(shape.seaLevel)
     }
+  })
+
+  it('fills the sea rows with water up to its level', () => {
+    const grid = grown(generateBeachV2, 'salty-gull-42')
+
+    for (let z = grid.seaStart; z < grid.depth; z += 7) {
+      for (let x = 0; x < grid.width; x += 31) {
+        expect(grid.getWaterSurfaceHeight(x, z)).toBeCloseTo(grid.seaLevel, 4)
+      }
+    }
+    expect(grid.getWaterHeight(128, grid.seaStart - 30)).toBe(0)
+  })
+
+  it('gives two seeds different seas', () => {
+    const a = grown(generateBeachV2, 'salty-gull-42')
+    const b = grown(generateBeachV2, 's46')
+
+    expect(a.seaStart).not.toBe(b.seaStart)
+    expect(a.seaLevel).not.toBe(b.seaLevel)
+  })
+
+  it('keeps its sea through a new game and a restore', () => {
+    const snapshot = newGameSnapshot(256, 256, { generator: 2, seed: 'salty-gull-42' })
+    const target = new Grid(256, 256)
+    applySnapshot({
+      grid: target, waterSim: new WaterSim(256, 256), waves: new Waves(256, 256), tide: new Tide(),
+      bucket: { setAmount: () => {}, setWater: () => {} }, camera: { restore: () => {} },
+    }, snapshot)
+
+    expect(target.sea).toEqual(grown(generateBeachV2, 'salty-gull-42').sea)
+    expect(target.seaStart).toBe(Math.floor(256 * shapeV2('salty-gull-42').seaFraction))
   })
 
   // Classic is a v1 idea. The guard and resolveBeach already keep a null seed

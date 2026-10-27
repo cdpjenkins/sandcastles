@@ -2,6 +2,8 @@ import type { Grid } from '../../Grid.ts'
 import { noiseSeed } from '../../BeachSeed.ts'
 import type { BeachSeed } from '../../BeachSeed.ts'
 import { springSiteV2 } from './SpringSiteV2.ts'
+import { shapeV2 } from './ShapeV2.ts'
+import type { ShapeV2 } from './ShapeV2.ts'
 import type { BeachGenerator } from '../BeachGenerator.ts'
 import type { BeachSea } from '../../BeachSea.ts'
 
@@ -14,9 +16,7 @@ import type { BeachSea } from '../../BeachSea.ts'
 // It owns everything it calls, as v1 does, even where that duplicates v1: a
 // shared helper would let a change here move every v1 beach.
 
-const SEA_FRACTION = 0.78
 const ROCK_BASE_HEIGHT = 1.0
-const SEA_WATER_HEIGHT = 1.0
 const ROCK_RIDGE_AMPLITUDE = 12
 const ROCK_NOISE_AMPLITUDE = 12
 const ROCK_NOISE_OFFSET = 1000
@@ -46,17 +46,18 @@ export const beachGeneratorV2: BeachGenerator = {
 // beach, so it is always grown from a seed.
 export function generateBeachV2(grid: Grid, seed: BeachSeed): void {
   if (seed === null) throw new Error('v2 has no classic beach: it needs a seed')
-  grid.setSea(seaV2(grid.depth))
+  const shape = shapeV2(seed)
+  grid.setSea(seaV2(grid.depth, shape))
   layBeachV2(grid, noiseSeed(seed))
   const site = springSiteV2(grid, seed)
   grid.setSourceRate(site.x, site.z, V2_SPRING_RATE)
 }
 
-// v2's whole sea for a beach this deep, tide and swell included.
-function seaV2(depth: number): BeachSea {
+// The beach's whole sea, from its shape, for a beach this deep.
+function seaV2(depth: number, shape: ShapeV2): BeachSea {
   return {
-    seaStart: Math.floor(depth * SEA_FRACTION),
-    seaLevel: ROCK_BASE_HEIGHT + SEA_WATER_HEIGHT,
+    seaStart: Math.floor(depth * shape.seaFraction),
+    seaLevel: shape.seaLevel,
     tideAmplitude: TIDE_AMPLITUDE,
     tidePeriod: TIDE_PERIOD,
     swellFrequency: SWELL_FREQUENCY,

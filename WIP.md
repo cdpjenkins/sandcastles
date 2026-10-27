@@ -8,16 +8,14 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 5 done. Next: step 6, seeded sea.
+Step 6 done. Next: step 7, seeded tide.
 
 ## Status
 
-⏸️ WAITING - step 5 complete: `shapeV2(seed)` draws v2's shape from its own
-`:shape` stream, through `drawShapeV2(random)` so a test can push every draw to
-both ends of its range. v2's mulberry32 moved to `RandomV2.ts`, shared by the
-shape and the spring. A scarp's place is stored as fractions (`row`,
-`xCentre`) plus a `span` in cells; PLAN.md updated to match. Not yet used by the
-generator. Suite 614 green, tsc clean. Waiting on "start step 6".
+⏸️ WAITING - step 6 complete: a v2 beach's `seaStart` and `seaLevel` come from
+its shape, so v2 no longer grows v1's beach; the scaffolding test that said it
+did is gone, on purpose. Tide and swell are still v1's. Suite 617 green, tsc
+clean. Waiting on "start step 7".
 
 ## Steps
 
@@ -26,7 +24,7 @@ generator. Suite 614 green, tsc clean. Waiting on "start step 6".
 - [x] Step 3: snapshot v5
 - [x] Step 4: v2 as a copy of v1
 - [x] Step 5: `shapeV2`
-- [ ] Step 6: seeded sea
+- [x] Step 6: seeded sea
 - [ ] Step 7: seeded tide
 - [ ] Step 8: seeded swell
 - [ ] Step 9: seeded ridge and sand share
