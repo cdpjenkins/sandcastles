@@ -17,12 +17,13 @@ import type { BeachSea } from '../../BeachSea.ts'
 // shared helper would let a change here move every v1 beach.
 
 const ROCK_BASE_HEIGHT = 1.0
-const ROCK_RIDGE_AMPLITUDE = 12
 const ROCK_NOISE_AMPLITUDE = 12
 const ROCK_NOISE_OFFSET = 1000
 const MIN_ROCK_HEIGHT = 0.2
 const ROCK_SHORE_FADE_DISTANCE = 25
-const SAND_RIDGE_AMPLITUDE = 9
+// v1's surface ridge, rock and sand together (12 + 9). A shape scales it and
+// shares it between the two layers.
+const RIDGE_AMPLITUDE = 21
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
 
@@ -43,7 +44,7 @@ export function generateBeachV2(grid: Grid, seed: BeachSeed): void {
   if (seed === null) throw new Error('v2 has no classic beach: it needs a seed')
   const shape = shapeV2(seed)
   grid.setSea(seaV2(grid.depth, shape))
-  layBeachV2(grid, noiseSeed(seed))
+  layBeachV2(grid, shape, noiseSeed(seed))
   const site = springSiteV2(grid, seed)
   grid.setSourceRate(site.x, site.z, V2_SPRING_RATE)
 }
@@ -63,12 +64,17 @@ function seaV2(depth: number, shape: ShapeV2): BeachSea {
 // The land and the sea bed, with water up to sea level wherever the ground is
 // below it. Lays out against the grid's sea as it stands.
 //
-// The seed varies only the land's noise. Seed 0 is the classic beach: it is
-// XORed into the hash, so 0 leaves every value as it always was.
+// The shape sets the ridge: how high it stands, how its height falls away down
+// the beach, and how much of it is sand. The surface ridge is shared between
+// the layers rather than set per layer, so sandShare moves sand and rock
+// against each other over much the same surface. The seed is the noise's.
 //
 // Each cell is written and then read back before use, so the arithmetic sees
 // the same float32-rounded values the layers hold.
-export function layBeachV2(grid: Grid, seed: number = 0): void {
+export function layBeachV2(grid: Grid, shape: ShapeV2, seed: number): void {
+  const ridgeHeight = RIDGE_AMPLITUDE * shape.ridgeScale
+  const rockRidge = ridgeHeight * (1 - shape.sandShare)
+  const sandRidge = ridgeHeight * shape.sandShare
   const { width, depth, seaStart, seaLevel } = grid
   for (let z = 0; z < depth; z++) {
     for (let x = 0; x < width; x++) {
@@ -79,15 +85,15 @@ export function layBeachV2(grid: Grid, seed: number = 0): void {
         grid.setWaterHeight(x, z, seaLevel - grid.getRockHeight(x, z)!)
       } else {
         const t = z / seaStart
-        const ridge = Math.pow(1 - t, 2)
+        const ridge = Math.pow(1 - t, shape.ridgePower)
 
         const distFromSea = seaStart - z
         const shoreFade = Math.min(1, distFromSea / ROCK_SHORE_FADE_DISTANCE)
         const rockNoise = fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET, seed) * ROCK_NOISE_AMPLITUDE
-        const unfadedRock = ROCK_BASE_HEIGHT + ROCK_RIDGE_AMPLITUDE * ridge + rockNoise
+        const unfadedRock = ROCK_BASE_HEIGHT + rockRidge * ridge + rockNoise
         grid.setRockHeight(x, z, shoreFade < 1 ? unfadedRock * shoreFade : Math.max(MIN_ROCK_HEIGHT, unfadedRock))
 
-        const base = SAND_RIDGE_AMPLITUDE * ridge
+        const base = sandRidge * ridge
         const noise = fractalNoise(x, z, seed) * SAND_NOISE_AMPLITUDE
         grid.setSandHeight(x, z, Math.max(0, (base + noise) * shoreFade))
 

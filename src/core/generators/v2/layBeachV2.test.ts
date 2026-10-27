@@ -1,0 +1,86 @@
+import { describe, it, expect } from 'vitest'
+import { Grid } from '../../Grid.ts'
+import { layBeachV2 } from './BeachGeneratorV2.ts'
+import { layBeachV1 } from '../v1/BeachGeneratorV1.ts'
+import type { ShapeV2 } from './ShapeV2.ts'
+
+// v1's land, stated as a shape: every comparison below moves one knob from here.
+const V1_LIKE: ShapeV2 = {
+  seaFraction: 0.78,
+  seaLevel: 2,
+  tideAmplitude: 0.8,
+  tidePeriod: 180,
+  swellFrequency: 1,
+  swellStrength: 1,
+  ridgeScale: 1,
+  ridgePower: 2,
+  sandShare: 9 / 21,
+  noiseScale: 1,
+  scarps: [],
+}
+
+const laid = (changes: Partial<ShapeV2>): Grid => {
+  const grid = new Grid(256, 256)
+  layBeachV2(grid, { ...V1_LIKE, ...changes }, 0)
+  return grid
+}
+
+// Mean over rows [z0, z1) of the whole width.
+const mean = (grid: Grid, z0: number, z1: number, read: (x: number, z: number) => number): number => {
+  let sum = 0
+  for (let z = z0; z < z1; z++) for (let x = 0; x < grid.width; x++) sum += read(x, z)
+  return sum / ((z1 - z0) * grid.width)
+}
+const surface = (grid: Grid) => (x: number, z: number) => grid.getSurfaceHeight(x, z)!
+const sand = (grid: Grid) => (x: number, z: number) => grid.getSandHeight(x, z)!
+
+describe('layBeachV2', () => {
+  it('stands the back of a high-ridgeScale beach higher than a low one', () => {
+    const high = laid({ ridgeScale: 1.3 })
+    const low = laid({ ridgeScale: 0.7 })
+
+    expect(mean(high, 0, 20, surface(high))).toBeGreaterThan(mean(low, 0, 20, surface(low)) + 5)
+  })
+
+  // A lower power keeps the ridge high further down the beach, so the steep
+  // part runs across it rather than sitting at the back.
+  it('keeps a low-ridgePower beach higher halfway down', () => {
+    const low = laid({ ridgePower: 1.5 })
+    const high = laid({ ridgePower: 2.5 })
+    const mid = Math.floor(high.seaStart / 2)
+
+    expect(mean(low, mid - 5, mid + 5, surface(low)))
+      .toBeGreaterThan(mean(high, mid - 5, mid + 5, surface(high)) + 1)
+  })
+
+  it('leaves the back of the beach where it was whatever the power', () => {
+    const low = laid({ ridgePower: 1.5 })
+    const high = laid({ ridgePower: 2.5 })
+
+    expect(low.getSurfaceHeight(128, 0)).toBeCloseTo(high.getSurfaceHeight(128, 0)!, 4)
+  })
+
+  // sandShare moves the ridge between the layers rather than adding to it.
+  it('gives a high-sandShare beach deeper sand over a similar surface', () => {
+    const sandy = laid({ sandShare: 0.65 })
+    const rocky = laid({ sandShare: 0.25 })
+
+    const sandGap = mean(sandy, 0, 40, sand(sandy)) - mean(rocky, 0, 40, sand(rocky))
+    const surfaceGap = mean(sandy, 0, 40, surface(sandy)) - mean(rocky, 0, 40, surface(rocky))
+    expect(sandGap).toBeGreaterThan(4)
+    expect(Math.abs(surfaceGap)).toBeLessThan(sandGap / 4)
+  })
+
+  it("lays v1's land from a shape with v1's knobs", () => {
+    const v2 = laid({})
+    const v1 = new Grid(256, 256)
+    layBeachV1(v1, 0)
+
+    for (let z = 0; z < 256; z += 5) {
+      for (let x = 0; x < 256; x += 9) {
+        expect(v2.getRockHeight(x, z)).toBeCloseTo(v1.getRockHeight(x, z)!, 4)
+        expect(v2.getSandHeight(x, z)).toBeCloseTo(v1.getSandHeight(x, z)!, 4)
+      }
+    }
+  })
+})

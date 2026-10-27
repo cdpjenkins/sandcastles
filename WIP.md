@@ -8,13 +8,15 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 8 done. Next: step 9, seeded ridge and sand share.
+Step 9 done. Next: step 10, bolder land.
 
 ## Status
 
-⏸️ WAITING - step 8 complete: a v2 beach's swell frequency (0.78 - 1) and
-strength (0.33 - 1) come from its shape, so its whole sea is now seeded.
-Suite 623 green, tsc clean. Waiting on "start step 9".
+⏸️ WAITING - step 9 complete: `layBeachV2(grid, shape, seed)` scales v1's
+surface ridge (12 + 9) by `ridgeScale`, falls it away by `ridgePower` and shares
+it between rock and sand by `sandShare`. Tested on hand-picked shapes; a shape
+with v1's knobs lays v1's land. Suite 628 green, tsc clean. Waiting on
+"start step 10".
 
 ## Steps
 
@@ -26,7 +28,7 @@ Suite 623 green, tsc clean. Waiting on "start step 9".
 - [x] Step 6: seeded sea
 - [x] Step 7: seeded tide
 - [x] Step 8: seeded swell
-- [ ] Step 9: seeded ridge and sand share
+- [x] Step 9: seeded ridge and sand share
 - [ ] Step 10: bolder land
 - [ ] Step 11: scarps
 - [ ] Step 12: sweep, then set the ranges (decision point)
