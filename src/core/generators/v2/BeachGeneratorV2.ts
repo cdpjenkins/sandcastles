@@ -25,9 +25,7 @@ const ROCK_SHORE_FADE_DISTANCE = 25
 const SAND_RIDGE_AMPLITUDE = 9
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
-// v1's tide and swell, until v2 seeds its own.
-const TIDE_AMPLITUDE = 0.8
-const TIDE_PERIOD = 180
+// v1's swell, until v2 seeds its own.
 const SWELL_FREQUENCY = 1
 const SWELL_STRENGTH = 1
 
@@ -58,8 +56,8 @@ function seaV2(depth: number, shape: ShapeV2): BeachSea {
   return {
     seaStart: Math.floor(depth * shape.seaFraction),
     seaLevel: shape.seaLevel,
-    tideAmplitude: TIDE_AMPLITUDE,
-    tidePeriod: TIDE_PERIOD,
+    tideAmplitude: shape.tideAmplitude,
+    tidePeriod: shape.tidePeriod,
     swellFrequency: SWELL_FREQUENCY,
     swellStrength: SWELL_STRENGTH,
   }

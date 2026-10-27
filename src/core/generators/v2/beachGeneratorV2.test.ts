@@ -62,6 +62,31 @@ describe('The v2 generator', () => {
     expect(target.seaStart).toBe(Math.floor(256 * shapeV2('salty-gull-42').seaFraction))
   })
 
+  it("gives the beach the shape's tide", () => {
+    for (const seed of ['salty-gull-42', 's46', 'gull']) {
+      const shape = shapeV2(seed)
+      const { sea } = grown(generateBeachV2, seed)
+
+      expect(sea.tideAmplitude).toBe(shape.tideAmplitude)
+      expect(sea.tidePeriod).toBe(shape.tidePeriod)
+    }
+  })
+
+  it('gives two seeds different tides', () => {
+    const a = grown(generateBeachV2, 'salty-gull-42').sea
+    const b = grown(generateBeachV2, 's46').sea
+
+    expect(a.tideAmplitude).not.toBe(b.tideAmplitude)
+    expect(a.tidePeriod).not.toBe(b.tidePeriod)
+  })
+
+  // Nothing was ever tested below 180s, so no beach's tide turns faster.
+  it('never gives a tide a period under 180s', () => {
+    for (let i = 0; i < 30; i++) {
+      expect(grown(generateBeachV2, `s${i}`).sea.tidePeriod).toBeGreaterThanOrEqual(180)
+    }
+  })
+
   // Classic is a v1 idea. The guard and resolveBeach already keep a null seed
   // away from v2; this says what happens if something gets past them.
   it('refuses to grow a beach from no seed', () => {

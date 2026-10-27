@@ -8,14 +8,13 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 6 done. Next: step 7, seeded tide.
+Step 7 done. Next: step 8, seeded swell.
 
 ## Status
 
-⏸️ WAITING - step 6 complete: a v2 beach's `seaStart` and `seaLevel` come from
-its shape, so v2 no longer grows v1's beach; the scaffolding test that said it
-did is gone, on purpose. Tide and swell are still v1's. Suite 617 green, tsc
-clean. Waiting on "start step 7".
+⏸️ WAITING - step 7 complete: a v2 beach's tide amplitude (0.4 - 1.4) and
+period (180 - 360s) come from its shape. Swell still v1's. Suite 620 green, tsc
+clean. Waiting on "start step 8".
 
 ## Steps
 
@@ -25,7 +24,7 @@ clean. Waiting on "start step 7".
 - [x] Step 4: v2 as a copy of v1
 - [x] Step 5: `shapeV2`
 - [x] Step 6: seeded sea
-- [ ] Step 7: seeded tide
+- [x] Step 7: seeded tide
 - [ ] Step 8: seeded swell
 - [ ] Step 9: seeded ridge and sand share
 - [ ] Step 10: bolder land
