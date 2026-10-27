@@ -8,14 +8,16 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 10 done. Next: step 11, scarps.
+Step 11 done. Next: step 12, the sweep (a decision point).
 
 ## Status
 
-⏸️ WAITING - step 10 complete: `noiseScale` scales v2's rock and sand noise
-together; tested as bumpiness across the beach. Bolder noise floors much more
-rock at 0.2 (9% -> 32% of cells on seed 0), noted in PLAN.md for the sweep.
-Suite 629 green, tsc clean. Waiting on "start step 11".
+⏸️ WAITING - step 11 complete: scarps are cut from the shape as walled
+notches with side ramps, a bare bench and a sand ramp, then the sand they
+touched is settled under repose. Placement depends on the ground (ramps fall
+from the actual raise, up to 51 rows across 50 seeds), so `layBeachV2` returns
+where each went. 50 seeds: none reaches the shore zone, slowest 75 ms. Suite
+642 green, tsc clean. Waiting on "start step 12".
 
 ## Steps
 
@@ -29,7 +31,7 @@ Suite 629 green, tsc clean. Waiting on "start step 11".
 - [x] Step 8: seeded swell
 - [x] Step 9: seeded ridge and sand share
 - [x] Step 10: bolder land
-- [ ] Step 11: scarps
+- [x] Step 11: scarps
 - [ ] Step 12: sweep, then set the ranges (decision point)
 - [ ] Step 13: the generator picker
 - [ ] Step 14: ship v2 (LATEST = 2, pins, frozen)

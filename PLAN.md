@@ -348,8 +348,33 @@ into the notch.
 
 Behind the lip, `SCARP_BENCH` cells (4 in the spike) are bare rock, and beyond
 that the sand is capped at `SCARP_SAND_RAMP` (0.3) per cell of distance, so it
-lies under the angle of repose. The foot keeps its sand. Moisture is cut in
-proportion with the sand it sits in.
+lies under the angle of repose. The foot keeps its sand. A fresh grid holds no
+moisture, so there is none to move with the sand.
+
+As built (step 11):
+
+- **Where it goes.** The foot row runs from row 20 (plus the wobble) to the
+  last row that keeps the ramps out of the shore zone; `row` picks within that.
+  `xCentre` places the notch so it always fits inside the beach.
+- **The ramps fall at 0.4 a row from the actual raise, not from `height`.**
+  Height is the drop to the foot, so where the foot carries deep sand the
+  ground behind must rise further than `height`: across 50 seeds, ramps ran to
+  51 rows, a raise of about 20. Sizing the ramp from `height` would have made it
+  steeper than 0.4 there. So a scarp is placed on the ground it is cut into,
+  and moves uphill if its ramps would reach the shore zone. None had to, across
+  50 seeds. `layBeachV2` returns where each scarp went, since only the layout
+  knows.
+- **The face meanders** up to 2 rows either way, turning every 8 columns.
+  A 2-cell face falls half its height on each row.
+- **Two scarps are cut in the shape's order;** the second raises everything
+  uphill of it, the first included.
+- **Sand is settled after cutting.** The ramps' 0.4 lands on top of the beach's
+  own slope, and sand over them stood steeper than repose: Slope moved it on
+  the first try, 6 - 15 columns out from the notch. Every cell a scarp changed
+  has its sand trimmed until it stands no more than 0.6 above a neighbour,
+  passing the check on to its neighbours when it lowers one. The noise leaves
+  some natural slopes over repose anyway, so the test is that a scarp gives
+  Slope nothing new to move.
 
 ### The dialog
 
