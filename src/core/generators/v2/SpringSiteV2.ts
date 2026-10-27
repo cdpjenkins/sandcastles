@@ -1,6 +1,7 @@
 import type { Grid } from '../../Grid.ts'
 import type { GridCoord } from '../../../types.ts'
 import { seedFromText } from '../../BeachSeed.ts'
+import { seededRandomV2 } from './RandomV2.ts'
 
 // Spring placement for the v2 generator: a copy of v1's. Frozen with the rest
 // of v2 once it ships; until then it is v1's rule unchanged. A later generator
@@ -179,17 +180,6 @@ export function fillCostV2(grid: Grid): Float32Array {
   return cost
 }
 
-// mulberry32: a small seeded generator, so the spring's draw is deterministic.
-function seededRandom(seed: number): () => number {
-  let state = seed | 0
-  return () => {
-    state = (state + 0x6d2b79f5) | 0
-    let t = Math.imul(state ^ (state >>> 15), 1 | state)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
 // Where a seeded beach's spring goes: on dry land, off the side walls, scoring
 // within MAX_SPRING_FILL, and as high up the beach as that allows, so the
 // stream is as long as the beach can give it. The seed picks among the spots
@@ -224,7 +214,7 @@ export function springSiteV2(grid: Grid, seed: string): GridCoord {
   const band = affordable.filter((i) => Math.floor(i / width) <= top + SPRING_ROW_BAND)
 
   // Trimmed as noiseSeed trims, or the same land would grow a different spring.
-  const random = seededRandom(seedFromText(`${seed.trim()}:spring`))
+  const random = seededRandomV2(seedFromText(`${seed.trim()}:spring`))
   const chosen = band[Math.floor(random() * band.length)]!
   return { x: chosen % width, z: Math.floor(chosen / width) }
 }

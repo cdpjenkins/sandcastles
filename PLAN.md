@@ -132,6 +132,10 @@ footing, and only then builds v2.
   matter, aiming them comes back as a decision, not a range tweak.
 - **v2 has no classic beach** (`hasClassic: false`). *Classic* in the dialog
   stays `CLASSIC_BEACH`, which is v1's.
+- **A scarp's place is stored as fractions,** so the shape does not depend on
+  the grid it is laid on. `row` is a fraction of the rows a scarp may use - from
+  the back of the beach to where its ramps would reach the shore zone - and
+  the generator turns it and `xCentre` into cells.
 - **The seed draws v2's shape from its own stream:**
   `seedFromText(seed.trim() + ':shape')` through v2's own mulberry32. That is
   separate from the noise, which takes the seed's own hash, and from the spring
@@ -270,12 +274,12 @@ takes the other four.
 ```ts
 // generators/v2/ShapeV2.ts
 export interface ScarpV2 {
-  row: number            // where the face crosses, as a fraction of the land's rows
-  xFrom: number          // the notch's first column
-  xTo: number            // its last: 10 - 40 cells wide
-  height: number         // how far the rock drops over the face
-  faceWidth: number      // cells the drop is spread over
-  wobble: number         // seed for the face's meander across the beach
+  row: number            // 0 - 1 across the rows a scarp may use, back to front
+  xCentre: number        // 0 - 1 across the width
+  span: number           // the notch's width in cells, 10 - 40
+  height: number         // how far the surface drops over the face
+  faceWidth: number      // cells the drop is spread over: 1 or 2
+  wobble: number         // seed for the face's meander across the notch
 }
 
 export interface ShapeV2 {

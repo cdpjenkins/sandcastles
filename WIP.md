@@ -8,15 +8,16 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 4 done. Next: step 5, `shapeV2`.
+Step 5 done. Next: step 6, seeded sea.
 
 ## Status
 
-⏸️ WAITING - step 4 complete: `generators/v2/` is a copy of v1 (no classic
-beach; refuses a `null` seed), registered so `generatorFor(2)` finds it, and
-`LATEST_GENERATOR` is still 1, held by a test. A scaffolding test says v2 grows
-v1's beach exactly; step 6 removes it. Suite 606 green, tsc clean. Waiting on
-"start step 5".
+⏸️ WAITING - step 5 complete: `shapeV2(seed)` draws v2's shape from its own
+`:shape` stream, through `drawShapeV2(random)` so a test can push every draw to
+both ends of its range. v2's mulberry32 moved to `RandomV2.ts`, shared by the
+shape and the spring. A scarp's place is stored as fractions (`row`,
+`xCentre`) plus a `span` in cells; PLAN.md updated to match. Not yet used by the
+generator. Suite 614 green, tsc clean. Waiting on "start step 6".
 
 ## Steps
 
@@ -24,7 +25,7 @@ v1's beach exactly; step 6 removes it. Suite 606 green, tsc clean. Waiting on
 - [x] Step 2: the beach's sea lives on the grid (`BeachSea`)
 - [x] Step 3: snapshot v5
 - [x] Step 4: v2 as a copy of v1
-- [ ] Step 5: `shapeV2`
+- [x] Step 5: `shapeV2`
 - [ ] Step 6: seeded sea
 - [ ] Step 7: seeded tide
 - [ ] Step 8: seeded swell
