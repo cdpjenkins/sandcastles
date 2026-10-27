@@ -8,15 +8,14 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 9 done. Next: step 10, bolder land.
+Step 10 done. Next: step 11, scarps.
 
 ## Status
 
-⏸️ WAITING - step 9 complete: `layBeachV2(grid, shape, seed)` scales v1's
-surface ridge (12 + 9) by `ridgeScale`, falls it away by `ridgePower` and shares
-it between rock and sand by `sandShare`. Tested on hand-picked shapes; a shape
-with v1's knobs lays v1's land. Suite 628 green, tsc clean. Waiting on
-"start step 10".
+⏸️ WAITING - step 10 complete: `noiseScale` scales v2's rock and sand noise
+together; tested as bumpiness across the beach. Bolder noise floors much more
+rock at 0.2 (9% -> 32% of cells on seed 0), noted in PLAN.md for the sweep.
+Suite 629 green, tsc clean. Waiting on "start step 11".
 
 ## Steps
 
@@ -29,7 +28,7 @@ with v1's knobs lays v1's land. Suite 628 green, tsc clean. Waiting on
 - [x] Step 7: seeded tide
 - [x] Step 8: seeded swell
 - [x] Step 9: seeded ridge and sand share
-- [ ] Step 10: bolder land
+- [x] Step 10: bolder land
 - [ ] Step 11: scarps
 - [ ] Step 12: sweep, then set the ranges (decision point)
 - [ ] Step 13: the generator picker

@@ -71,6 +71,39 @@ describe('layBeachV2', () => {
     expect(Math.abs(surfaceGap)).toBeLessThan(sandGap / 4)
   })
 
+})
+
+// How bumpy the land is across the beach: the mean, over a band of rows, of
+// each row's spread about its own mean. Read across x, so the ridge falling
+// away down the beach does not count.
+const bumpiness = (grid: Grid, z0: number, z1: number, read: (x: number, z: number) => number): number => {
+  let total = 0
+  for (let z = z0; z < z1; z++) {
+    let sum = 0
+    let squares = 0
+    for (let x = 0; x < grid.width; x++) {
+      const v = read(x, z)
+      sum += v
+      squares += v * v
+    }
+    const m = sum / grid.width
+    total += Math.sqrt(Math.max(0, squares / grid.width - m * m))
+  }
+  return total / (z1 - z0)
+}
+const rock = (grid: Grid) => (x: number, z: number) => grid.getRockHeight(x, z)!
+
+describe('layBeachV2 noise', () => {
+  it('makes a high-noiseScale beach bumpier, in rock and in sand', () => {
+    const bold = laid({ noiseScale: 1.6 })
+    const plain = laid({ noiseScale: 1 })
+
+    expect(bumpiness(bold, 20, 120, rock(bold))).toBeGreaterThan(1.3 * bumpiness(plain, 20, 120, rock(plain)))
+    expect(bumpiness(bold, 20, 120, sand(bold))).toBeGreaterThan(1.3 * bumpiness(plain, 20, 120, sand(plain)))
+  })
+})
+
+describe('layBeachV2 against v1', () => {
   it("lays v1's land from a shape with v1's knobs", () => {
     const v2 = laid({})
     const v1 = new Grid(256, 256)

@@ -311,7 +311,7 @@ Starting ranges, before the sweep:
 | `ridgeScale` | 1.0 | 0.7 - 1.3 | The stream's speed and erosion |
 | `ridgePower` | 2 | 1.5 - 2.5 | Where the beach is steep: near the back, or across it |
 | `sandShare` | 0.43 | 0.25 - 0.65 | Rocky to sandy. At the sandy end, deep sand soaks the stream and slows its arrival |
-| `noiseScale` | 1.0 | 1.0 - 1.6 | Deepest inland water must stay well under the advection-instability onset at ~22 |
+| `noiseScale` | 1.0 | 1.0 - 1.6 | Deepest inland water must stay well under the advection-instability onset at ~22. Bolder noise also floors more rock at v1's 0.2: on seed 0, rows 20 - 120, 9% of cells at 1.0 and 32% at 1.6. The sweep should look at those flat floors |
 | scarp count | 0 | 0 - 2 | |
 | scarp `height` | - | 3 - 10 | The surface drop, lip to foot. All three spiked drops held for 600s, and the pools stayed at 3.9 or less |
 | scarp `faceWidth` | - | 1 - 2 | The spike tried only 1. A 2-cell face is unmeasured until the sweep |

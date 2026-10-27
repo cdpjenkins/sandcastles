@@ -67,7 +67,8 @@ function seaV2(depth: number, shape: ShapeV2): BeachSea {
 // The shape sets the ridge: how high it stands, how its height falls away down
 // the beach, and how much of it is sand. The surface ridge is shared between
 // the layers rather than set per layer, so sandShare moves sand and rock
-// against each other over much the same surface. The seed is the noise's.
+// against each other over much the same surface. noiseScale makes the land
+// bolder, in both layers at once. The seed is the noise's.
 //
 // Each cell is written and then read back before use, so the arithmetic sees
 // the same float32-rounded values the layers hold.
@@ -75,6 +76,8 @@ export function layBeachV2(grid: Grid, shape: ShapeV2, seed: number): void {
   const ridgeHeight = RIDGE_AMPLITUDE * shape.ridgeScale
   const rockRidge = ridgeHeight * (1 - shape.sandShare)
   const sandRidge = ridgeHeight * shape.sandShare
+  const rockNoiseAmplitude = ROCK_NOISE_AMPLITUDE * shape.noiseScale
+  const sandNoiseAmplitude = SAND_NOISE_AMPLITUDE * shape.noiseScale
   const { width, depth, seaStart, seaLevel } = grid
   for (let z = 0; z < depth; z++) {
     for (let x = 0; x < width; x++) {
@@ -89,12 +92,12 @@ export function layBeachV2(grid: Grid, shape: ShapeV2, seed: number): void {
 
         const distFromSea = seaStart - z
         const shoreFade = Math.min(1, distFromSea / ROCK_SHORE_FADE_DISTANCE)
-        const rockNoise = fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET, seed) * ROCK_NOISE_AMPLITUDE
+        const rockNoise = fractalNoise(x + ROCK_NOISE_OFFSET, z + ROCK_NOISE_OFFSET, seed) * rockNoiseAmplitude
         const unfadedRock = ROCK_BASE_HEIGHT + rockRidge * ridge + rockNoise
         grid.setRockHeight(x, z, shoreFade < 1 ? unfadedRock * shoreFade : Math.max(MIN_ROCK_HEIGHT, unfadedRock))
 
         const base = sandRidge * ridge
-        const noise = fractalNoise(x, z, seed) * SAND_NOISE_AMPLITUDE
+        const noise = fractalNoise(x, z, seed) * sandNoiseAmplitude
         grid.setSandHeight(x, z, Math.max(0, (base + noise) * shoreFade))
 
         const surface = grid.getRockHeight(x, z)! + grid.getSandHeight(x, z)!
