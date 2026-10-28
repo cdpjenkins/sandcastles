@@ -1,4 +1,5 @@
 import type { BeachSpec } from '../core/generators/BeachGenerator.ts'
+import { LATEST_GENERATOR } from '../core/generators/BeachGenerator.ts'
 import { beachLabel } from './beachLabel.ts'
 import type { NewGameChoice } from '../core/NewGame.ts'
 
@@ -19,10 +20,16 @@ export class NewGameDialog {
   private readonly radios = new Map<ChoiceKind, HTMLInputElement>()
   private readonly restartLabel: HTMLSpanElement
   private readonly seedField: HTMLInputElement
+  private readonly generatorPicker: HTMLSelectElement
   private readonly startButton: HTMLButtonElement
+  private readonly latest: number
   private chooseHandler: (choice: NewGameChoice) => void = () => {}
 
-  constructor() {
+  // `latest` is the newest generator offered: only shipped, frozen ones, so an
+  // unfinished generator grows no player's beach. A parameter only so a test
+  // can show the picker with more than this game has.
+  constructor(latest: number = LATEST_GENERATOR) {
+    this.latest = latest
     this.element = document.createElement('div')
     this.element.style.cssText =
       'position:fixed;inset:0;display:none;align-items:center;justify-content:center;' +
@@ -50,9 +57,27 @@ export class NewGameDialog {
     this.seedField.type = 'text'
     this.seedField.dataset.role = 'seed'
     this.seedField.placeholder = 'e.g. salty-gull-42'
-    this.seedField.style.cssText = CONTROL_STYLE + ';margin-left:22px'
     this.seedField.addEventListener('input', () => this.reflect())
-    panel.appendChild(this.seedField)
+
+    // Which generator grows a typed seed, so a seed from an older game grows
+    // the beach it grew there. Random always takes the newest and a restart
+    // keeps the beach's own, so it is only offered beside the seed.
+    this.generatorPicker = document.createElement('select')
+    this.generatorPicker.dataset.role = 'generator'
+    this.generatorPicker.title = 'Which generator grows the seed'
+    this.generatorPicker.style.cssText = CONTROL_STYLE
+    for (let generator = latest; generator >= 1; generator--) {
+      const option = document.createElement('option')
+      option.value = String(generator)
+      option.textContent = `gen ${generator}`
+      this.generatorPicker.appendChild(option)
+    }
+
+    const seedRow = document.createElement('div')
+    seedRow.style.cssText = 'display:flex;gap:6px;margin-left:22px'
+    this.seedField.style.cssText = CONTROL_STYLE + ';flex:1;min-width:0'
+    seedRow.append(this.seedField, this.generatorPicker)
+    panel.appendChild(seedRow)
 
     const buttons = document.createElement('div')
     buttons.style.cssText = 'display:flex;gap:6px;justify-content:flex-end'
@@ -84,6 +109,7 @@ export class NewGameDialog {
     this.restartLabel.textContent = `Restart this beach: ${beachLabel(current)}`
     this.radios.get(DEFAULT_CHOICE)!.checked = true
     this.seedField.value = ''
+    this.generatorPicker.value = String(this.latest)
     this.reflect()
     this.element.style.display = 'flex'
     this.startButton.focus()
@@ -135,14 +161,16 @@ export class NewGameDialog {
 
   private reflect(): void {
     this.seedField.disabled = this.selected !== 'chosen'
+    this.generatorPicker.disabled = this.selected !== 'chosen'
     this.startButton.disabled = !this.canStart
   }
 
   private start(): void {
     if (!this.canStart) return
     const kind = this.selected
-    const choice: NewGameChoice =
-      kind === 'chosen' ? { kind, text: this.seedField.value } : { kind }
+    const choice: NewGameChoice = kind === 'chosen'
+      ? { kind, text: this.seedField.value, generator: Number(this.generatorPicker.value) }
+      : { kind }
     this.close()
     this.chooseHandler(choice)
   }

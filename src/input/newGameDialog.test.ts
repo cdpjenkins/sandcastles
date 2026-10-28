@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { NewGameDialog } from './NewGameDialog.ts'
 import type { NewGameChoice } from '../core/NewGame.ts'
 import type { BeachSpec } from '../core/generators/BeachGenerator.ts'
+import { LATEST_GENERATOR } from '../core/generators/BeachGenerator.ts'
 
 const choiceRadio = (dialog: NewGameDialog, kind: string): HTMLInputElement =>
   dialog.element.querySelector<HTMLInputElement>(`input[type="radio"][value="${kind}"]`)!
@@ -36,8 +37,16 @@ afterEach(() => {
   document.body.replaceChildren()
 })
 
-function aDialog(current: BeachSpec = { generator: 1, seed: 'salty-gull-42' }) {
-  const dialog = new NewGameDialog()
+const picker = (dialog: NewGameDialog): HTMLSelectElement =>
+  dialog.element.querySelector<HTMLSelectElement>('select[data-role="generator"]')!
+
+const pick = (dialog: NewGameDialog, generator: number): void => {
+  picker(dialog).value = String(generator)
+  picker(dialog).dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+function aDialog(current: BeachSpec = { generator: 1, seed: 'salty-gull-42' }, latest?: number) {
+  const dialog = new NewGameDialog(latest)
   document.body.appendChild(dialog.element)
   const chosen: NewGameChoice[] = []
   dialog.onChoose((choice) => chosen.push(choice))
@@ -102,7 +111,59 @@ describe('NewGameDialog', () => {
 
     button(dialog, 'start').click()
 
-    expect(chosen).toEqual([{ kind: 'chosen', text: 'my beach' }])
+    expect(chosen).toEqual([{ kind: 'chosen', text: 'my beach', generator: LATEST_GENERATOR }])
+  })
+
+  it('lists every generator, newest first and picked', () => {
+    const { dialog } = aDialog(undefined, 3)
+
+    expect([...picker(dialog).options].map((o) => [o.value, o.textContent])).toEqual([
+      ['3', 'gen 3'], ['2', 'gen 2'], ['1', 'gen 1'],
+    ])
+    expect(picker(dialog).value).toBe('3')
+  })
+
+  // Only shipped, frozen generators: an unfinished one must grow no player's beach.
+  it('lists only the generators this game ships', () => {
+    const { dialog } = aDialog()
+
+    expect([...picker(dialog).options].map((o) => o.value))
+      .toEqual(Array.from({ length: LATEST_GENERATOR }, (_, i) => String(LATEST_GENERATOR - i)))
+  })
+
+  it('grows the typed seed with the generator picked', () => {
+    const { dialog, chosen } = aDialog(undefined, 2)
+    choose(dialog, 'chosen')
+    typeSeed(dialog, 'gull')
+    pick(dialog, 1)
+
+    button(dialog, 'start').click()
+
+    expect(chosen).toEqual([{ kind: 'chosen', text: 'gull', generator: 1 }])
+  })
+
+  // Random always takes the newest - a random old beach serves nothing - and
+  // a restart keeps the beach's own; only a typed seed is worth regrowing old.
+  it('only offers a generator when the player is typing a seed', () => {
+    const { dialog } = aDialog(undefined, 2)
+    expect(picker(dialog).disabled).toBe(true)
+
+    choose(dialog, 'chosen')
+    expect(picker(dialog).disabled).toBe(false)
+
+    choose(dialog, 'random')
+    expect(picker(dialog).disabled).toBe(true)
+  })
+
+  it('goes back to the newest generator each time it opens', () => {
+    const { dialog } = aDialog(undefined, 2)
+    choose(dialog, 'chosen')
+    pick(dialog, 1)
+    button(dialog, 'cancel').click()
+
+    dialog.open({ generator: 1, seed: null })
+
+    expect(picker(dialog).value).toBe('2')
   })
 
   it('closes once a choice is made', () => {
@@ -149,7 +210,7 @@ describe('NewGameDialog', () => {
 
     press(seedField(dialog), 'Enter')
 
-    expect(chosen).toEqual([{ kind: 'chosen', text: 'gull' }])
+    expect(chosen).toEqual([{ kind: 'chosen', text: 'gull', generator: LATEST_GENERATOR }])
   })
 
   it('does not start on Enter while the seed is empty', () => {

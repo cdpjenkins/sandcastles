@@ -9,12 +9,12 @@ export type NewGameChoice =
   | { kind: 'classic' }
   | { kind: 'restart' }
   | { kind: 'random' }
-  | { kind: 'chosen'; text: string }
+  | { kind: 'chosen'; text: string; generator: number }
 
-// Which beach a choice grows. A new seed is grown by the newest generator; a
-// restart regrows this beach with the generator that grew it; classic is v1's.
-// Choosing an older generator for a new seed is left open: this is the one
-// place that would need to learn it.
+// Which beach a choice grows. A random seed is grown by the newest generator,
+// a typed one by whichever the player picked, so a seed from an older game
+// grows the beach it grew there; a restart regrows this beach with the
+// generator that grew it; classic is v1's.
 //
 // The random source is passed in so a random beach can be pinned in a test.
 // A chosen seed is stored trimmed, so what the Hud shows is what was hashed.
@@ -27,7 +27,7 @@ export function resolveBeach(
     case 'classic': return { ...CLASSIC_BEACH }
     case 'restart': return { ...current }
     case 'random': return { generator: LATEST_GENERATOR, seed: randomSeed(random) }
-    case 'chosen': return { generator: LATEST_GENERATOR, seed: choice.text.trim() }
+    case 'chosen': return { generator: choice.generator, seed: choice.text.trim() }
   }
 }
 

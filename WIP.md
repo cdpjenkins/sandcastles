@@ -8,16 +8,16 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 12 done. Next: step 13, the generator picker.
+Step 13 done. Next: step 14, ship v2.
 
 ## Status
 
-⏸️ WAITING - step 12 complete: swept, and the findings are in PLAN.md's "The
-sweep (step 12)". The user accepted the slow streams (bar now 33/50, at most 3
-never), the deep shore lakes (limit 12) and the one corner over 0.3, and raised
-`swellStrength`'s floor to 0.5, the only range that moved. The chop check
-showed no instability below waterfalls. Suite 642 green, tsc clean. Waiting on
-"start step 13".
+⏸️ WAITING - step 13 complete: the New game dialog has a `gen` picker beside
+the seed field, listing 1..LATEST_GENERATOR newest first, enabled only for a
+typed seed and reset to the newest on each open; `chosen` carries the
+generator and `resolveBeach` uses it. Only gen 1 is listed until step 14.
+Suite 648 green, tsc clean, build clean. Browser look at the dialog is part of
+step 15. Waiting on "start step 14".
 
 ## Steps
 
@@ -33,7 +33,7 @@ showed no instability below waterfalls. Suite 642 green, tsc clean. Waiting on
 - [x] Step 10: bolder land
 - [x] Step 11: scarps
 - [x] Step 12: sweep, then set the ranges (decision point)
-- [ ] Step 13: the generator picker
+- [x] Step 13: the generator picker
 - [ ] Step 14: ship v2 (LATEST = 2, pins, frozen)
 - [ ] Step 15: verify in the browser
 - [ ] Step 16: CLAUDE.md

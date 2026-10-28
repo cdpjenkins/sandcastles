@@ -165,9 +165,15 @@ describe('resolveBeach', () => {
   })
 
   // Stored trimmed, so the Hud shows exactly the text that was hashed.
-  it('takes the player\'s own seed, trimmed, for the newest generator', () => {
-    expect(resolveBeach({ kind: 'chosen', text: '  my beach \n' }, CLASSIC_BEACH, pinned))
+  it('takes the player\'s own seed, trimmed', () => {
+    expect(resolveBeach({ kind: 'chosen', text: '  my beach \n', generator: LATEST_GENERATOR }, CLASSIC_BEACH, pinned))
       .toEqual({ generator: LATEST_GENERATOR, seed: 'my beach' })
+  })
+
+  // So a seed shared from an older game grows the beach it grew there.
+  it('grows a typed seed with the generator the player picked', () => {
+    expect(resolveBeach({ kind: 'chosen', text: 'gull', generator: 7 }, CLASSIC_BEACH, pinned))
+      .toEqual({ generator: 7, seed: 'gull' })
   })
 
   // CLASSIC_BEACH is shared; handing it out would let a caller change it.
