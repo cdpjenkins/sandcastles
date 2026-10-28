@@ -4,15 +4,15 @@ import { seededRandomV2 } from './RandomV2.ts'
 import { shapeV2, drawShapeV2 } from './ShapeV2.ts'
 import type { ShapeV2 } from './ShapeV2.ts'
 
-// Every seeded parameter and the range the plan gives it. Provisional until
-// the sweep; when a range moves, it moves here and in ShapeV2 together.
+// Every seeded parameter and the range v2's sweep set for it (PLAN.md step 12).
+// When a range moves, it moves here and in ShapeV2 together.
 const RANGES: Record<Exclude<keyof ShapeV2, 'scarps'>, [number, number]> = {
   seaFraction: [0.74, 0.80],
   seaLevel: [1.6, 2.4],
   tideAmplitude: [0.4, 1.4],
   tidePeriod: [180, 360],
   swellFrequency: [0.78, 1],
-  swellStrength: [0.33, 1],
+  swellStrength: [0.5, 1],
   ridgeScale: [0.7, 1.3],
   ridgePower: [1.5, 2.5],
   sandShare: [0.25, 0.65],

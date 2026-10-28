@@ -6,7 +6,7 @@ import { seededRandomV2 } from './RandomV2.ts'
 // and its scarps. Part of v2: once it ships, every range here and the order of
 // the draws are frozen with it.
 //
-// The ranges are provisional until v2's sweep (PLAN.md step 12).
+// The ranges were set by v2's sweep (PLAN.md step 12).
 
 // A rock cliff far steeper than sand can stand, cut as a notch so the water
 // falling over it is walled in at the foot. Where it goes is stored as
@@ -40,7 +40,7 @@ const SEA_LEVEL = [1.6, 2.4] as const
 const TIDE_AMPLITUDE = [0.4, 1.4] as const
 const TIDE_PERIOD = [180, 360] as const
 const SWELL_FREQUENCY = [0.78, 1] as const
-const SWELL_STRENGTH = [0.33, 1] as const
+const SWELL_STRENGTH = [0.5, 1] as const
 const RIDGE_SCALE = [0.7, 1.3] as const
 const RIDGE_POWER = [1.5, 2.5] as const
 const SAND_SHARE = [0.25, 0.65] as const

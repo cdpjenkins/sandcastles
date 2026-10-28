@@ -307,7 +307,7 @@ Starting ranges, before the sweep:
 | `tideAmplitude` | 0.8 | 0.4 - 1.4 | The water the tide moves (22,822 at 0.8, scaling with amplitude), the swash's reach and castle survival. With `seaLevel`, how low low water and how high high water go |
 | `tidePeriod` | 180 | 180 - 360 | Below 180 is untested; above 360 a player would not see it turn |
 | `swellFrequency` | 1 (3.5s) | 0.78 - 1 (4.5s - 3.5s) | Above 1 is harsher than anything tuned. Below 0.78 the waves stop bending, and less of each wave is absorbed by the sea's absorbing edge |
-| `swellStrength` | 1 (0.15) | 0.33 - 1 | Above 1 is harsher than anything tuned. Below a third, the sea looks flat |
+| `swellStrength` | 1 (0.15) | 0.5 - 1 | Above 1 is harsher than anything tuned. Set by the sweep: castle wear falls away unevenly with strength, and at a third a castle barely erodes |
 | `ridgeScale` | 1.0 | 0.7 - 1.3 | The stream's speed and erosion |
 | `ridgePower` | 2 | 1.5 - 2.5 | Where the beach is steep: near the back, or across it |
 | `sandShare` | 0.43 | 0.25 - 0.65 | Rocky to sandy. At the sandy end, deep sand soaks the stream and slows its arrival |
@@ -375,6 +375,57 @@ As built (step 11):
   passing the check on to its neighbours when it lowers one. The noise leaves
   some natural slopes over repose anyway, so the test is that a scarp gives
   Slope nothing new to move.
+
+### The sweep (step 12)
+
+Scratch probes `sweep2.ts`, `swellsweep.ts` and `chopcheck.ts`, through the full
+`Game.simStep` pipeline. 50 seeds, `s1`..`s50`, each for 300s or one tide period
+and on to 900s for a stream that had not arrived; 10 sea and tide corners on
+v1-like land; 10 swell points.
+
+| criterion | v2 | bar (v1) | outcome |
+|---|---|---|---|
+| NaN or negative depth | none | none (none) | pass |
+| open sea vs the tide | seeds 0.04 - 0.24; corners up to 0.317 | 0.3 (0.26) | accepted: one corner, the lowest sea at the highest level with the biggest tide |
+| deepest water inland | median 7.1, max 11.52 | 11 (9.4) | bar raised to 12 |
+| streams inside 300s | 35 / 50, 13 by 305 - 755s, 2 never | 40 (41, 1 never) | bar lowered to 33, with at most 3 never |
+| castle wear, over its flat sea | 0.08 - 1.22x v1's | 2x | pass; the floor of `swellStrength` raised |
+| refraction | 0.10 - 0.21 | v1 0.14 by this measure | pass |
+| reflected / incident at the sponge | 0.127 - 0.133 | 2x v1's 0.132 | pass |
+| flicker below a waterfall | 0.035 - 0.039 | the spike's 0.04 - 0.06 | pass |
+
+- **Deep inland water is shore lakes, not plunge pools.** The four seeds over
+  11 already hold 9.6 - 10.8 at boot, in hollows below sea level at rows 169 -
+  178, just inland of the shore zone. A higher sea level and a bigger tide than
+  v1's lift them: v2's tide reaches 1.4 against v1's 0.8. Half the instability
+  onset is 11; 12 still leaves 10 to spare.
+- **No knob separates a slow stream from a fast one.** The mean of every
+  seeded knob is within a few percent between the 35 that arrived and the 15
+  that did not. Waterfalls play a part: 5 of the 11 streams that crossed a
+  scarp were slow, against 10 of the 39 that did not. The two that never
+  arrived score 61 and 37 on the spring's fill cost, inside its budget of 70,
+  as v1's one did. Narrowing a range would not fix it; a route-aware spring
+  would, and stays out of scope. A slow or pooling stream is a fine beach.
+- **Castle wear is not proportional to swell strength**, because of the
+  erosion threshold. Over its flat sea, against v1's: 0.08x at 0.33, 0.22x at
+  0.5, 0.32x at 0.66, 0.53x at 0.8. Hence the floor of 0.5. A slow full swell
+  is the harshest corner, at 1.22x.
+- **Refraction and reflection are measured here relative to v1,** because
+  how CLAUDE.md's 0.09 and 0.035 were taken is not recorded. Refraction is
+  RMS(flowX) / RMS(flowZ) at row 240 minus at `seaStart` + 11; it is a
+  direction, so it does not shrink with amplitude, and the plan's per-strength
+  floor does not apply. Reflection splits the wave at row 240 into its
+  shoreward and seaward parts.
+- **Spatial chop could not referee a waterfall; flicker can.** The spike's
+  curvature-flip chop read 0.06 - 0.52 below the 11 waterfalls, but the same
+  streams read nearly as high without their cliffs (s12 0.41, s46 0.36): v2's
+  streams are busier than classic's. The step-to-step flicker the spike used
+  was the same with and without the cliffs and under the spike's control. s16
+  reads high only with its cliff, which is the plunge pool's surge.
+- **Waterfalls form on 1 beach in 5:** 48 scarps on 34 beaches, 11 crossed.
+- **The runs took far longer than measured alone:** 0.45s a simulated second
+  for one probe, but up to 15x that with 8 in parallel, or across a sleep.
+  Budget hours, not minutes, for a sweep this size.
 
 ### The dialog
 
