@@ -1,4 +1,29 @@
-# WIP: A v2 beach generator
+# WIP: v2 without scarps
+
+The user asked for the waterfalls to go. v2 is unpushed, so it is treated as
+still under development and changed in place: the scarps come out, v2 is
+re-pinned and its seeds re-swept. `LATEST_GENERATOR` stays at 2. Plan in
+`PLAN.md`, under *Follow-on: v2 without scarps*.
+
+## Current Step
+
+Step 1 done. Next: step 2, re-sweep the seeds.
+
+## Status
+
+⏸️ WAITING - step 1 complete: the scarps are out of v2 (shape, layout, the
+sand settle and their tests); `layBeachV2` returns nothing again. All 16
+cliff-free seeds of s1..s50 grow exactly what they did; s46 is re-pinned
+(its land moved, its sea did not), s37 unchanged. Suite 636 green, tsc clean,
+build clean. Next: the re-sweep.
+
+## Steps
+
+- [x] Step 1: remove the scarps from v2 and re-pin
+- [ ] Step 2: re-sweep the seeds (decision point)
+- [ ] Step 3: CLAUDE.md
+
+## Shipped before this: a v2 beach generator
 
 The seed shapes the beach as well as its noise: its own sea, tide and
 swell, a seeded ridge and sand share, bolder land, and rock scarps that can make
@@ -6,18 +31,18 @@ waterfalls. A waterfall spike comes first; then the sea, tide and swell move
 onto the grid as one `BeachSea` (snapshot v5). v1 untouched beyond stating its whole sea; v2 unreachable until
 swept and frozen. Plan in `PLAN.md`.
 
-## Current Step
+### Current Step
 
 None - work complete.
 
-## Status
+### Status
 
 ⏸️ WAITING - all 16 steps done: v2 shipped frozen (LATEST_GENERATOR = 2),
 browser-checked by the user, and its learnings recorded in CLAUDE.md under
 *The v2 generator*, *The sea is the beach's* and the swell notes. Suite 650
 green, tsc clean, build clean. Not pushed.
 
-## Steps
+### Steps
 
 - [x] Step 1: the waterfall spike (decision point)
 - [x] Step 2: the beach's sea lives on the grid (`BeachSea`)

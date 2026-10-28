@@ -16,7 +16,6 @@ const V1_LIKE: ShapeV2 = {
   ridgePower: 2,
   sandShare: 9 / 21,
   noiseScale: 1,
-  scarps: [],
 }
 
 const laid = (changes: Partial<ShapeV2>): Grid => {

@@ -48,13 +48,14 @@ describe('The beaches a new game lays out', () => {
 // than "the latest", so a v3 cannot pass them by accident. Its sea is pinned
 // whole: unlike v1's, it is grown from the seed, and lives outside the layers.
 //
-// s46 has two scarps, and its stream falls over one of them in the sweep; s37
-// has none.
+// Re-pinned when v2's scarps were taken out, before it was ever pushed. s46
+// had two and s37 none, so s37's pin did not move and s46's land did - its
+// sea did not.
 describe('The beaches v2 lays out', () => {
-  it('s46, with scarps', () => {
+  it('s46', () => {
     expect(checksums('s46', 2)).toEqual({
-      rock: '67b33572', sand: '00258b5a', water: '1c8867c2',
-      moisture: 'f5ec9dc5', source: 'c1aedce8', sediment: 'f5ec9dc5',
+      rock: '3d76a938', sand: '332383f3', water: '32383b0f',
+      moisture: 'f5ec9dc5', source: 'd8b42c68', sediment: 'f5ec9dc5',
     })
     expect(newGameSnapshot(256, 256, { generator: 2, seed: 's46' }).sea).toEqual({
       seaStart: 197,
@@ -66,7 +67,7 @@ describe('The beaches v2 lays out', () => {
     })
   })
 
-  it('s37, without', () => {
+  it('s37', () => {
     expect(checksums('s37', 2)).toEqual({
       rock: 'f931349e', sand: 'd6419726', water: '2124f44a',
       moisture: 'f5ec9dc5', source: '15db18c8', sediment: 'f5ec9dc5',

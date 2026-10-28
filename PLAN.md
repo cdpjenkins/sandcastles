@@ -607,3 +607,39 @@ the game plays exactly as now.
 - **Showing the tide or the swell in the Hud** beyond the readouts already
   there.
 - **Typing a generator into the seed (`gen1:...`).** The picker does this job.
+
+## Follow-on: v2 without scarps
+
+The user did not like the waterfalls in play and asked for them to go. v2 had
+not been pushed - `main` was 18 commits ahead of `origin/main`, whose latest is
+`e3da65b`, from before this plan - so no player has a v2 beach, and v2 is
+treated as still under development: changing it in place breaks nothing
+outside this machine. The only v2 beaches are the user's own, from the browser
+check; one that had scarps regrows without them on *Restart*, and still loads
+unchanged, since a save stores its layers.
+
+Decisions:
+
+- **The scarp code comes out of v2,** rather than drawing zero scarps: a
+  frozen generator should not carry code it never runs. The spike, the design
+  and the sweep's scarp findings stay above and in git history for a later
+  generator to bring them back.
+- **Every seed without a scarp is unchanged.** Scarps are the shape's last
+  draws, so removing them moves no other value.
+- **`showsWater` stays.** It is right for any cliff a player digs.
+- **`LATEST_GENERATOR` stays at 2.** The removal, the re-pin and the re-sweep
+  happen together, before any push.
+
+Steps:
+
+1. **Remove the scarps from v2 and re-pin.** `ScarpV2`, the scarp draws,
+   `cutScarpV2` and its placement, the sand settle, and their tests go;
+   `layBeachV2` returns nothing again. s46's pin moves; s37's does not. A
+   one-off scratch check confirms every seed of `s1`..`s50` that had no scarp
+   grows exactly the beach it did.
+2. **Re-sweep the seeds** (a decision point). The 50 seeds through the full
+   pipeline, as step 12 ran them. The sea, tide and swell corners had no
+   scarps and stand. Bring the user the table if any bar fails.
+3. **CLAUDE.md.** The v2 section describes v2 without scarps, keeping what the
+   spike taught about waterfalls under a note that v2 does not grow them.
+
