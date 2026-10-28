@@ -8,12 +8,14 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 15 done. Next: step 16, CLAUDE.md.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - step 15 complete: the user checked every item of PLAN.md's step
-15 list in the browser, and all pass. Waiting on "start step 16".
+⏸️ WAITING - all 16 steps done: v2 shipped frozen (LATEST_GENERATOR = 2),
+browser-checked by the user, and its learnings recorded in CLAUDE.md under
+*The v2 generator*, *The sea is the beach's* and the swell notes. Suite 650
+green, tsc clean, build clean. Not pushed.
 
 ## Steps
 
@@ -32,7 +34,7 @@ Step 15 done. Next: step 16, CLAUDE.md.
 - [x] Step 13: the generator picker
 - [x] Step 14: ship v2 (LATEST = 2, pins, frozen)
 - [x] Step 15: verify in the browser
-- [ ] Step 16: CLAUDE.md
+- [x] Step 16: CLAUDE.md
 
 ## Shipped before this
 
