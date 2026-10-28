@@ -7,19 +7,20 @@ the beach's drop as a knob*.
 
 ## Current Step
 
-Step 3: CLAUDE.md.
+None - work complete.
 
 ## Status
 
-🔴 RED - updating CLAUDE.md for `beachDrop` and v2 under development. Step 2
-done: every bar passes but streams, 39/50 inside 300s against 40, which the
-user accepted, keeping 10 - 35.
+⏸️ WAITING - all three steps done: `beachDrop` (10 - 35) replaces
+`ridgeScale`, v2 is re-pinned and marked under development, re-swept (39/50
+streams inside 300s, accepted), and CLAUDE.md updated. Suite 637 green, tsc
+clean, build clean. Not pushed.
 
 ## Steps
 
 - [x] Step 1: `beachDrop` replaces `ridgeScale`; re-pin v2
 - [x] Step 2: re-sweep (decision point)
-- [ ] Step 3: CLAUDE.md
+- [x] Step 3: CLAUDE.md
 
 ## Shipped before this: v2 without scarps
 

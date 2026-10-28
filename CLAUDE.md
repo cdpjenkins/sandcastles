@@ -786,7 +786,8 @@ in the snapshot is the alternative, and it gets more expensive to add later.
 `generators/BeachGenerator.ts` (`BeachGenerator`, `BeachSpec`, `generatorFor`,
 `LATEST_GENERATOR`, `CLASSIC_BEACH`), `generators/v1/` (`BeachGeneratorV1.ts`,
 `SpringSiteV1.ts`) and `generators/v2/` (below). Every beach is grown by a
-numbered generator, and every save records which one. Both are frozen. What was
+numbered generator, and every save records which one. v1 is frozen; v2 is still
+under development (below). What was
 expensive to learn:
 
 ### A shipped generator is frozen; a change is a new one beside it
@@ -802,18 +803,18 @@ shared helper would let a v2 improvement change every v1 beach.
 `beachPins.test.ts` holds both: every layer of v1's classic, `salty-gull-42` and
 `s46`, and every layer and the whole sea of v2's `s46` and `s37`, each named
 with its generator explicitly - the pins pin a version, not "the latest", so a
-newer one cannot pass them by accident. If one fails, a shipped beach changed.
+newer one cannot pass them by accident. If a v1 pin fails, a shipped beach
+changed. v2's move on purpose while it is under development.
 
-v2 was built over many commits with `LATEST_GENERATOR` held at 1 by a test, so
-no player could grow a beach from a generator still changing. It moved to 2
-in the same commit as v2's pins - that commit is the moment v2 froze. Build a
-v3 the same way.
-
-What freezing protects is beaches players have. v2 was changed once after its
-pins - its scarps taken out - and that was safe only because it had never been
-pushed: the only v2 beaches were on the machine it was built on. Check
-`git log origin/main..main` before treating a pinned generator as changeable;
-once pushed, a change is a new generator.
+What freezing protects is beaches players have, and nothing deploys this game:
+there is no CI and no deploy configuration, so a push reaches only machines
+that clone the repo. That is why v2 can be the latest while still under
+development, changing in place with its pins moving on purpose - its scarps
+came out, and `beachDrop` replaced `ridgeScale`, both after it was pinned and
+the second after it was pushed. The day the game is deployed, that stops: only
+a frozen generator may then be the latest, and a change to one is a new
+generator beside it. v2 was first built with `LATEST_GENERATOR` held at 1 by a
+test, which is the way to build a generator once players exist.
 
 The rock and sand checksums alone were not enough. Raising the sea by 0.0001
 passed every test in `grid.test.ts` and failed all three whole-beach pins: the
@@ -897,8 +898,9 @@ CLASSIC_BEACH))`, the one path every beach takes.
 
 `generators/v2/`: `BeachGeneratorV2.ts` (`generateBeachV2`, `layBeachV2`),
 `ShapeV2.ts` (`shapeV2`, `drawShapeV2`), `SpringSiteV2.ts` (v1's rule, copied)
-and `RandomV2.ts`. Frozen. A seed draws the beach's sea, tide and swell, its
-ridge, its sand share and how bold its noise is. `PLAN.md` has the design, the
+and `RandomV2.ts`. Still under development, so not yet frozen. A seed draws the
+beach's sea, tide and swell, its steepness, the shape of its ridge, its sand
+share and how bold its noise is. `PLAN.md` has the design, the
 sweep, and the scarps that were built and taken out. What was expensive to
 learn:
 
@@ -918,10 +920,19 @@ cheapest drawn last.
 
 ### Steepness and sand are separate knobs
 
-`ridgeScale` scales v1's surface ridge, rock and sand together (12 + 9);
-`sandShare` splits it between the layers. One effect per knob: the ridge sets
-how fast the stream runs, the share sets soaking and digging, and a sweep can
-say which a failing seed failed on. Two scales, one per layer, could not.
+`beachDrop` is how far the surface falls from the back of the beach to the sea,
+noise aside, in world units (10 - 35; v1's is 22). The ridge, rock and sand
+together, is `beachDrop` less the rock's base height of 1, and `sandShare`
+splits it between the layers. One effect per knob: the drop sets how fast the
+stream runs, the share sets soaking and digging, and a sweep can say which a
+failing seed failed on. Two scales, one per layer, could not.
+
+It replaced `ridgeScale`, which multiplied v1's ridge and so already set the
+drop - about 1 + 21 x `ridgeScale`. Adding steepness beside it would have given
+two knobs one job. Named for what it means, it can be tested directly: with the
+noise off, the back of the beach stands exactly `beachDrop` above the shore.
+Steepness barely explained which streams were slow (correlation 0.11 with
+arrival time); the flattest and steepest beaches' streams both arrived fast.
 Bolder noise (`noiseScale`) floors far more rock at 0.2 - 9% of cells to 32%
 on seed 0 - and does not average to zero over a band of rows, so it moves the
 beach's mean height too.
@@ -967,11 +978,15 @@ any cell whose water changes.
 | NaN or negative depth | none | none |
 | open sea vs the tide | seeds ≤ 0.287; one corner 0.317 | 0.3 (0.26) |
 | deepest water inland | max 11.52 | 12, raised from 11 (9.4) |
-| streams inside 300s | 44 / 50; 1 never | 40 (41, 1 never) |
+| streams inside 300s | 39 / 50; 2 never | 40 (41, 1 never) |
 | castle wear over its flat sea | 0.08 - 1.22x | 2x |
 | refraction, reflection | as v1's | as v1's |
 
-Two were judged and accepted, not passed:
+Three were judged and accepted, not passed:
+
+- **39 streams, one short of 40.** Without `beachDrop` it was 44; changing
+  every beach's land reshuffles whose spring lands somewhere awkward, and
+  steepness barely tracks it. Kept at 10 - 35.
 
 - **The deep water is shore lakes:** hollows below sea level just inland of
   the shore zone, 9.6 - 10.8 deep at boot, lifted at high tide by a higher sea
@@ -981,7 +996,7 @@ Two were judged and accepted, not passed:
   biggest tide; no seed came within 0.01 of it.
 
 Only one range moved: `swellStrength`'s floor, a third to a half, for the
-castle wear recorded under the swell notes. No knob separates the 6 slow
+castle wear recorded under the swell notes. No knob separates the 11 slow
 streams from the rest - every seeded knob's mean is within a few percent
 between them - so a slow or pooling stream is just a beach; a route-aware
 spring is what would change it.
