@@ -1,22 +1,45 @@
-# WIP: v2 without scarps
+# WIP: the beach's drop as a knob
+
+`beachDrop` - the surface's fall from the back of the beach to the sea -
+replaces `ridgeScale` in v2, drawn from 10 to 35. v2 is treated as still under
+development: nothing deploys on a push. Plan in `PLAN.md`, under *Follow-on:
+the beach's drop as a knob*.
+
+## Current Step
+
+Step 2: re-sweep (decision point).
+
+## Status
+
+🔴 RED - re-sweeping all 50 seeds and the flattest and steepest beach.
+Step 1 done (`beachDrop` replaces `ridgeScale`, v2 re-pinned and marked under
+development; suite 637 green).
+
+## Steps
+
+- [x] Step 1: `beachDrop` replaces `ridgeScale`; re-pin v2
+- [ ] Step 2: re-sweep (decision point)
+- [ ] Step 3: CLAUDE.md
+
+## Shipped before this: v2 without scarps
 
 The user asked for the waterfalls to go. v2 is unpushed, so it is treated as
 still under development and changed in place: the scarps come out, v2 is
 re-pinned and its seeds re-swept. `LATEST_GENERATOR` stays at 2. Plan in
 `PLAN.md`, under *Follow-on: v2 without scarps*.
 
-## Current Step
+### Current Step
 
 None - work complete.
 
-## Status
+### Status
 
 ⏸️ WAITING - all three steps done: the scarps are out of v2, it is re-pinned
 and re-swept (every bar passes), and CLAUDE.md describes v2 without scarps,
 keeping what the cliffs taught. Suite 636 green, tsc clean, build clean. Not
 pushed.
 
-## Steps
+### Steps
 
 - [x] Step 1: remove the scarps from v2 and re-pin
 - [x] Step 2: re-sweep the seeds (decision point)

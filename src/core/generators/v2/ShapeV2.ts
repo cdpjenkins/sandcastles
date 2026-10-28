@@ -3,7 +3,8 @@ import { seededRandomV2 } from './RandomV2.ts'
 
 // What a v2 seed chooses about its beach beyond the noise: its sea, tide and
 // swell, the shape of its ridge, how much of it is sand, and how bold its land
-// is. FROZEN with the rest of v2: every range here and the order of the draws.
+// is. Not yet frozen, like the rest of v2; once it is, every range here and the
+// order of the draws are frozen with it.
 //
 // v2 once drew up to two scarps - rock cliffs that made waterfalls - after
 // everything else. They were taken out before v2 was pushed; because they were
@@ -18,7 +19,7 @@ export interface ShapeV2 {
   tidePeriod: number     // seconds
   swellFrequency: number // fraction of the maximum swell's
   swellStrength: number  // fraction of the maximum swell's
-  ridgeScale: number     // multiplies v1's surface ridge, rock + sand
+  beachDrop: number      // the surface's fall from z = 0 to the sea, noise aside; v1 is 22
   ridgePower: number     // ridge = (1 - t) ** ridgePower; v1 is 2
   sandShare: number      // fraction of the ridge that is sand; v1 is 9/21
   noiseScale: number     // multiplies v1's rock and sand noise amplitudes
@@ -30,7 +31,7 @@ const TIDE_AMPLITUDE = [0.4, 1.4] as const
 const TIDE_PERIOD = [180, 360] as const
 const SWELL_FREQUENCY = [0.78, 1] as const
 const SWELL_STRENGTH = [0.5, 1] as const
-const RIDGE_SCALE = [0.7, 1.3] as const
+const BEACH_DROP = [10, 35] as const
 const RIDGE_POWER = [1.5, 2.5] as const
 const SAND_SHARE = [0.25, 0.65] as const
 const NOISE_SCALE = [1.0, 1.6] as const
@@ -53,13 +54,13 @@ export function drawShapeV2(random: () => number): ShapeV2 {
   const tidePeriod = between(TIDE_PERIOD)
   const swellFrequency = between(SWELL_FREQUENCY)
   const swellStrength = between(SWELL_STRENGTH)
-  const ridgeScale = between(RIDGE_SCALE)
+  const beachDrop = between(BEACH_DROP)
   const ridgePower = between(RIDGE_POWER)
   const sandShare = between(SAND_SHARE)
   const noiseScale = between(NOISE_SCALE)
 
   return {
     seaFraction, seaLevel, tideAmplitude, tidePeriod, swellFrequency, swellStrength,
-    ridgeScale, ridgePower, sandShare, noiseScale,
+    beachDrop, ridgePower, sandShare, noiseScale,
   }
 }

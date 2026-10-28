@@ -7,17 +7,17 @@ import type { ShapeV2 } from './ShapeV2.ts'
 import type { BeachGenerator } from '../BeachGenerator.ts'
 import type { BeachSea } from '../../BeachSea.ts'
 
-// Version 2 of the beach generator. FROZEN.
+// Version 2 of the beach generator. STILL UNDER DEVELOPMENT - not yet frozen.
 //
 // Every save records the generator that built its beach, and a seed must
 // regenerate the same beach forever - for Restart, and for a seed someone has
-// shared. So nothing here may change, not a constant and not the order of an
-// operation; nor in ShapeV2, SpringSiteV2 or RandomV2. A change to how beaches
-// grow goes into a new generator beside this one, copying whatever it wants to
-// alter.
+// shared. Once v2 is frozen, nothing here may change, not a constant and not
+// the order of an operation; nor in ShapeV2, SpringSiteV2 or RandomV2. Until
+// then it changes in place, which is safe only while nothing deploys the game:
+// the only v2 beaches are on machines that cloned the repo.
 //
 // Held by beachPins.test.ts, which checksums every layer and the whole sea of
-// two v2 beaches.
+// two v2 beaches; a change here moves those pins on purpose.
 //
 // It owns everything it calls, as v1 does, even where that duplicates v1: a
 // shared helper would let a change here move every v1 beach.
@@ -27,9 +27,6 @@ const ROCK_NOISE_AMPLITUDE = 12
 const ROCK_NOISE_OFFSET = 1000
 const MIN_ROCK_HEIGHT = 0.2
 const ROCK_SHORE_FADE_DISTANCE = 25
-// v1's surface ridge, rock and sand together (12 + 9). A shape scales it and
-// shares it between the two layers.
-const RIDGE_AMPLITUDE = 21
 const SAND_NOISE_AMPLITUDE = 6
 const SEA_FLOOR_END_HEIGHT = -20
 
@@ -79,7 +76,9 @@ function seaV2(depth: number, shape: ShapeV2): BeachSea {
 // Each cell is written and then read back before use, so the arithmetic sees
 // the same float32-rounded values the layers hold.
 export function layBeachV2(grid: Grid, shape: ShapeV2, seed: number): void {
-  const ridgeHeight = RIDGE_AMPLITUDE * shape.ridgeScale
+  // The ridge stands on the rock's base height, so the back of the beach is
+  // beachDrop above the sea's first row, which lies at 0. v1's ridge is 12 + 9.
+  const ridgeHeight = shape.beachDrop - ROCK_BASE_HEIGHT
   const rockRidge = ridgeHeight * (1 - shape.sandShare)
   const sandRidge = ridgeHeight * shape.sandShare
   const rockNoiseAmplitude = ROCK_NOISE_AMPLITUDE * shape.noiseScale

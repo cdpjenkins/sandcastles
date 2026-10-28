@@ -12,7 +12,7 @@ const V1_LIKE: ShapeV2 = {
   tidePeriod: 180,
   swellFrequency: 1,
   swellStrength: 1,
-  ridgeScale: 1,
+  beachDrop: 22,
   ridgePower: 2,
   sandShare: 9 / 21,
   noiseScale: 1,
@@ -34,9 +34,20 @@ const surface = (grid: Grid) => (x: number, z: number) => grid.getSurfaceHeight(
 const sand = (grid: Grid) => (x: number, z: number) => grid.getSandHeight(x, z)!
 
 describe('layBeachV2', () => {
-  it('stands the back of a high-ridgeScale beach higher than a low one', () => {
-    const high = laid({ ridgeScale: 1.3 })
-    const low = laid({ ridgeScale: 0.7 })
+  // With the noise off, the drop is exactly what the shape says: the back of
+  // the beach stands beachDrop above the sea's first row.
+  it('stands the back of the beach beachDrop above the shore', () => {
+    for (const beachDrop of [10, 22, 35]) {
+      const grid = laid({ beachDrop, noiseScale: 0 })
+      const drop = grid.getSurfaceHeight(128, 0)! - grid.getSurfaceHeight(128, grid.seaStart)!
+
+      expect(drop, `beachDrop ${beachDrop}`).toBeCloseTo(beachDrop, 4)
+    }
+  })
+
+  it('stands the back of a steep beach higher than a flat one', () => {
+    const high = laid({ beachDrop: 35 })
+    const low = laid({ beachDrop: 10 })
 
     expect(mean(high, 0, 20, surface(high))).toBeGreaterThan(mean(low, 0, 20, surface(low)) + 5)
   })

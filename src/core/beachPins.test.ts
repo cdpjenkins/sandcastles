@@ -44,18 +44,19 @@ describe('The beaches a new game lays out', () => {
   })
 })
 
-// v2, pinned the moment it shipped and froze. Named with generator 2 rather
-// than "the latest", so a v3 cannot pass them by accident. Its sea is pinned
-// whole: unlike v1's, it is grown from the seed, and lives outside the layers.
+// v2, named with generator 2 rather than "the latest", so a v3 cannot pass
+// them by accident. Its sea is pinned whole: unlike v1's, it is grown from the
+// seed, and lives outside the layers.
 //
-// Re-pinned when v2's scarps were taken out, before it was ever pushed. s46
-// had two and s37 none, so s37's pin did not move and s46's land did - its
-// sea did not.
+// v2 is still under development, so these move when it does, on purpose: when
+// its scarps came out, and when beachDrop replaced ridgeScale. Each time its
+// seas held; only the land moved. Once it is frozen, a failure here means a
+// v2 beach changed.
 describe('The beaches v2 lays out', () => {
   it('s46', () => {
     expect(checksums('s46', 2)).toEqual({
-      rock: '3d76a938', sand: '332383f3', water: '32383b0f',
-      moisture: 'f5ec9dc5', source: 'd8b42c68', sediment: 'f5ec9dc5',
+      rock: '0744145f', sand: '5f87a991', water: 'f400528e',
+      moisture: 'f5ec9dc5', source: 'e2d09318', sediment: 'f5ec9dc5',
     })
     expect(newGameSnapshot(256, 256, { generator: 2, seed: 's46' }).sea).toEqual({
       seaStart: 197,
@@ -69,7 +70,7 @@ describe('The beaches v2 lays out', () => {
 
   it('s37', () => {
     expect(checksums('s37', 2)).toEqual({
-      rock: 'f931349e', sand: 'd6419726', water: '2124f44a',
+      rock: '085b1f47', sand: '3c73b72a', water: '2bcde44e',
       moisture: 'f5ec9dc5', source: '15db18c8', sediment: 'f5ec9dc5',
     })
     expect(newGameSnapshot(256, 256, { generator: 2, seed: 's37' }).sea).toEqual({

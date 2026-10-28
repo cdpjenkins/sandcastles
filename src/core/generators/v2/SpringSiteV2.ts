@@ -3,9 +3,10 @@ import type { GridCoord } from '../../../types.ts'
 import { seedFromText } from '../../BeachSeed.ts'
 import { seededRandomV2 } from './RandomV2.ts'
 
-// Spring placement for the v2 generator: v1's rule, copied. FROZEN with the
-// rest of v2: a later generator that wants a different rule copies this file
-// rather than editing it, or every v2 seed would grow its spring somewhere new.
+// Spring placement for the v2 generator: v1's rule, copied. Not yet frozen,
+// like the rest of v2; once it is, a later generator that wants a different
+// rule copies this file rather than editing it, or every v2 seed would grow
+// its spring somewhere new.
 
 // How much a spring may have to fill and still be sure of reaching the sea:
 // across v1's 50-seed sweep every spring scoring under 70 arrived inside 300s,

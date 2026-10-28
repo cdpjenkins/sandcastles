@@ -659,3 +659,33 @@ Without scarps v2's streams beat v1's, so the stream bar lowered for the
 scarps goes back to 40. The 13 slow streams with scarps are 5 without -
 s26, s14, s20, s5, s10, 350 - 585s - and still no knob separates them.
 
+## Follow-on: the beach's drop as a knob
+
+The user wants the beach's steepness - its fall in elevation from `z = 0` to
+`seaStart` - as a generator parameter, and v2 treated as still under
+development: pushing deploys nothing (no CI, no deploy config), so the only v2
+beaches are on machines that cloned the repo since the scarps came out.
+
+Decisions (the user's):
+
+- **`beachDrop` replaces `ridgeScale`.** `ridgeScale` already set the drop - it
+  is about 1 + 21 x `ridgeScale` - so a second knob would fight it for the same
+  job. `beachDrop` is the surface's fall from the back of the beach to the sea,
+  noise aside, in world units, drawn directly: the ridge (rock and sand
+  together) is `beachDrop - ROCK_BASE_HEIGHT`. 22 lays v1's land exactly.
+- **Range 10 - 35,** against v2's ~16 - 28 and v1's 22. Both ends are swept.
+- **It is drawn in `ridgeScale`'s place,** so no other shape value moves. Every
+  v2 beach's land does.
+- **v2's headers say it is under development again;** `LATEST_GENERATOR` stays
+  at 2.
+
+Steps:
+
+1. **`beachDrop` replaces `ridgeScale`, and v2 is re-pinned.** Tests: a
+   beach's back stands `beachDrop` above its shore when the noise is off; a
+   steeper beach's back stands higher; 22 still lays v1's land.
+2. **Re-sweep** (a decision point): all 50 seeds, and the flattest and steepest
+   beach on v1-like land. The swell points are unaffected. Bring the user the
+   table if any bar fails.
+3. **CLAUDE.md.**
+

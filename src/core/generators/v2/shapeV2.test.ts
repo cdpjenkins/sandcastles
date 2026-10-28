@@ -13,7 +13,7 @@ const RANGES: Record<keyof ShapeV2, [number, number]> = {
   tidePeriod: [180, 360],
   swellFrequency: [0.78, 1],
   swellStrength: [0.5, 1],
-  ridgeScale: [0.7, 1.3],
+  beachDrop: [10, 35],
   ridgePower: [1.5, 2.5],
   sandShare: [0.25, 0.65],
   noiseScale: [1.0, 1.6],

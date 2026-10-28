@@ -28,10 +28,11 @@ describe('LATEST_GENERATOR', () => {
     expect(generatorFor(LATEST_GENERATOR)?.version).toBe(LATEST_GENERATOR)
   })
 
-  // Only a frozen generator may grow a player's beach: one still changing
-  // would regrow it differently after its next change. v2 shipped frozen,
-  // with its pins in beachPins.test.ts.
-  it('is v2, which is frozen', () => {
+  // v2 grows new beaches while it is still under development: nothing deploys
+  // on a push, so the only v2 beaches are on machines that cloned the repo.
+  // Once the game is played anywhere else, only a frozen generator may be the
+  // latest: one still changing would regrow a player's beach differently.
+  it('is v2', () => {
     expect(LATEST_GENERATOR).toBe(2)
   })
 })
