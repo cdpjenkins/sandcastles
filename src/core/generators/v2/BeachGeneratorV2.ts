@@ -8,11 +8,17 @@ import { seededRandomV2 } from './RandomV2.ts'
 import type { BeachGenerator } from '../BeachGenerator.ts'
 import type { BeachSea } from '../../BeachSea.ts'
 
-// Version 2 of the beach generator. NOT YET FROZEN - PLAN.md builds it up step
-// by step, starting from this copy of v1, and LATEST_GENERATOR stays 1 so it
-// grows no player's beach until then. Once it ships, everything here is frozen
-// the way v1 is: nothing may change, not a constant and not the order of an
-// operation.
+// Version 2 of the beach generator. FROZEN.
+//
+// Every save records the generator that built its beach, and a seed must
+// regenerate the same beach forever - for Restart, and for a seed someone has
+// shared. So nothing here may change, not a constant and not the order of an
+// operation; nor in ShapeV2, SpringSiteV2 or RandomV2. A change to how beaches
+// grow goes into a new generator beside this one, copying whatever it wants to
+// alter.
+//
+// Held by beachPins.test.ts, which checksums every layer and the whole sea of
+// two v2 beaches.
 //
 // It owns everything it calls, as v1 does, even where that duplicates v1: a
 // shared helper would let a change here move every v1 beach.

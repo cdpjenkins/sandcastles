@@ -1,5 +1,5 @@
-// mulberry32: a small seeded generator, so v2's draws are deterministic. Part
-// of v2: once it ships, changing this changes every v2 beach's shape and
+// mulberry32: a small seeded generator, so v2's draws are deterministic.
+// FROZEN with the rest of v2: changing it changes every v2 beach's shape and
 // spring.
 export function seededRandomV2(seed: number): () => number {
   let state = seed | 0

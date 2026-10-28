@@ -28,11 +28,11 @@ describe('LATEST_GENERATOR', () => {
     expect(generatorFor(LATEST_GENERATOR)?.version).toBe(LATEST_GENERATOR)
   })
 
-  // v2 is unfinished, so it must grow no player's beach: a beach grown by an
-  // unfrozen generator would regrow differently after its next change. This
-  // moves to 2 on purpose when v2 ships frozen.
-  it('is still v1 while v2 is being built', () => {
-    expect(LATEST_GENERATOR).toBe(1)
+  // Only a frozen generator may grow a player's beach: one still changing
+  // would regrow it differently after its next change. v2 shipped frozen,
+  // with its pins in beachPins.test.ts.
+  it('is v2, which is frozen', () => {
+    expect(LATEST_GENERATOR).toBe(2)
   })
 })
 

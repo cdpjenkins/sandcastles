@@ -23,9 +23,9 @@ export interface BeachSpec {
 
 const GENERATORS: readonly BeachGenerator[] = [beachGeneratorV1, beachGeneratorV2]
 
-// What a new random or typed seed is grown with. Still 1 while v2 is being
-// built: an unfrozen generator must grow no player's beach.
-export const LATEST_GENERATOR = 1
+// What a new random or typed seed is grown with. Only ever a frozen
+// generator: one still changing would regrow a player's beach differently.
+export const LATEST_GENERATOR = 2
 
 export const CLASSIC_BEACH: Readonly<BeachSpec> = Object.freeze({ generator: 1, seed: null })
 

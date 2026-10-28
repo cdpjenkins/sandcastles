@@ -3,8 +3,8 @@ import { seededRandomV2 } from './RandomV2.ts'
 
 // What a v2 seed chooses about its beach beyond the noise: its sea, tide and
 // swell, the shape of its ridge, how much of it is sand, how bold its land is,
-// and its scarps. Part of v2: once it ships, every range here and the order of
-// the draws are frozen with it.
+// and its scarps. FROZEN with the rest of v2: every range here and the order
+// of the draws.
 //
 // The ranges were set by v2's sweep (PLAN.md step 12).
 
