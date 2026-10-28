@@ -7,18 +7,18 @@ the beach's drop as a knob*.
 
 ## Current Step
 
-Step 2: re-sweep (decision point).
+Step 3: CLAUDE.md.
 
 ## Status
 
-🔴 RED - re-sweeping all 50 seeds and the flattest and steepest beach.
-Step 1 done (`beachDrop` replaces `ridgeScale`, v2 re-pinned and marked under
-development; suite 637 green).
+🔴 RED - updating CLAUDE.md for `beachDrop` and v2 under development. Step 2
+done: every bar passes but streams, 39/50 inside 300s against 40, which the
+user accepted, keeping 10 - 35.
 
 ## Steps
 
 - [x] Step 1: `beachDrop` replaces `ridgeScale`; re-pin v2
-- [ ] Step 2: re-sweep (decision point)
+- [x] Step 2: re-sweep (decision point)
 - [ ] Step 3: CLAUDE.md
 
 ## Shipped before this: v2 without scarps

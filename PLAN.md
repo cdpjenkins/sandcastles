@@ -689,3 +689,21 @@ Steps:
    table if any bar fails.
 3. **CLAUDE.md.**
 
+**Re-sweep result** (step 2): all 50 seeds, and the flattest and steepest beach
+on v1-like land.
+
+| criterion | before `beachDrop` | with it | bar |
+|---|---|---|---|
+| NaN or negative depth | none | none | none |
+| open sea vs the tide | max 0.287 | max 0.288 | 0.3 |
+| deepest water inland | 11.52 | 11.53, the same shore lakes | 12 |
+| streams inside 300s | 44 / 50 | 39 / 50 | 40 |
+| never arrive | 1 | 2 (s17, s50) | 3 |
+
+On v1-like land the flattest beach's stream arrives in 60s and the steepest's
+in 150s. Steepness barely explains which seeds are slow: arrival time
+correlates 0.11 with `beachDrop` and under 0.15 with every other knob; by
+thirds, drops of 10 - 18 put 14 of 17 inside 300s, 18 - 27 put 12 of 14, and
+27 - 35 put 13 of 19. Changing every beach's land reshuffles whose spring
+lands somewhere awkward. The user accepted 39 and kept 10 - 35.
+
