@@ -8,15 +8,12 @@ swept and frozen. Plan in `PLAN.md`.
 
 ## Current Step
 
-Step 14 done. Next: step 15, verify in the browser.
+Step 15 done. Next: step 16, CLAUDE.md.
 
 ## Status
 
-⏸️ WAITING - step 14 complete: v2 shipped and frozen. LATEST_GENERATOR = 2,
-v2's four files carry the FROZEN header, and beachPins.test.ts pins every layer
-and the whole sea of s46 (two scarps, a waterfall) and s37 (none). v1's pins
-unchanged. Random and typed seeds now grow v2 beaches. Suite 650 green, tsc
-clean, build clean. Waiting on "start step 15".
+⏸️ WAITING - step 15 complete: the user checked every item of PLAN.md's step
+15 list in the browser, and all pass. Waiting on "start step 16".
 
 ## Steps
 
@@ -34,7 +31,7 @@ clean, build clean. Waiting on "start step 15".
 - [x] Step 12: sweep, then set the ranges (decision point)
 - [x] Step 13: the generator picker
 - [x] Step 14: ship v2 (LATEST = 2, pins, frozen)
-- [ ] Step 15: verify in the browser
+- [x] Step 15: verify in the browser
 - [ ] Step 16: CLAUDE.md
 
 ## Shipped before this
