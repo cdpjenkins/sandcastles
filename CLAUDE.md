@@ -809,6 +809,12 @@ no player could grow a beach from a generator still changing. It moved to 2
 in the same commit as v2's pins - that commit is the moment v2 froze. Build a
 v3 the same way.
 
+What freezing protects is beaches players have. v2 was changed once after its
+pins - its scarps taken out - and that was safe only because it had never been
+pushed: the only v2 beaches were on the machine it was built on. Check
+`git log origin/main..main` before treating a pinned generator as changeable;
+once pushed, a change is a new generator.
+
 The rock and sand checksums alone were not enough. Raising the sea by 0.0001
 passed every test in `grid.test.ts` and failed all three whole-beach pins: the
 sea lives in the water layer, which only the whole-beach pins read.
@@ -889,12 +895,12 @@ CLASSIC_BEACH))`, the one path every beach takes.
 
 ## The v2 generator
 
-`generators/v2/`: `BeachGeneratorV2.ts` (`generateBeachV2`, `layBeachV2`, the
-scarps), `ShapeV2.ts` (`shapeV2`, `drawShapeV2`), `SpringSiteV2.ts` (v1's rule,
-copied) and `RandomV2.ts`. Frozen. A seed draws the beach's sea, tide and
-swell, its ridge, its sand share, how bold its noise is, and up to two rock
-scarps - cliffs far steeper than sand, which a stream falls over as a
-waterfall. `PLAN.md` has the design and the sweep. What was expensive to learn:
+`generators/v2/`: `BeachGeneratorV2.ts` (`generateBeachV2`, `layBeachV2`),
+`ShapeV2.ts` (`shapeV2`, `drawShapeV2`), `SpringSiteV2.ts` (v1's rule, copied)
+and `RandomV2.ts`. Frozen. A seed draws the beach's sea, tide and swell, its
+ridge, its sand share and how bold its noise is. `PLAN.md` has the design, the
+sweep, and the scarps that were built and taken out. What was expensive to
+learn:
 
 ### The shape has its own stream, in a frozen order
 
@@ -905,8 +911,10 @@ them, and that order is part of v2: insert a draw and every later value of
 every seed moves. `drawShapeV2` takes the random source, so a test stuck at 0
 and at just under 1 reaches both ends of every range at once.
 
-A scarp's place is stored as fractions - a row across the band it may use, a
-centre across the width - so the shape does not depend on the grid.
+The order is also what let the scarps come out cleanly: they were the last
+draws, so removing them moved nothing else, and every seed that had none grew
+exactly the beach it did. Anything a later generator might want to drop is
+cheapest drawn last.
 
 ### Steepness and sand are separate knobs
 
@@ -918,62 +926,37 @@ Bolder noise (`noiseScale`) floors far more rock at 0.2 - 9% of cells to 32%
 on seed 0 - and does not average to zero over a band of rows, so it moves the
 beach's mean height too.
 
-### A heightfield has no vertical momentum, so falling water spreads at the foot
+### Scarps were built, then taken out
 
-The waterfall spike's first cliff ran the whole width. The stream crossed the
-lip 7 columns wide and was 116 wide at the foot, flowing sideways 9x as hard as
-downhill, scouring a gutter along the wall that drew more water into it. The
-sim carries no momentum downward, so water lands at the foot with nothing
-carrying it away from the face, and it fills whatever room the foot gives it.
-A sloped foot did not help: the fall dug a pool and built a bar below it in
-minutes either way.
+v2 once cut up to two rock cliffs, which a stream fell over as a waterfall.
+They worked, and did not play well, so they came out before v2 was pushed. The
+design and the measurements are in `PLAN.md`; what anyone bringing cliffs back
+should know first:
 
-So a scarp is a *notch*, 10 - 40 wide. Uphill of its face the rock is raised
-across the whole width; outside the notch the raised ground carries on and
-ramps back down at 0.4 a row, so the foot is walled on both sides. The spread
-then stops at the walls.
+- **A heightfield has no vertical momentum, so falling water spreads at the
+  foot.** On a full-width cliff a 7-column stream was 116 wide at the foot,
+  flowing sideways 9x as hard as downhill and scouring a gutter along the wall.
+  Water lands with nothing carrying it away from the face and fills whatever
+  room the foot gives it. Walling the foot in - a notch with ramps either side -
+  stopped the spread at the walls; a sloped foot did nothing.
+- **Sand by a cliff must lie under repose, or `Slope` buries the face.** Sand
+  left steeper took a 10-high face to 1.75 in 300s. Bare rock behind the lip,
+  then sand thickening by at most 0.3 a cell, held every dry face for 600s; on
+  v2's steeper ground the sand over the ramps still needed trimming afterwards,
+  and that trim needed a float32 tolerance or it trimmed the same cell forever.
+- **A cliff's height has to be the surface drop,** or the foot's sand eats it -
+  and then how far the ground behind must rise depends on the ground, so the
+  cliff's footprint does too.
+- **Cliffs slowed the streams.** 35 of 50 arrived inside 300s with them, 44
+  without; 5 of the 11 streams that went over a cliff were slow.
 
-The mesh made it look worse. One vertex per cell means a cliff face is one
-quad blended from lip to foot, so a pool at the foot painted the whole face
-blue across its width. `render/faceWater.ts` (`showsWater`) colours a wet cell
-under a face as water only when a cell on the face's top is wet too - true of
-every cliff a player digs, not only v2's. Its cost is a pool's edge drawn a
-cell back from the wall. It reads neighbours, but a still pool under a face is
-never stale: `Evaporation` dirties any cell whose water changes.
-
-### Sand by a cliff must lie under repose, or Slope buries it
-
-The spike's first scene thinned the sand to nothing over three cells behind
-the lip; `Slope` emptied it over the edge, and a 10-high face was 1.75 high
-after 300s, away from the stream entirely. Behind the lip there is a bench of
-bare rock (`SCARP_BENCH`, 4), then sand thickening by at most 0.3 a cell; beside
-the walls likewise; the foot keeps its sand. Shaped that way, every dry face
-held to two decimal places for 600s.
-
-That was not enough on v2's own ground. The ramps' 0.4 lands on top of the
-beach's slope, and the sand over them stood steeper than repose 6 - 15 columns
-out from the notch. So after cutting, every cell a scarp changed has its sand
-settled to 0.6 above its lowest neighbour, passing the check on whenever it
-lowers one. Two things about that pass:
-
-- **Its test is a comparison, not "nothing moves".** The noise already leaves
-  natural slopes over repose on a plain beach. The test is that a scarp gives
-  `Slope` nothing to move that the same beach without it would not.
-- **It needs a tolerance, or it never ends.** The layers are float32, so a trim
-  can round back up to just over what it was trimmed to, and the same cell is
-  trimmed forever. 0.6 leaves 0.025 under repose to spend on it.
-
-### A scarp's height is the drop, so its footprint depends on the ground
-
-Raising the rock by `height` left the foot's sand to eat it: a 6 raise gave a
-real drop of 1.2, which the stream filled. So `height` is the surface drop from
-the bare lip to the foot, and each column is raised by whatever makes it so.
-Where the foot carries deep sand that is far more than `height` - across 50
-seeds, up to about 20, and ramps 51 rows long. Ramps sized from `height` would
-have been steeper than 0.4 there. So the ramps fall from the actual raise, a
-scarp is placed on the ground it is cut into, and it moves uphill if its ramps
-would reach the shore zone. Only the layout knows where a scarp went, so
-`layBeachV2` returns the placements, and the tests read those.
+`render/faceWater.ts` (`showsWater`) came out of the same work and stays: with
+one vertex per cell a cliff face is one quad blended from lip to foot, so a
+pool at the foot painted the whole face blue. A wet cell under a face is drawn
+as water only when a cell on the face's top is wet too - right for any cliff a
+player digs. Its cost is a pool's edge drawn a cell back from the wall. It reads
+neighbours, but a still pool under a face is never stale: `Evaporation` dirties
+any cell whose water changes.
 
 ### The sweep before shipping
 
@@ -982,42 +965,43 @@ would reach the shore zone. Only the layout knows where a scarp went, so
 | | v2 | bar (v1) |
 |---|---|---|
 | NaN or negative depth | none | none |
-| open sea vs the tide | seeds ≤ 0.24; one corner 0.317 | 0.3 (0.26) |
+| open sea vs the tide | seeds ≤ 0.287; one corner 0.317 | 0.3 (0.26) |
 | deepest water inland | max 11.52 | 12, raised from 11 (9.4) |
-| streams inside 300s | 35 / 50; 2 never | 33, lowered from 40 (41) |
+| streams inside 300s | 44 / 50; 1 never | 40 (41, 1 never) |
 | castle wear over its flat sea | 0.08 - 1.22x | 2x |
 | refraction, reflection | as v1's | as v1's |
-| flicker below a waterfall | 0.035 - 0.039 | the spike's 0.04 - 0.06 |
 
-The first, third and fourth were judged and accepted, not passed:
+Two were judged and accepted, not passed:
 
-- **The deep water is shore lakes, not plunge pools:** hollows below sea level
-  just inland of the shore zone, 9.6 - 10.8 deep at boot, lifted at high tide.
-  12 still leaves 10 under the instability onset at ~22.
-- **No knob separates a slow stream from a fast one** - every seeded knob's
-  mean is within a few percent between them - so narrowing a range would not
-  help. Waterfalls play a part: 5 of 11 streams over a scarp were slow, against
-  10 of 39. A slow or pooling stream is a fine beach; a route-aware spring is
-  what would change it.
-- **Only one range moved:** `swellStrength`'s floor, a third to a half, for the
-  castle wear above. Waterfalls form on about 1 beach in 5: nothing aims a
-  scarp at the stream.
+- **The deep water is shore lakes:** hollows below sea level just inland of
+  the shore zone, 9.6 - 10.8 deep at boot, lifted at high tide by a higher sea
+  and a bigger tide than v1's. 12 still leaves 10 under the instability onset
+  at ~22.
+- **The one corner over 0.3** is the lowest sea at the highest level under the
+  biggest tide; no seed came within 0.01 of it.
 
-Two measures needed replacing, and one could not be reproduced:
+Only one range moved: `swellStrength`'s floor, a third to a half, for the
+castle wear recorded under the swell notes. No knob separates the 6 slow
+streams from the rest - every seeded knob's mean is within a few percent
+between them - so a slow or pooling stream is just a beach; a route-aware
+spring is what would change it.
 
-- **Spatial chop cannot referee a waterfall.** The spike's curvature-flip chop
-  read up to 0.52 below a fall, but the same streams read nearly as high with
-  their cliffs removed: v2's streams are busier than classic's. Step-to-step
-  flicker - how often a cell's depth change flips sign - is what tells
-  numerical chatter from a busy pool, and it matched with and without the
-  cliffs.
+Two measures needed replacing, and two figures could not be reproduced:
+
+- **Spatial chop cannot referee a busy stream.** The spike's curvature-flip
+  chop read up to 0.52 below a waterfall, but the same streams read nearly as
+  high with their cliffs removed. Step-to-step flicker - how often a cell's
+  depth change flips sign - is what tells numerical chatter from a busy pool.
 - **Measure refraction and reflection against v1, the same way.** How the
   0.09 and 0.035 recorded above were taken is not written down. The sweep used
   RMS(flowX)/RMS(flowZ) at row 240 minus at `seaStart` + 11 - a direction, so it
   does not shrink with amplitude - and split the wave at row 240 into its
   shoreward and seaward parts.
-- **Budget hours.** One probe alone runs 0.45s a simulated second; eight in
-  parallel ran up to 15x slower, and the 60-job sweep took over three hours.
+- **Budget hours, and rerun only what changed.** One probe alone runs 0.45s a
+  simulated second; eight in parallel ran up to 15x slower, and the first
+  60-job sweep took over three hours. The sim is deterministic, so a re-sweep
+  after a change need only rerun the seeds whose beaches moved: removing the
+  scarps meant 34 of 50, in 15 minutes.
 
 ### The picker is for typed seeds only
 

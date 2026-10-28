@@ -7,19 +7,20 @@ re-pinned and its seeds re-swept. `LATEST_GENERATOR` stays at 2. Plan in
 
 ## Current Step
 
-Step 2 done. Next: step 3, CLAUDE.md.
+None - work complete.
 
 ## Status
 
-⏸️ WAITING - step 2 complete: re-swept, every bar passes. Streams inside 300s
-44/50 (35 with scarps; bar back to 40), 1 never; sea vs tide 0.287; inland
-11.52, the same shore lakes. Results in PLAN.md's follow-on.
+⏸️ WAITING - all three steps done: the scarps are out of v2, it is re-pinned
+and re-swept (every bar passes), and CLAUDE.md describes v2 without scarps,
+keeping what the cliffs taught. Suite 636 green, tsc clean, build clean. Not
+pushed.
 
 ## Steps
 
 - [x] Step 1: remove the scarps from v2 and re-pin
 - [x] Step 2: re-sweep the seeds (decision point)
-- [ ] Step 3: CLAUDE.md
+- [x] Step 3: CLAUDE.md
 
 ## Shipped before this: a v2 beach generator
 
