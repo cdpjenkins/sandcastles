@@ -7,20 +7,18 @@ re-pinned and its seeds re-swept. `LATEST_GENERATOR` stays at 2. Plan in
 
 ## Current Step
 
-Step 1 done. Next: step 2, re-sweep the seeds.
+Step 2 done. Next: step 3, CLAUDE.md.
 
 ## Status
 
-⏸️ WAITING - step 1 complete: the scarps are out of v2 (shape, layout, the
-sand settle and their tests); `layBeachV2` returns nothing again. All 16
-cliff-free seeds of s1..s50 grow exactly what they did; s46 is re-pinned
-(its land moved, its sea did not), s37 unchanged. Suite 636 green, tsc clean,
-build clean. Next: the re-sweep.
+⏸️ WAITING - step 2 complete: re-swept, every bar passes. Streams inside 300s
+44/50 (35 with scarps; bar back to 40), 1 never; sea vs tide 0.287; inland
+11.52, the same shore lakes. Results in PLAN.md's follow-on.
 
 ## Steps
 
 - [x] Step 1: remove the scarps from v2 and re-pin
-- [ ] Step 2: re-sweep the seeds (decision point)
+- [x] Step 2: re-sweep the seeds (decision point)
 - [ ] Step 3: CLAUDE.md
 
 ## Shipped before this: a v2 beach generator

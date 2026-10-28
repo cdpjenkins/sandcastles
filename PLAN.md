@@ -643,3 +643,19 @@ Steps:
 3. **CLAUDE.md.** The v2 section describes v2 without scarps, keeping what the
    spike taught about waterfalls under a note that v2 does not grow them.
 
+**Re-sweep result** (step 2). The 34 seeds that had scarps were rerun; the 16
+that had none grow the same beaches, and the sim is deterministic, so theirs
+stand. The corners and swell points never had scarps.
+
+| criterion | with scarps | without | bar |
+|---|---|---|---|
+| NaN or negative depth | none | none | none |
+| open sea vs the tide | max 0.24 | max 0.287 | 0.3 |
+| deepest water inland | 11.52 | 11.52, the same shore lakes | 12 |
+| streams inside 300s | 35 / 50 | 44 / 50 | 40 again (v1 41) |
+| never arrive | 2 | 1 (s50, which never had a scarp) | 3 |
+
+Without scarps v2's streams beat v1's, so the stream bar lowered for the
+scarps goes back to 40. The 13 slow streams with scarps are 5 without -
+s26, s14, s20, s5, s10, 350 - 585s - and still no knob separates them.
+
